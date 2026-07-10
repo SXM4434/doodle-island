@@ -1,5 +1,5 @@
-import { Suspense, useEffect } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Suspense, useEffect, useMemo } from 'react'
+import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
@@ -8,6 +8,7 @@ import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
 import { PlacedItems, PlaceGhost } from '../world/Placed'
 import { Player } from '../actors/Player'
+import { HeldItem } from '../actors/HeldItem'
 import { Drops } from '../actors/Drops'
 import { InteractDriver } from '../sim/Interact'
 import { DrawTable } from './DrawTable'
@@ -74,6 +75,7 @@ export default function App() {
             )}
           </Physics>
           <Props />
+          {started && <HeldItem />}
           <Drops />
           <PlacedItems />
           <PlaceGhost />

@@ -95,19 +95,23 @@ export function Props() {
             </>
           )}
           {n.type === 'fiber' && (
-            <>
-              {/* chunky tuft — fat cones so it reads as a plant, not stray lines */}
-              {[-0.18, 0, 0.19].map((dx, i) => (
-                <mesh
-                  key={i}
-                  position={[dx, 0.34, (i - 1) * 0.12]}
-                  rotation={[0, 0, dx * 1.6]}
-                  material={i === 1 ? mats.leafDk : mats.fiber}
-                >
-                  <coneGeometry args={[0.13, 0.75, 5]} />
-                </mesh>
-              ))}
-            </>
+            <group>
+              {/* grass tuft rosette — 5 fat leaning cones around a center (reads at distance) */}
+              {[0, 1, 2, 3, 4].map((i) => {
+                const ang = (i / 5) * Math.PI * 2 + n.rot
+                const lean = i === 0 ? 0 : 0.38
+                return (
+                  <mesh
+                    key={i}
+                    position={[Math.cos(ang) * 0.14, 0.3, Math.sin(ang) * 0.14]}
+                    rotation={[Math.sin(ang) * lean, 0, -Math.cos(ang) * lean]}
+                    material={i % 2 ? mats.fiber : mats.leafDk}
+                  >
+                    <coneGeometry args={[0.16, 0.7, 5]} />
+                  </mesh>
+                )
+              })}
+            </group>
           )}
           {n.type === 'shell' && (
             <group rotation={[0, n.rot, 0]}>

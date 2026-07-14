@@ -5,7 +5,7 @@ import { scatterNodes, type NodeType } from './terrain'
 
 export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink'
 export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
-export type ToolKind = 'axe' | 'pick' | 'sword'
+export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'stonesword'
 
 export interface DrawnItem {
   id: string
@@ -54,6 +54,9 @@ export interface Villager {
   fed: number // total quests completed (friendship)
   built: number // 0..1 house progress — they build it themselves once befriended
 }
+export interface Journal {
+  deeds: Record<string, number> // deedKey -> count (first time = sticker unlock)
+}
 export interface Project {
   key: 'dock'
   need: number // total wood
@@ -81,11 +84,27 @@ export const refs = {
   placeValid: false,
 }
 
+export const DEED_LABEL: Record<string, string> = {
+  'gather-wood': 'First Timber', 'gather-stone': 'Rock Collector', 'gather-fiber': 'Grass Whisperer',
+  'gather-shine': 'Beachcomber', 'gather-berry': 'Berry Nice', 'gather-ink': 'Night Hunter',
+  'craft-axe': 'Axe Artist', 'craft-pick': 'Pick Picasso', 'craft-sword': 'Blade Doodler',
+  'craft-stoneaxe': 'Stone Age II', 'craft-stonepick': 'Deep Cutter', 'craft-stonesword': 'Ink Blade',
+  'craft-furniture': 'Furnisher', 'craft-decoration': 'Decorator', 'craft-campfire': 'Fire Keeper',
+  'craft-wallhang': 'Trophy Maker', 'craft-friend': 'Life Giver', 'craft-fence': 'Fence Builder',
+  'place-furniture': 'Home Maker', 'place-campfire': 'Warm Heart', 'place-fence': 'Land Shaper',
+  'place-decoration': 'Island Stylist', 'place-wallhang': 'Proud Hunter',
+  'feed-friend': 'Good Neighbor', 'slay-scribble': 'Scribble Slayer', 'slay-wasp': 'Wasp Whacker',
+  'dock-done': 'Dock Founder', 'daily-gift': 'Early Bird', 'plant-berry': 'Green Thumb',
+  'survive-night': 'Night Owl',
+}
+
 // Starting values (game-design Numbers Policy) — tune in playtest, never silently.
 export const NODE_HITS: Record<NodeType, number> = { tree: 3, rock: 4, fiber: 1, shell: 1 }
 export const NODE_RES: Record<NodeType, ResKind> = { tree: 'wood', rock: 'stone', fiber: 'fiber', shell: 'shine' }
 export const NODE_YIELD: Record<NodeType, number> = { tree: 3, rock: 3, fiber: 1, shell: 1 }
 export const TOOL_FOR: Record<NodeType, ToolKind | null> = { tree: 'axe', rock: 'pick', fiber: null, shell: null }
+export const TOOL_TIER: Record<ToolKind, number> = { axe: 1, pick: 1, sword: 1, stoneaxe: 2, stonepick: 2, stonesword: 2 }
+export const TOOL_BASE: Record<ToolKind, ToolKind> = { axe: 'axe', pick: 'pick', sword: 'sword', stoneaxe: 'axe', stonepick: 'pick', stonesword: 'sword' }
 export const RESPAWN_MS: [number, number] = [120_000, 240_000] // 2–4 min (PRD §3)
 export const STACK_MAX = 50
 // Starting value: bush matures in ~8 min real time (2 stages x 4 min) — tune in playtest
@@ -96,6 +115,9 @@ export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   axe: { wood: 2, fiber: 1 }, // bootstrappable bare-handed
   pick: { wood: 2, stone: 1 },
   sword: { wood: 2, stone: 1 }, // PRD §4 example
+  stoneaxe: { wood: 2, stone: 3, ink: 1 }, // tier 2: night ink unlocks power
+  stonepick: { wood: 2, stone: 4, ink: 1 },
+  stonesword: { wood: 1, stone: 3, ink: 2 },
   furniture: { wood: 4 },
   decoration: { fiber: 2 },
   campfire: { wood: 8, stone: 2 }, // the first "goal" craft — warms the night
@@ -116,6 +138,8 @@ interface State {
   villagers: Villager[]
   plants: Plant[]
   project: Project
+  journal: Journal
+  journalOpen: boolean
   drawOpen: boolean
   placing: DrawnItem | null
   placingRot: number
@@ -145,6 +169,8 @@ interface State {
   addVillager: (item: DrawnItem) => void
   contributeProject: (n: number) => void
   buildTick: (id: string, amt: number) => void
+  deed: (key: string) => void
+  openJournal: (open: boolean) => void
   giveVillager: (id: string) => boolean
   plantBerry: (x: number, z: number) => boolean
   harvestPlant: (id: string) => void
@@ -153,7 +179,7 @@ interface State {
 let dropId = 1
 const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project } | null {
+function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal } | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
     return raw ? JSON.parse(raw) : null
@@ -174,6 +200,8 @@ export const useGame = create<State>((set, get) => ({
   villagers: (saved?.villagers ?? []).map((v) => ({ built: 0, ...v })),
   plants: saved?.plants ?? [],
   project: saved?.project ?? { key: 'dock', need: 20, given: 0, doneAt: 0 },
+  journal: saved?.journal ?? { deeds: {} },
+  journalOpen: false,
   drawOpen: false,
   placing: null,
   placingRot: 0,
@@ -262,6 +290,7 @@ export const useGame = create<State>((set, get) => ({
     if (!d) return
     set({ drops: get().drops.filter((x) => x.id !== id) })
     get().addRes(d.res, 1)
+    get().deed('gather-' + d.res)
     if (get().hint === 1) set({ hint: 2 })
   },
 
@@ -292,6 +321,7 @@ export const useGame = create<State>((set, get) => ({
       tool: isTool ? (key as ToolKind) : undefined,
       strokes,
     }
+    get().deed('craft-' + key)
     if (isTool) {
       const empty = slots.findIndex((s) => !s.res && !s.item)
       if (empty >= 0) {
@@ -317,6 +347,7 @@ export const useGame = create<State>((set, get) => ({
       placed: [...g.placed, { id: g.placing.id, item: g.placing, x, z, rot: g.placingRot }],
       placing: null,
     })
+    g.deed('place-' + g.placing.item.cls)
     if (g.hint === 3) set({ hint: 4 })
   },
   cancelPlace: () => {
@@ -338,6 +369,17 @@ export const useGame = create<State>((set, get) => ({
     empty.item = p.item
     set({ placed: g.placed.filter((x) => x.id !== id), slots })
   },
+
+  deed: (key) => {
+    const g = get()
+    const n = (g.journal.deeds[key] ?? 0) + 1
+    set({ journal: { deeds: { ...g.journal.deeds, [key]: n } } })
+    if (n === 1) {
+      // first time = sticker moment
+      setTimeout(() => get().say('📖 New sticker: ' + DEED_LABEL[key] ?? key), 400)
+    }
+  },
+  openJournal: (open) => set({ journalOpen: open }),
 
   say: (msg) => set({ toast: msg, toastAt: performance.now() }),
   setHint: (h) => set({ hint: h }),
@@ -385,6 +427,7 @@ export const useGame = create<State>((set, get) => ({
       ),
     })
     g.addRes('shine', 2) // gratitude sparkles
+    g.deed('feed-friend')
     g.say(v.name + ': "Oh!! Thank you thank you!" (+2 shine)')
     return true
   },
@@ -404,6 +447,7 @@ export const useGame = create<State>((set, get) => ({
       plants: [...g.plants, { id: Date.now().toString(36), x, z, plantedAt: Date.now() }],
     })
     g.say('Planted! Come back when it\u2019s grown.')
+    get().deed('plant-berry')
     return true
   },
 
@@ -470,7 +514,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)

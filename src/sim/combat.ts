@@ -231,6 +231,7 @@ export function swingHitMobs(dmg: number): boolean {
       if (m.hp <= 0) {
         m.state = 'dying'; m.stateAt = now
         dropInk(m.x, m.z, m.kind === 'scribble' ? 2 : 1)
+        import('../sim/store').then(({ useGame }) => useGame.getState().deed('slay-' + m.kind))
       }
     }
   }

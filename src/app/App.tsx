@@ -8,6 +8,9 @@ import { Ripples } from '../world/Ripples'
 import { Campfires } from '../world/Campfires'
 import { Garden } from '../world/Garden'
 import { Homes, Dock, DockSign } from '../world/Homes'
+import { DailyBottle } from '../world/DailyBottle'
+import { Critters } from '../actors/Critters'
+import { Journal } from './Journal'
 import { Villagers } from '../actors/Villagers'
 import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
@@ -95,6 +98,8 @@ export default function App() {
           <Dock />
           <DockSign />
           {started && <Villagers />}
+          {started && <Critters />}
+          {started && <DailyBottle />}
           {started && <HeldItem />}
           {started && <Mobs />}
           {started && <RemotePlayers />}
@@ -109,6 +114,7 @@ export default function App() {
       {started && <HUD />}
       {started && <Hearts />}
       <DrawTable />
+      <Journal />
       {drawingSelf && (
         <CharacterEasel
           onDone={() => {

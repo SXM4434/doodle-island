@@ -271,3 +271,25 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .step-dots { margin-left: 10px; font-size: 0.8rem; }
 .step-dots .dot { opacity: 0.25; margin-right: 3px; }
 .step-dots .dot.on { opacity: 1; color: var(--leaf); }
+
+/* ---------- sticker journal ---------- */
+.journal-count { font-weight: 700; color: var(--leaf); }
+.sticker-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px; max-height: 55vh; overflow: auto; padding: 4px;
+}
+.sticker {
+  border: 2px dashed rgba(51,41,31,0.25); border-radius: 12px;
+  padding: 10px 6px; text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; min-height: 64px; position: relative;
+  background: rgba(255,255,255,0.4);
+}
+.sticker.got {
+  border-style: solid; border-color: var(--ink);
+  background: #fff; box-shadow: 0 2px 0 rgba(51,41,31,0.5);
+  transform: rotate(-1deg);
+}
+.sticker.got:nth-child(even) { transform: rotate(1.2deg); }
+.sticker-face { font-size: 1.3rem; }
+.sticker-name { font-size: 0.72rem; line-height: 1.15; }
+.sticker-n { position: absolute; top: 4px; right: 7px; font-size: 0.65rem; opacity: 0.6; }

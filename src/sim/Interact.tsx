@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useGame, refs, equippedTool, TOOL_FOR, type NodeState } from './store'
+import { useGame, refs, equippedTool, TOOL_FOR, TOOL_TIER, TOOL_BASE, type NodeState } from './store'
 import { TABLE } from './terrain'
 import { sfx } from '../audio/sfx'
 import { swingHitMobs, tryDodge, useCombat, SWORD_DMG, OTHER_DMG } from './combat'
 import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
+import { critterSay } from '../actors/Critters'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
 // or pick up a placed item. Swing cooldown 0.5s (PRD §6 starting value).
@@ -65,6 +66,9 @@ export function tryInteract(): void {
     }
   }
 
+  // wild critter nearby? they have opinions
+  if (critterSay()) { sfx.knock('soft'); return }
+
   // villager nearby? give (if they asked and you have it) or chat
   const vil = nearestQuestVillager()
   if (vil) {
@@ -102,13 +106,15 @@ export function tryInteract(): void {
   refs.swingAt = now
   const tool = equippedTool()
   sfx.swing()
-  const hitMob = swingHitMobs(tool === 'sword' ? SWORD_DMG : OTHER_DMG)
+  const hitMob = swingHitMobs(tool && TOOL_BASE[tool] === 'sword' ? SWORD_DMG * TOOL_TIER[tool] : OTHER_DMG)
   if (hitMob) { sfx.thunk(); return }
   const n = nearestNode()
   if (!n) return
   const need = TOOL_FOR[n.type]
-  // right tool = full hit; bare hands / wrong tool = half speed (PRD §3)
-  const dmg = need === null || tool === need ? 1 : 0.5
+  // right tool = full hit x tier; bare hands / wrong tool = half speed (PRD §3)
+  const base = tool ? TOOL_BASE[tool] : null
+  const tier = tool ? TOOL_TIER[tool] : 1
+  const dmg = need === null ? tier : base === need ? tier : 0.5
   setTimeout(() => {
     useGame.getState().hitNode(n.id, dmg)
     sfx.knock(n.type === 'rock' ? 'stone' : n.type === 'tree' ? 'wood' : 'soft')
@@ -131,6 +137,9 @@ export function InteractDriver() {
       if (e.key >= '1' && e.key <= '8') g.equip(Number(e.key) - 1)
       if (e.key === 'q' || e.key === 'Q') {
         if (tryDodge()) sfx.swing()
+      }
+      if (e.key === 'j' || e.key === 'J') {
+        useGame.getState().openJournal(!useGame.getState().journalOpen)
       }
       if (e.key === 'p' || e.key === 'P') {
         const p = refs.playerPos

@@ -4,12 +4,13 @@ import { RigidBody } from '@react-three/rapier'
 import { ISLAND_SIZE, islandHeight, TABLE, groundY } from '../sim/terrain'
 import { gradientMap, noOutline } from './toon'
 
-const SAND = new THREE.Color('#ecd9a8')
-const GRASS = new THREE.Color('#79b356')
-const GRASS_DK = new THREE.Color('#63a047')
-const ROCKTOP = new THREE.Color('#8ea06d')
-const MUD = new THREE.Color('#b09a6c')
-const SEABED = new THREE.Color('#c9bd93')
+const SAND = new THREE.Color('#F2E3C6')
+const GRASS = new THREE.Color('#8CC152')
+const GRASS_DK = new THREE.Color('#7cb245')
+const GRASS_LT = new THREE.Color('#A8D66B')
+const ROCKTOP = new THREE.Color('#9fb96a')
+const MUD = new THREE.Color('#c9a86e')
+const SEABED = new THREE.Color('#dbc9a0')
 
 function buildTerrain(segs: number): THREE.BufferGeometry {
   const geo = new THREE.PlaneGeometry(ISLAND_SIZE + 40, ISLAND_SIZE + 40, segs, segs)

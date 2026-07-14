@@ -13,13 +13,14 @@ export function Props() {
   const mats = useMemo(
     () => ({
       trunk: toon('#a8703d'),
-      leaf: toon('#5c9645'),
-      leafDk: toon('#4a7f38'),
+      leaf: toon('#6fae4e'),
+      leafDk: toon('#57923c'),
+      leafLt: toon('#8CC152'),
       rock: toon('#9a9a94'),
       rockDk: toon('#7e7e78'),
-      fiber: toon('#6fae4e'),
-      shell: toon('#f2e3c9'),
-      shellPink: toon('#e8b8a4'),
+      fiber: toon('#8CC152'),
+      shell: toon('#F2E3C6'),
+      shellPink: toon('#F5A8B8'),
     }),
     [],
   )

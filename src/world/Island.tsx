@@ -5,8 +5,8 @@ import { ISLAND_SIZE, islandHeight, TABLE, groundY } from '../sim/terrain'
 import { gradientMap, noOutline } from './toon'
 
 const SAND = new THREE.Color('#F2E3C6')
-const GRASS = new THREE.Color('#8CC152')
-const GRASS_DK = new THREE.Color('#7cb245')
+const GRASS = new THREE.Color('#84bb4f')
+const GRASS_DK = new THREE.Color('#6da545')
 const GRASS_LT = new THREE.Color('#A8D66B')
 const ROCKTOP = new THREE.Color('#9fb96a')
 const MUD = new THREE.Color('#c9a86e')

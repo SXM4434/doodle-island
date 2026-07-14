@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGame, refs, equippedTool, TOOL_FOR, type NodeState } from './store'
 import { TABLE } from './terrain'
 import { sfx } from '../audio/sfx'
+import { swingHitMobs, tryDodge, useCombat, SWORD_DMG, OTHER_DMG } from './combat'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
 // or pick up a placed item. Swing cooldown 0.5s (PRD §6 starting value).
@@ -60,13 +61,15 @@ export function tryInteract(): void {
     }
   }
 
-  // whack nearest node
+  // whack: mobs first (combat), then nearest node
   if (now - refs.swingAt < SWING_MS) return
   refs.swingAt = now
-  const n = nearestNode()
-  sfx.swing()
-  if (!n) return
   const tool = equippedTool()
+  sfx.swing()
+  const hitMob = swingHitMobs(tool === 'sword' ? SWORD_DMG : OTHER_DMG)
+  if (hitMob) { sfx.thunk(); return }
+  const n = nearestNode()
+  if (!n) return
   const need = TOOL_FOR[n.type]
   // right tool = full hit; bare hands / wrong tool = half speed (PRD §3)
   const dmg = need === null || tool === need ? 1 : 0.5
@@ -90,6 +93,22 @@ export function InteractDriver() {
       }
       if (e.key === 'Escape' && g.placing) g.cancelPlace()
       if (e.key >= '1' && e.key <= '8') g.equip(Number(e.key) - 1)
+      if (e.key === 'q' || e.key === 'Q') {
+        if (tryDodge()) sfx.swing()
+      }
+      // eat a berry from the equipped slot (heal +1 heart)
+      if (e.key === 'c' || e.key === 'C') {
+        const slot = g.slots[g.equipped]
+        if (slot?.res === 'berry' && (slot.count ?? 0) > 0) {
+          const slots = g.slots.map((s, i) =>
+            i === g.equipped ? { ...s, count: (s.count ?? 0) - 1 } : s,
+          )
+          if (!slots[g.equipped].count) { delete slots[g.equipped].res; delete slots[g.equipped].count }
+          useGame.setState({ slots })
+          useCombat.getState().heal(2)
+          sfx.chime()
+        }
+      }
       held.current = e.key === 'e' || e.key === 'E'
     }
     const up = () => (held.current = false)

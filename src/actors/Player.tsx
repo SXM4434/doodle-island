@@ -57,6 +57,22 @@ export function Player() {
     const now = performance.now()
     const a = anim.current
 
+    // death → fade + respawn at home with hearts full (PRD §6, no item loss)
+    const combat = useCombat.getState()
+    if (combat.dead && now - combat.diedAt > 1400) {
+      respawnAtHome(body)
+    }
+    // dodge impulse: burst along current move direction with i-frames
+    const dodging = now - combatRefs.dodgeAt < DODGE_MS
+    if (dodging) {
+      const k = 1 - (now - combatRefs.dodgeAt) / DODGE_MS
+      body.applyImpulse({ x: a.dirX * 0.12 * k, y: 0, z: a.dirZ * 0.12 * k }, true)
+      // squash-stretch roll read
+      sprite.current.rotation.z = (1 - k) * (a.flip > 0 ? -1 : 1) * 0.5
+    } else {
+      sprite.current.rotation.z = 0
+    }
+
     // exponential smoothing on speed + direction (raw physics deltas are noisy)
     const dt = Math.max(1e-4, Math.min(0.1, moved > 0 || a.speed > 0 ? 1 / 60 : 1 / 60))
     const rawSpeed = moved / dt

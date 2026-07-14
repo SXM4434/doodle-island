@@ -184,6 +184,15 @@ const ICONS: Record<string, (ctx: Ctx) => void> = {
       ctx.stroke()
     }
   },
+  berry: (ctx) => {
+    ctx.fillStyle = '#d95d39'
+    blob(ctx, 28, 36, 11, 11, '#d95d39')
+    blob(ctx, 40, 32, 9, 9, '#d95d39')
+    ctx.strokeStyle = '#5c9645'
+    ctx.lineWidth = 4
+    wobblyPath(ctx, [[33, 24], [36, 14]])
+    ctx.stroke()
+  },
   shine: (ctx) => {
     ctx.fillStyle = '#e0a428'
     ctx.beginPath()

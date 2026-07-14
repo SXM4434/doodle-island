@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
 
-export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine'
+export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry'
 export type ItemClass = 'tool' | 'furniture' | 'decoration'
 export type ToolKind = 'axe' | 'pick' | 'sword'
 
@@ -75,7 +75,7 @@ export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   decoration: { fiber: 2 },
 }
 
-export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine' }
+export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry' }
 
 interface State {
   started: boolean
@@ -184,11 +184,13 @@ export const useGame = create<State>((set, get) => ({
       refs.pops.set(id, now)
       const drops: Drop[] = [...get().drops]
       const yieldN = NODE_YIELD[n.type]
-      for (let i = 0; i < yieldN; i++) {
+      // fiber plants sometimes carry a berry (heal item, PRD §6 healing loop)
+      const berryBonus = n.type === 'fiber' && Math.random() < 0.4 ? 1 : 0
+      for (let i = 0; i < yieldN + berryBonus; i++) {
         const a = Math.random() * Math.PI * 2
         drops.push({
           id: dropId++,
-          res: NODE_RES[n.type],
+          res: berryBonus && i === yieldN ? 'berry' : NODE_RES[n.type],
           x: n.x + Math.cos(a) * 0.7,
           y: 1.2,
           z: n.z + Math.sin(a) * 0.7,

@@ -85,6 +85,7 @@ export default function App() {
       </Canvas>
       <TitleCard />
       {started && <HUD />}
+      {started && <Hearts />}
       <DrawTable />
     </div>
   )

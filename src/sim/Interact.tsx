@@ -4,6 +4,8 @@ import { useGame, refs, equippedTool, TOOL_FOR, type NodeState } from './store'
 import { TABLE } from './terrain'
 import { sfx } from '../audio/sfx'
 import { swingHitMobs, tryDodge, useCombat, SWORD_DMG, OTHER_DMG } from './combat'
+import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
+import { nearestRipePlant } from '../world/Garden'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
 // or pick up a placed item. Swing cooldown 0.5s (PRD §6 starting value).
@@ -52,6 +54,40 @@ export function tryInteract(): void {
     return
   }
 
+  // the dock project sign: stand at the north beach sign, E donates 5 wood
+  const proj = g.project
+  if (!proj.doneAt || proj.given < proj.need) {
+    const signZ = -46
+    if (Math.hypot(p.x - 0, p.z - signZ) < 2.5) {
+      g.contributeProject(5)
+      sfx.place()
+      return
+    }
+  }
+
+  // villager nearby? give (if they asked and you have it) or chat
+  const vil = nearestQuestVillager()
+  if (vil) {
+    if (vil.quest) {
+      if (g.giveVillager(vil.id)) { sfx.chime(); return }
+      g.say(`${vil.name} wants ${vil.quest.n} ${vil.quest.res} — not enough yet!`)
+      return
+    }
+    g.say(villagerChat(vil))
+    sfx.knock('soft')
+    return
+  }
+
+  // ripe bush nearby? harvest
+  const ripe = nearestRipePlant()
+  if (ripe) {
+    g.harvestPlant(ripe.id)
+    sfx.pop()
+    g.say('+3 berries! Replant one to keep the garden going.')
+    return
+  }
+
+  // holding berries on grass? plant one (P key also works)
   // near a placed item? pick it back up
   for (const pl of g.placed) {
     if (Math.hypot(pl.x - p.x, pl.z - p.z) < 1.4) {
@@ -95,6 +131,10 @@ export function InteractDriver() {
       if (e.key >= '1' && e.key <= '8') g.equip(Number(e.key) - 1)
       if (e.key === 'q' || e.key === 'Q') {
         if (tryDodge()) sfx.swing()
+      }
+      if (e.key === 'p' || e.key === 'P') {
+        const p = refs.playerPos
+        if (g.plantBerry(Math.round(p.x * 2) / 2, Math.round(p.z * 2) / 2)) sfx.place()
       }
       // eat a berry from the equipped slot (heal +1 heart)
       if (e.key === 'c' || e.key === 'C') {

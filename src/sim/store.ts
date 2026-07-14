@@ -4,7 +4,7 @@ import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
 
 export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink'
-export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang'
+export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
 export type ToolKind = 'axe' | 'pick' | 'sword'
 
 export interface DrawnItem {
@@ -43,6 +43,29 @@ export interface Placed {
   z: number
   rot: number // radians, 90° steps
 }
+export interface Villager {
+  id: string
+  name: string
+  item: DrawnItem // the player's creature drawing
+  homeX: number
+  homeZ: number
+  quest: { res: ResKind; n: number } | null
+  questAt: number // when current quest was asked (0 = none yet)
+  fed: number // total quests completed (friendship)
+  built: number // 0..1 house progress — they build it themselves once befriended
+}
+export interface Project {
+  key: 'dock'
+  need: number // total wood
+  given: number
+  doneAt: number // Date.now() when finished (0 = in progress)
+}
+export interface Plant {
+  id: string
+  x: number
+  z: number
+  plantedAt: number // Date.now() — growth survives reloads
+}
 
 // ---- mutable per-frame refs: read in useFrame, NEVER through React ----
 export const refs = {
@@ -65,8 +88,10 @@ export const NODE_YIELD: Record<NodeType, number> = { tree: 3, rock: 3, fiber: 1
 export const TOOL_FOR: Record<NodeType, ToolKind | null> = { tree: 'axe', rock: 'pick', fiber: null, shell: null }
 export const RESPAWN_MS: [number, number] = [120_000, 240_000] // 2–4 min (PRD §3)
 export const STACK_MAX = 50
+// Starting value: bush matures in ~8 min real time (2 stages x 4 min) — tune in playtest
+export const GROW_STAGE_MS = 4 * 60_000
 
-export type CraftKey = ToolKind | 'furniture' | 'decoration' | 'campfire' | 'wallhang'
+export type CraftKey = ToolKind | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
 export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   axe: { wood: 2, fiber: 1 }, // bootstrappable bare-handed
   pick: { wood: 2, stone: 1 },
@@ -75,6 +100,8 @@ export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   decoration: { fiber: 2 },
   campfire: { wood: 8, stone: 2 }, // the first "goal" craft — warms the night
   wallhang: { ink: 2, shine: 1 }, // trophy of the night — proof you hunted
+  friend: { fiber: 3, berry: 1 }, // draw a creature — it LIVES here now
+  fence: { wood: 1 }, // cheap, solid, snaps — build pens and yards
 }
 
 export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry', ink: 'ink' }
@@ -86,6 +113,9 @@ interface State {
   nodes: NodeState[]
   drops: Drop[]
   placed: Placed[]
+  villagers: Villager[]
+  plants: Plant[]
+  project: Project
   drawOpen: boolean
   placing: DrawnItem | null
   placingRot: number
@@ -112,12 +142,18 @@ interface State {
   pickupPlaced: (id: string) => void
   say: (msg: string) => void
   setHint: (h: number) => void
+  addVillager: (item: DrawnItem) => void
+  contributeProject: (n: number) => void
+  buildTick: (id: string, amt: number) => void
+  giveVillager: (id: string) => boolean
+  plantBerry: (x: number, z: number) => boolean
+  harvestPlant: (id: string) => void
 }
 
 let dropId = 1
 const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-function loadSave(): { slots: Slot[]; placed: Placed[] } | null {
+function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project } | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
     return raw ? JSON.parse(raw) : null
@@ -135,6 +171,9 @@ export const useGame = create<State>((set, get) => ({
   nodes: scatterNodes().map((n) => ({ ...n, hp: NODE_HITS[n.type], respawnAt: 0 })),
   drops: [],
   placed: saved?.placed ?? [],
+  villagers: (saved?.villagers ?? []).map((v) => ({ built: 0, ...v })),
+  plants: saved?.plants ?? [],
+  project: saved?.project ?? { key: 'dock', need: 20, given: 0, doneAt: 0 },
   drawOpen: false,
   placing: null,
   placingRot: 0,
@@ -302,6 +341,115 @@ export const useGame = create<State>((set, get) => ({
 
   say: (msg) => set({ toast: msg, toastAt: performance.now() }),
   setHint: (h) => set({ hint: h }),
+
+  addVillager: (item) => {
+    const names = ['Momo','Pip','Wobble','Sprig','Inky','Biscuit','Clover','Doodle','Pebble','Juniper']
+    const used = get().villagers.map((v) => v.name)
+    const name = names.find((n) => !used.includes(n)) ?? 'Scribbly ' + (get().villagers.length + 1)
+    const p = refs.playerPos
+    const a = Math.random() * Math.PI * 2
+    set({
+      villagers: [
+        ...get().villagers,
+        {
+          id: item.id, name, item,
+          homeX: p.x + Math.cos(a) * 2.5,
+          homeZ: p.z + Math.sin(a) * 2.5,
+          quest: null, questAt: 0, fed: 0, built: 0,
+        },
+      ],
+    })
+    get().say(name + ' hopped off the page! They live here now.')
+  },
+
+  giveVillager: (id) => {
+    const g = get()
+    const v = g.villagers.find((x) => x.id === id)
+    if (!v?.quest) return false
+    if (g.countRes(v.quest.res) < v.quest.n) return false
+    // consume across slots
+    const slots = g.slots.map((s) => ({ ...s }))
+    let need = v.quest.n
+    for (const s of slots) {
+      if (s.res === v.quest.res && need > 0) {
+        const take = Math.min(need, s.count ?? 0)
+        s.count = (s.count ?? 0) - take
+        need -= take
+        if (!s.count) { delete s.res; delete s.count }
+      }
+    }
+    set({
+      slots,
+      villagers: g.villagers.map((x) =>
+        x.id === id ? { ...x, quest: null, questAt: performance.now(), fed: x.fed + 1 } : x,
+      ),
+    })
+    g.addRes('shine', 2) // gratitude sparkles
+    g.say(v.name + ': "Oh!! Thank you thank you!" (+2 shine)')
+    return true
+  },
+
+  plantBerry: (x, z) => {
+    const g = get()
+    const slot = g.slots[g.equipped]
+    if (slot?.res !== 'berry' || !(slot.count ?? 0)) return false
+    for (const pl of g.plants) if (Math.hypot(pl.x - x, pl.z - z) < 1.2) return false
+    const slots = g.slots.map((s, i) =>
+      i === g.equipped ? { ...s, count: (s.count ?? 0) - 1 } : { ...s },
+    )
+    const es = slots[g.equipped]
+    if (!es.count) { delete es.res; delete es.count }
+    set({
+      slots,
+      plants: [...g.plants, { id: Date.now().toString(36), x, z, plantedAt: Date.now() }],
+    })
+    g.say('Planted! Come back when it\u2019s grown.')
+    return true
+  },
+
+  contributeProject: (n) => {
+    const g = get()
+    if (g.project.doneAt) return
+    const have = g.countRes('wood')
+    const give = Math.min(n, have, g.project.need - g.project.given)
+    if (give <= 0) { g.say('The dock needs wood — go chop!'); return }
+    const slots = g.slots.map((s) => ({ ...s }))
+    let need = give
+    for (const s of slots) {
+      if (s.res === 'wood' && need > 0) {
+        const take = Math.min(need, s.count ?? 0)
+        s.count = (s.count ?? 0) - take
+        need -= take
+        if (!s.count) { delete s.res; delete s.count }
+      }
+    }
+    const given = g.project.given + give
+    const done = given >= g.project.need
+    set({
+      slots,
+      project: { ...g.project, given, doneAt: done ? Date.now() : 0 },
+    })
+    g.say(done ? 'THE DOCK IS DONE!! The whole island came to see.' : `+${give} wood — dock is ${Math.round((given / g.project.need) * 100)}% built`)
+  },
+
+  buildTick: (id, amt) => {
+    const g = get()
+    set({
+      villagers: g.villagers.map((v) =>
+        v.id === id ? { ...v, built: Math.min(1, v.built + amt) } : v,
+      ),
+    })
+  },
+
+  harvestPlant: (id) => {
+    const g = get()
+    set({
+      plants: g.plants.map((p) =>
+        p.id === id ? { ...p, plantedAt: Date.now() - GROW_STAGE_MS } : p,
+      ),
+    })
+    g.addRes('berry', 3)
+  },
 }))
 
 // ---- multiplayer world-edit sync (via net seam) ----
@@ -322,7 +470,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)
@@ -335,7 +483,7 @@ export function equippedTool(): ToolKind | null {
 }
 
 export function itemWorldSize(cls: ItemClass): number {
-  return cls === 'tool' ? 0.85 : cls === 'furniture' ? 1.4 : cls === 'campfire' ? 1.1 : cls === 'wallhang' ? 0.9 : 1.0
+  return cls === 'tool' ? 0.85 : cls === 'furniture' ? 1.4 : cls === 'campfire' ? 1.1 : cls === 'wallhang' ? 0.9 : cls === 'fence' ? 0.8 : 1.0
 }
 
 // dev debug handle

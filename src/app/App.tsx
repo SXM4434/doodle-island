@@ -6,6 +6,9 @@ import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { Island } from '../world/Island'
 import { Ripples } from '../world/Ripples'
 import { Campfires } from '../world/Campfires'
+import { Garden } from '../world/Garden'
+import { Homes, Dock, DockSign } from '../world/Homes'
+import { Villagers } from '../actors/Villagers'
 import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
 import { PlacedItems, PlaceGhost } from '../world/Placed'
@@ -87,12 +90,16 @@ export default function App() {
           <Props />
           <Ripples />
           <Campfires />
+          <Garden />
+          <Homes />
+          <Dock />
+          <DockSign />
+          {started && <Villagers />}
           {started && <HeldItem />}
           {started && <Mobs />}
           {started && <RemotePlayers />}
           {started && <NetSync />}
           <Drops />
-          <PlacedItems />
           <PlaceGhost />
           {started && <InteractDriver />}
           <Outlined />

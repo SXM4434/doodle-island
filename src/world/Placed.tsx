@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { RigidBody } from '@react-three/rapier'
 import { useGame, refs, itemWorldSize, type Placed as PlacedT } from '../sim/store'
 import { groundY, TABLE } from '../sim/terrain'
 import { itemTexture } from '../draw/itemTexture'
@@ -51,6 +52,15 @@ function Standee({ p }: { p: PlacedT }) {
           <planeGeometry args={[w, h]} />
         </mesh>
       </group>
+      {/* fences (and furniture) are SOLID — thin cuboid matching the standee */}
+      {(p.item.cls === 'fence' || p.item.cls === 'furniture') && (
+        <RigidBody type="fixed" colliders="cuboid" includeInvisible>
+          <mesh position={[0, h / 2, 0]} visible={false}>
+            <boxGeometry args={[w * 0.9, h, 0.14]} />
+            <meshBasicMaterial />
+          </mesh>
+        </RigidBody>
+      )}
       <primitive object={shadow} position={[0, 0.04, 0]} />
     </group>
   )

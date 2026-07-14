@@ -12,6 +12,8 @@ const CLASSES: Array<{ key: CraftKey; label: string; blurb: string }> = [
   { key: 'decoration', label: 'Decoration', blurb: 'small standee' },
   { key: 'campfire', label: 'Campfire', blurb: 'warms the night, scares the dark' },
   { key: 'wallhang', label: 'Trophy', blurb: 'needs night-hunt ink' },
+  { key: 'friend', label: 'Friend', blurb: 'draw a creature — it lives here!' },
+  { key: 'fence', label: 'Fence', blurb: 'solid! build pens and yards' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -137,6 +139,9 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
     if (item.cls === 'tool') {
       openDraw(false)
       say('Made it! It’s in your hand.')
+    } else if (item.cls === 'friend') {
+      openDraw(false)
+      useGame.getState().addVillager(item)
     } else {
       beginPlace(item)
       say('Walk somewhere and press E to place — R rotates.')

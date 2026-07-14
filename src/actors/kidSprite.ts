@@ -184,6 +184,13 @@ const ICONS: Record<string, (ctx: Ctx) => void> = {
       ctx.stroke()
     }
   },
+  ink: (ctx) => {
+    // ink splat blob
+    ctx.fillStyle = '#3d3358'
+    blob(ctx, 32, 36, 13, 10, '#3d3358')
+    blob(ctx, 44, 26, 5, 4, '#3d3358', false)
+    blob(ctx, 20, 24, 4, 3, '#3d3358', false)
+  },
   berry: (ctx) => {
     ctx.fillStyle = '#d95d39'
     blob(ctx, 28, 36, 11, 11, '#d95d39')

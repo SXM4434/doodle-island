@@ -5,6 +5,7 @@ import { KeyboardControls } from '@react-three/drei'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { Island } from '../world/Island'
 import { Ripples } from '../world/Ripples'
+import { Campfires } from '../world/Campfires'
 import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
 import { PlacedItems, PlaceGhost } from '../world/Placed'
@@ -85,6 +86,7 @@ export default function App() {
           </Physics>
           <Props />
           <Ripples />
+          <Campfires />
           {started && <HeldItem />}
           {started && <Mobs />}
           {started && <RemotePlayers />}

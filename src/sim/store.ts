@@ -3,8 +3,8 @@ import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
 
-export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry'
-export type ItemClass = 'tool' | 'furniture' | 'decoration'
+export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink'
+export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang'
 export type ToolKind = 'axe' | 'pick' | 'sword'
 
 export interface DrawnItem {
@@ -66,16 +66,18 @@ export const TOOL_FOR: Record<NodeType, ToolKind | null> = { tree: 'axe', rock: 
 export const RESPAWN_MS: [number, number] = [120_000, 240_000] // 2–4 min (PRD §3)
 export const STACK_MAX = 50
 
-export type CraftKey = ToolKind | 'furniture' | 'decoration'
+export type CraftKey = ToolKind | 'furniture' | 'decoration' | 'campfire' | 'wallhang'
 export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   axe: { wood: 2, fiber: 1 }, // bootstrappable bare-handed
   pick: { wood: 2, stone: 1 },
   sword: { wood: 2, stone: 1 }, // PRD §4 example
   furniture: { wood: 4 },
   decoration: { fiber: 2 },
+  campfire: { wood: 8, stone: 2 }, // the first "goal" craft — warms the night
+  wallhang: { ink: 2, shine: 1 }, // trophy of the night — proof you hunted
 }
 
-export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry' }
+export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry', ink: 'ink' }
 
 interface State {
   started: boolean
@@ -333,7 +335,7 @@ export function equippedTool(): ToolKind | null {
 }
 
 export function itemWorldSize(cls: ItemClass): number {
-  return cls === 'tool' ? 0.85 : cls === 'furniture' ? 1.4 : 1.0
+  return cls === 'tool' ? 0.85 : cls === 'furniture' ? 1.4 : cls === 'campfire' ? 1.1 : cls === 'wallhang' ? 0.9 : 1.0
 }
 
 // dev debug handle

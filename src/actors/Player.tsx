@@ -79,6 +79,13 @@ export function Player() {
     if (combat.dead && now - combat.diedAt > 1400) {
       respawnAtHome(body)
     }
+    // swing read: quick lean + squash when E fires (game-feel: no silent actions)
+    const sinceSwing = now - refs.swingAt
+    let swingLean = 0
+    if (sinceSwing >= 0 && sinceSwing < 320) {
+      const k = sinceSwing / 320
+      swingLean = Math.sin(k * Math.PI) * 0.22 * (a.flip > 0 ? 1 : -1)
+    }
     // dodge impulse: burst along current move direction with i-frames
     const dodging = now - combatRefs.dodgeAt < DODGE_MS
     if (dodging) {
@@ -87,7 +94,7 @@ export function Player() {
       // squash-stretch roll read
       sprite.current.rotation.z = (1 - k) * (a.flip > 0 ? -1 : 1) * 0.5
     } else {
-      sprite.current.rotation.z = 0
+      sprite.current.rotation.z = swingLean
     }
 
     // exponential smoothing on speed + direction (raw physics deltas are noisy)
@@ -134,7 +141,7 @@ export function Player() {
     // rigged mode: swing limbs; walkDist*3.2 matches the bob cadence
     if (rig) {
       const speed01 = Math.min(1, a.speed / 5)
-      rig.update(walkDist.current * 3.2, a.walking ? speed01 : 0, now)
+      rig.update(walkDist.current * 3.2, a.walking ? speed01 : 0, now, sinceSwing >= 0 && sinceSwing < 320 ? sinceSwing / 320 : 0)
       rig.group.rotation.y = sprite.current.rotation.y
       rig.group.scale.x = a.facing === 2 ? a.flip : 1
       // paper-flip for the rig: mirror on side, and flip whole doll for back view

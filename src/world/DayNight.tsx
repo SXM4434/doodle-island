@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
-import { refs } from '../sim/store'
+import { refs, useGame } from '../sim/store'
 
 // 20-min full cycle, night = last 25% (PRD §2). refs.time in 0..1.
 const DAY_SPAN = 0.75
@@ -10,6 +10,9 @@ const sunColor = new THREE.Color()
 const DAY_SUN = new THREE.Color('#fff4dc')
 const DUSK_SUN = new THREE.Color('#ff9d5c')
 const NIGHT_SUN = new THREE.Color('#8a9cc9')
+
+let duskWarned = false
+let nightTold = false
 
 export function DayNight() {
   const sun = useRef<THREE.DirectionalLight>(null)
@@ -22,6 +25,17 @@ export function DayNight() {
   useFrame((_, delta) => {
     refs.time = (refs.time + delta / 1200) % 1
     const t = refs.time
+    // narrative beats (once per cycle)
+    if (t > 0.68 && t < 0.75 && !duskWarned) {
+      duskWarned = true
+      nightTold = false
+      useGame.getState().say('The sun is getting low… something scratches in the far woods.')
+    }
+    if (t > 0.76 && !nightTold) {
+      nightTold = true
+      duskWarned = false
+      useGame.getState().say('Night. Scribbles are out past the cliff — ink for the brave.')
+    }
     let elev: number
     if (t < DAY_SPAN) {
       elev = Math.sin((t / DAY_SPAN) * Math.PI) // 0→1→0 across the day

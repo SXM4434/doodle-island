@@ -10,6 +10,8 @@ const CLASSES: Array<{ key: CraftKey; label: string; blurb: string }> = [
   { key: 'sword', label: 'Sword', blurb: 'for the night' },
   { key: 'furniture', label: 'Furniture', blurb: 'big standee' },
   { key: 'decoration', label: 'Decoration', blurb: 'small standee' },
+  { key: 'campfire', label: 'Campfire', blurb: 'warms the night, scares the dark' },
+  { key: 'wallhang', label: 'Trophy', blurb: 'needs night-hunt ink' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]

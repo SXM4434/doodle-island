@@ -6,7 +6,7 @@ import type { RigPart } from '../draw/rig'
 // pivoting at its joint. Limbs swing in opposing pairs on the walk cycle,
 // head bobs with follow-through lag (physics-intuition: overlapping action).
 export interface RigHandle {
-  update: (walkPhase: number, speed01: number, now: number) => void
+  update: (walkPhase: number, speed01: number, now: number, swingK?: number) => void
   group: THREE.Group
 }
 
@@ -43,8 +43,10 @@ export function buildRig(parts: RigPart[]): RigHandle {
 
   return {
     group,
-    update(walkPhase: number, speed01: number, now: number) {
+    update(walkPhase: number, speed01: number, now: number, swingK = 0) {
       const swing = Math.sin(walkPhase) * SWING * speed01
+      // attack: right arm hammers down hard (overrides gait swing)
+      const swingArm = swingK > 0 ? -Math.sin(swingK * Math.PI) * 1.6 : 0
       const l = pivots.get('legL')
       const r = pivots.get('legR')
       const al = pivots.get('armL')
@@ -55,7 +57,7 @@ export function buildRig(parts: RigPart[]): RigHandle {
       if (r) r.rotation.z = -swing
       // arms opposite to legs (natural gait), slightly less
       if (al) al.rotation.z = -swing * 0.8
-      if (ar) ar.rotation.z = swing * 0.8
+      if (ar) ar.rotation.z = swingK > 0 ? swingArm : swing * 0.8
       // head: lags the bob (follow-through), tiny idle sway when standing
       if (head) {
         const target = speed01 > 0.05

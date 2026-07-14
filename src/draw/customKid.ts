@@ -7,6 +7,7 @@ export interface CustomKid {
   front: Stroke[]
   side: Stroke[]
   back: Stroke[]
+  riggable?: boolean // drawn on the mannequin guide → parts can swing
 }
 
 const CELL = 256

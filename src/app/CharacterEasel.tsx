@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../sim/store'
 import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { saveCustomKid, type CustomKid } from '../draw/customKid'
+import { REGIONS, analyzeDrawing } from '../draw/rig'
 import { sfx } from '../audio/sfx'
 
 // "Draw yourself" — three facings, one easel each. Minecraft-skin energy,
@@ -32,6 +33,28 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       const ctx = canvasRef.current?.getContext('2d')
       if (!ctx) return
       ctx.clearRect(0, 0, PX, PX)
+      // mannequin guide: faint body-part zones + stick figure (front step drives the rig)
+      if (step === 0) {
+        ctx.save()
+        ctx.globalAlpha = 0.13
+        ctx.strokeStyle = '#4f8fb8'
+        ctx.lineWidth = 2
+        ctx.setLineDash([6, 5])
+        for (const r of Object.values(REGIONS)) {
+          ctx.strokeRect(r.x0 * PX, r.y0 * PX, (r.x1 - r.x0) * PX, (r.y1 - r.y0) * PX)
+        }
+        ctx.setLineDash([])
+        // stick-figure hint
+        ctx.globalAlpha = 0.18
+        ctx.lineWidth = 5
+        ctx.lineCap = 'round'
+        ctx.beginPath(); ctx.arc(0.5 * PX, 0.24 * PX, 0.13 * PX, 0, 7); ctx.stroke() // head
+        ctx.beginPath(); ctx.moveTo(0.5 * PX, 0.44 * PX); ctx.lineTo(0.5 * PX, 0.68 * PX); ctx.stroke() // spine
+        ctx.beginPath(); ctx.moveTo(0.31 * PX, 0.62 * PX); ctx.lineTo(0.5 * PX, 0.48 * PX); ctx.lineTo(0.69 * PX, 0.62 * PX); ctx.stroke() // arms
+        ctx.beginPath(); ctx.moveTo(0.41 * PX, 0.92 * PX); ctx.lineTo(0.47 * PX, 0.7 * PX); ctx.stroke() // legL
+        ctx.beginPath(); ctx.moveTo(0.59 * PX, 0.92 * PX); ctx.lineTo(0.53 * PX, 0.7 * PX); ctx.stroke() // legR
+        ctx.restore()
+      }
       // ghost previous facing at low alpha for proportion reference
       if (step > 0) {
         ctx.save()
@@ -61,11 +84,16 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     if (live.current.pts.length % 3 === 0) sfx.pencil()
     repaint()
   }
+  const [analysis, setAnalysis] = useState('')
   const onUp = () => {
     if (!live.current) return
     const s = { ...live.current, pts: simplifyStroke(live.current.pts) }
     live.current = null
-    setStrokes((prev) => [...prev, s])
+    setStrokes((prev) => {
+      const next = [...prev, s]
+      if (step === 0) setAnalysis(analyzeDrawing(next))
+      return next
+    })
   }
 
   const next = () => {
@@ -77,7 +105,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       setStep(step + 1)
       setStrokes([])
     } else {
-      saveCustomKid(updated)
+      saveCustomKid({ ...updated, riggable: true })
       say('That’s you now! Looking great.')
       onDone()
     }
@@ -97,7 +125,10 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
             {step < 2 ? 'Next →' : 'That’s me!'}
           </button>
         </div>
-        <p className="hint-line">{facing.hint}</p>
+        <p className="hint-line">
+          {facing.hint}
+          {step === 0 && analysis && <strong style={{ marginLeft: 8, color: 'var(--leaf)' }}>{analysis}</strong>}
+        </p>
         <div className="easel-row">
           <div className="tools">
             {BRUSHES.map((b, i) => (

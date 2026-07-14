@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import Ecctrl, { type CustomEcctrlRigidBody } from 'ecctrl'
 import { kidAtlas } from './kidSprite'
 import { loadCustomKid, bakeCustomAtlas } from '../draw/customKid'
+import { bakeRig } from '../draw/rig'
+import { buildRig, disposeRig, type RigHandle } from './RiggedKid'
 import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
@@ -18,8 +20,17 @@ export function Player() {
   const drawOpen = useGame((s) => s.drawOpen)
 
   const kidVersion = useGame((s) => s.kidVersion)
-  const { tex, mat } = useMemo(() => {
+  const rigRef = useRef<RigHandle | null>(null)
+  const { tex, mat, rig } = useMemo(() => {
+    if (rigRef.current) { disposeRig(rigRef.current); rigRef.current = null }
     const custom = loadCustomKid()
+    let rig: RigHandle | null = null
+    if (custom?.riggable && custom.front.length) {
+      const parts = bakeRig(custom.front)
+      // need at least a torso/head + one limb for rigging to be worth it
+      if (parts.length >= 2) rig = buildRig(parts)
+    }
+    rigRef.current = rig
     const tex = custom ? bakeCustomAtlas(custom) : kidAtlas()
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
@@ -29,7 +40,7 @@ export function Player() {
       toneMapped: false,
     })
     mat.userData.outlineParameters = { visible: false }
-    return { tex, mat }
+    return { tex, mat, rig }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidVersion])
   const shadow = useMemo(() => makeBlobShadow(0.5), [])
@@ -120,6 +131,16 @@ export function Player() {
     tex.offset.x = cell / 6
     sprite.current.scale.x = a.flip
     net.sendPos(t.x, t.y, t.z, cell, a.flip)
+    // rigged mode: swing limbs; walkDist*3.2 matches the bob cadence
+    if (rig) {
+      const speed01 = Math.min(1, a.speed / 5)
+      rig.update(walkDist.current * 3.2, a.walking ? speed01 : 0, now)
+      rig.group.rotation.y = sprite.current.rotation.y
+      rig.group.scale.x = a.facing === 2 ? a.flip : 1
+      // paper-flip for the rig: mirror on side, and flip whole doll for back view
+      rig.group.visible = true
+      sprite.current.visible = false
+    }
     // Y-lock billboard: face camera around Y only
     sprite.current.rotation.y = Math.atan2(camera.position.x - t.x, camera.position.z - t.z)
     // walk bob (secondary action) — smoothed amplitude so it fades in/out
@@ -154,6 +175,7 @@ export function Player() {
         <mesh ref={sprite} material={mat} position={[0, 0.58, 0]}>
           <planeGeometry args={[1.1, 1.1]} />
         </mesh>
+        {rig && <primitive object={rig.group} position={[0, 0.02, 0]} />}
         <primitive object={shadow} position={[0, 0.04, 0]} />
       </group>
     </Ecctrl>

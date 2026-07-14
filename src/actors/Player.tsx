@@ -8,6 +8,7 @@ import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
 import { sfx } from '../audio/sfx'
 import { useCombat, combatRefs, DODGE_MS, respawnAtHome } from '../sim/combat'
+import { net } from '../net'
 
 // Paper-flip billboard kid riding the ecctrl capsule (ARCH §3).
 export function Player() {
@@ -114,6 +115,7 @@ export function Player() {
     }
     tex.offset.x = cell / 6
     sprite.current.scale.x = a.flip
+    net.sendPos(t.x, t.y, t.z, cell, a.flip)
     // Y-lock billboard: face camera around Y only
     sprite.current.rotation.y = Math.atan2(camera.position.x - t.x, camera.position.z - t.z)
     // walk bob (secondary action) — smoothed amplitude so it fades in/out

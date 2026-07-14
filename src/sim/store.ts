@@ -300,6 +300,13 @@ export const useGame = create<State>((set, get) => ({
   setHint: (h) => set({ hint: h }),
 }))
 
+// ---- multiplayer world-edit sync (via net seam) ----
+import('../net').then(({ net }) => {
+  useGame.subscribe((s, prev) => {
+    if (s.placed !== prev.placed) net.pushPlaced(s.placed)
+  })
+})
+
 // ---- persistence (throttled) ----
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 useGame.subscribe(() => {

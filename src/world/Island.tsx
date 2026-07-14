@@ -27,7 +27,7 @@ function buildTerrain(segs: number): THREE.BufferGeometry {
     else if (h > 2.6) c.copy(ROCKTOP)
     else {
       const n = Math.sin(x * 0.31 + z * 0.17) + Math.sin(x * 0.11 - z * 0.23)
-      c.copy(n > 0.6 ? GRASS_DK : GRASS)
+      c.copy(n > 0.6 ? GRASS_DK : n < -0.8 ? GRASS_LT : GRASS)
     }
     // pond rim mud
     const pondD = Math.hypot(x + 16, z - 10)
@@ -54,7 +54,8 @@ export function Island() {
   const waterMat = useMemo(
     () =>
       noOutline(
-        new THREE.MeshBasicMaterial({ color: '#8ed0dd', transparent: true, opacity: 0.82 }),
+        // solid teal water, flat and stylized (message.txt §2)
+        new THREE.MeshBasicMaterial({ color: '#4FC3C7', transparent: true, opacity: 0.88 }),
       ),
     [],
   )
@@ -106,6 +107,13 @@ function DrawTableLandmark() {
           <cylinderGeometry args={[0.05, 0.05, 0.7, 6]} />
         </mesh>
         <mesh position={[0.42, 0, 0]} rotation={[0, 0, -Math.PI / 2]} material={paper}>
+          <coneGeometry args={[0.05, 0.14, 6]} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+aper}>
           <coneGeometry args={[0.05, 0.14, 6]} />
         </mesh>
       </group>

@@ -69,17 +69,18 @@ export function Props() {
         >
           {n.type === 'tree' && (
             <>
-              <mesh position={[0, 0.9, 0]} material={mats.trunk}>
-                <cylinderGeometry args={[0.22, 0.34, 1.8, 7]} />
+              {/* chunky trunk (2-3x thick, slight lean) + ice-cream-scoop canopy */}
+              <mesh position={[0, 0.8, 0]} rotation={[0.04, 0, 0.06]} material={mats.trunk}>
+                <cylinderGeometry args={[0.3, 0.44, 1.7, 7]} />
               </mesh>
-              <mesh position={[0, 2.3, 0]} material={mats.leaf}>
-                <icosahedronGeometry args={[1.15, 0]} />
+              <mesh position={[0, 2.35, 0]} material={mats.leaf}>
+                <icosahedronGeometry args={[1.25, 1]} />
               </mesh>
-              <mesh position={[0.5, 1.75, 0.3]} material={mats.leafDk}>
-                <icosahedronGeometry args={[0.65, 0]} />
+              <mesh position={[0.6, 1.8, 0.35]} material={mats.leafDk}>
+                <icosahedronGeometry args={[0.7, 1]} />
               </mesh>
-              <mesh position={[-0.55, 1.9, -0.2]} material={mats.leafDk}>
-                <icosahedronGeometry args={[0.55, 0]} />
+              <mesh position={[-0.6, 1.95, -0.25]} material={mats.leafLt}>
+                <icosahedronGeometry args={[0.62, 1]} />
               </mesh>
             </>
           )}

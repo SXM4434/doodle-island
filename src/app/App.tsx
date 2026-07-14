@@ -32,7 +32,7 @@ function Outlined() {
   useEffect(() => {
     const effect = new OutlineEffect(gl, {
       defaultThickness: 0.0028,
-      defaultColor: [0.2, 0.16, 0.12],
+      defaultColor: [0.24, 0.18, 0.13],
     })
     let raf = 0
     const loop = () => {

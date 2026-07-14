@@ -28,9 +28,10 @@ export function blobShadowTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas')
   c.width = c.height = 64
   const g = c.getContext('2d')!
+  // purple-shifted shadow, never gray/black (message.txt §3)
   const grad = g.createRadialGradient(32, 32, 4, 32, 32, 30)
-  grad.addColorStop(0, 'rgba(40,30,20,0.4)')
-  grad.addColorStop(1, 'rgba(40,30,20,0)')
+  grad.addColorStop(0, 'rgba(74,58,110,0.38)')
+  grad.addColorStop(1, 'rgba(74,58,110,0)')
   g.fillStyle = grad
   g.fillRect(0, 0, 64, 64)
   _blob = new THREE.CanvasTexture(c)

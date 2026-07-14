@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useCombat, tickMobs, type Mob } from '../sim/combat'
+import { useCombat, tickMobs, combatRefs, type Mob } from '../sim/combat'
 import { mobAtlas } from './mobSprites'
 import { makeBlobShadow } from '../world/toon'
 import { sfx } from '../audio/sfx'
@@ -22,13 +22,13 @@ export function Mobs() {
 const WHITE = new THREE.Color(4, 4, 4)
 const NORMAL = new THREE.Color(1, 1, 1)
 
-function MobQuad({ m }: { m: Mob }) {
+function MobQuad({ m: m0 }: { m: Mob }) {
   const camera = useThree((s) => s.camera)
   const group = useRef<THREE.Group>(null)
   const inner = useRef<THREE.Mesh>(null)
-  const prevState = useRef(m.state)
+  const prevState = useRef(m0.state)
   const { tex, mat } = useMemo(() => {
-    const tex = mobAtlas(m.kind).clone()
+    const tex = mobAtlas(m0.kind).clone()
     tex.needsUpdate = true
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
@@ -38,13 +38,15 @@ function MobQuad({ m }: { m: Mob }) {
     })
     mat.userData.outlineParameters = { visible: false }
     return { tex, mat }
-  }, [m.kind])
+  }, [m0.kind])
   const shadow = useMemo(() => makeBlobShadow(0.42), [])
 
   useFrame(() => {
     const g = group.current
     const q = inner.current
     if (!g || !q) return
+    // read the LIVE mob (mutated in place by tickMobs) — roster prop is just identity
+    const m = combatRefs.live.find((x) => x.id === m0.id) ?? m0
     const now = performance.now()
     g.position.set(m.x, m.y, m.z)
     g.rotation.y = Math.atan2(camera.position.x - m.x, camera.position.z - m.z)

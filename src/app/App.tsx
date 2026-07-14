@@ -31,24 +31,27 @@ const keyMap = [
   { name: 'run', keys: ['Shift'] },
 ]
 
-// Inverted-hull toon outlines: swap the render call for OutlineEffect (ARCH §3.4)
+// Inverted-hull toon outlines: take over r3f's render call with OutlineEffect
+// (ARCH §3.4). A priority useFrame disables r3f auto-render; we render instead.
 function Outlined() {
-  const { gl, scene, camera } = useThree()
-  useEffect(() => {
-    const effect = new OutlineEffect(gl, {
-      defaultThickness: 0.0028,
-      defaultColor: [0.24, 0.18, 0.13],
-    })
-    let raf = 0
-    const loop = () => {
-      effect.render(scene, camera)
-      raf = requestAnimationFrame(loop)
+  const gl = useThree((s) => s.gl)
+  const effect = useMemo(
+    () =>
+      new OutlineEffect(gl, {
+        defaultThickness: 0.0028,
+        defaultColor: [0.24, 0.18, 0.13],
+      }),
+    [gl],
+  )
+  useFrame(({ scene, camera }) => {
+    effect.render(scene, camera)
+    // dev perf probe (ARCH §8 budget check)
+    ;(window as unknown as { __perf?: unknown }).__perf = {
+      calls: gl.info.render.calls,
+      triangles: gl.info.render.triangles,
+      textures: gl.info.memory.textures,
     }
-    // let r3f's own loop stand down for color pass
-    gl.setAnimationLoop(null)
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [gl, scene, camera])
+  }, 1)
   return null
 }
 

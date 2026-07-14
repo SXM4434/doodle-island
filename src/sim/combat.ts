@@ -47,6 +47,9 @@ export const combatRefs = {
   dodgeDirZ: 0,
   hurtAt: 0,
   swingHitAt: 0, // ms of last successful weapon connect (for hit-stop)
+  // LIVE mob array — mutated in place every frame (game-perf: zero per-frame setState).
+  // React's mobs state only mirrors the ID list for mounting quads.
+  live: [] as Mob[],
 }
 
 interface CombatState {
@@ -91,32 +94,31 @@ export function isNight(): boolean {
 // one sim tick, called from useFrame (mutates a working copy, sets once per frame)
 export function tickMobs(dt: number): void {
   const now = performance.now()
-  const st = useCombat.getState()
-  let mobs = st.mobs.map((m) => ({ ...m }))
+  const mobs = combatRefs.live
   const p = refs.playerPos
+  let structural = false
 
   // spawn at night in wild zone, despawn at day
   if (isNight()) {
     if (mobs.length < MOB_CAP && Math.random() < dt * 0.4) {
-      // spawn out of player sight, inside wild zone
       for (let tries = 0; tries < 12; tries++) {
         const x = 4 + Math.random() * 44
         const z = -8 - Math.random() * 44
         if (!inWildZone(x, z)) continue
         if (Math.hypot(x - p.x, z - p.z) < 12) continue
+        const kind = Math.random() < 0.6 ? 'scribble' as const : 'wasp' as const
         mobs.push({
-          id: mobId++,
-          kind: Math.random() < 0.6 ? 'scribble' : 'wasp',
-          x, z, y: groundY(x, z),
-          hp: 0, state: 'wander', stateAt: now, tx: x, tz: z, hurtAt: 0,
+          id: mobId++, kind, x, z, y: groundY(x, z),
+          hp: MOB_HP[kind], state: 'wander', stateAt: now, tx: x, tz: z, hurtAt: 0,
         })
-        mobs[mobs.length - 1].hp = MOB_HP[mobs[mobs.length - 1].kind]
+        structural = true
         break
       }
     }
-  } else if (mobs.length) {
-    // dawn clears the island (fade handled visually via dying state)
-    mobs = mobs.filter((m) => m.state === 'dying')
+  } else {
+    for (let i = mobs.length - 1; i >= 0; i--) {
+      if (mobs[i].state !== 'dying') { mobs.splice(i, 1); structural = true }
+    }
   }
 
   for (const m of mobs) {
@@ -145,7 +147,6 @@ export function tickMobs(dt: number): void {
         if (distP < STRIKE_R) { m.state = 'windup'; m.stateAt = now; break }
         v.set(p.x - m.x, 0, p.z - m.z).normalize().multiplyScalar(speed * dt)
         const nx = m.x + v.x, nz = m.z + v.z
-        // mobs never leave the wild zone (cozy rule: home plot is safe)
         if (inWildZone(nx, nz)) { m.x = nx; m.z = nz }
         else { m.state = 'wander'; m.stateAt = now }
         break
@@ -170,10 +171,14 @@ export function tickMobs(dt: number): void {
     m.y = m.kind === 'wasp' ? gy + 1.1 + Math.sin(now * 0.004 + m.id) * 0.15 : gy
   }
 
-  // cull finished deaths
-  mobs = mobs.filter((m) => m.state !== 'dying' || now - m.stateAt < 450)
-  useCombat.getState().setMobs(mobs)
+  // cull finished deaths (in place)
+  for (let i = mobs.length - 1; i >= 0; i--) {
+    if (mobs[i].state === 'dying' && now - mobs[i].stateAt > 450) { mobs.splice(i, 1); structural = true }
+  }
+  // React only re-renders when the roster changes
+  if (structural) useCombat.getState().setMobs([...mobs])
 
+  const st = useCombat.getState()
   // calm regen: +1 hp every 5s once out of combat 10s (PRD §6)
   if (
     st.hp < MAX_HP && !st.dead &&
@@ -188,27 +193,22 @@ export function tickMobs(dt: number): void {
 // weapon arc hit test — called on swing from Interact
 export function swingHitMobs(dmg: number): boolean {
   const now = performance.now()
-  const st = useCombat.getState()
   const p = refs.playerPos
   let hit = false
-  const mobs = st.mobs.map((m) => {
-    if (m.state === 'dying') return m
+  for (const m of combatRefs.live) {
+    if (m.state === 'dying') continue
     const d = Math.hypot(m.x - p.x, m.z - p.z)
     if (d < 2.2) {
       hit = true
-      const nm = { ...m, hp: m.hp - dmg, hurtAt: now }
-      // knockback away from player
-      const kx = (m.x - p.x) / (d || 1), kz = (m.z - p.z) / (d || 1)
-      nm.x += kx * 0.6; nm.z += kz * 0.6
-      if (nm.hp <= 0) { nm.state = 'dying'; nm.stateAt = now }
-      return nm
+      m.hp -= dmg
+      m.hurtAt = now
+      const k = d || 1
+      m.x += ((m.x - p.x) / k) * 0.6
+      m.z += ((m.z - p.z) / k) * 0.6
+      if (m.hp <= 0) { m.state = 'dying'; m.stateAt = now }
     }
-    return m
-  })
-  if (hit) {
-    combatRefs.swingHitAt = now
-    st.setMobs(mobs)
   }
+  if (hit) combatRefs.swingHitAt = now
   return hit
 }
 

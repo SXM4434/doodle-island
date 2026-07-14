@@ -113,10 +113,3 @@ function DrawTableLandmark() {
     </group>
   )
 }
-aper}>
-          <coneGeometry args={[0.05, 0.14, 6]} />
-        </mesh>
-      </group>
-    </group>
-  )
-}

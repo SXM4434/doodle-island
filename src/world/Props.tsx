@@ -96,27 +96,29 @@ export function Props() {
           )}
           {n.type === 'fiber' && (
             <>
-              {[-0.16, 0, 0.17].map((dx, i) => (
+              {/* chunky tuft — fat cones so it reads as a plant, not stray lines */}
+              {[-0.18, 0, 0.19].map((dx, i) => (
                 <mesh
                   key={i}
-                  position={[dx, 0.4, (i - 1) * 0.1]}
-                  rotation={[0, 0, dx * 1.8]}
-                  material={mats.fiber}
+                  position={[dx, 0.34, (i - 1) * 0.12]}
+                  rotation={[0, 0, dx * 1.6]}
+                  material={i === 1 ? mats.leafDk : mats.fiber}
                 >
-                  <coneGeometry args={[0.07, 0.85, 5]} />
+                  <coneGeometry args={[0.13, 0.75, 5]} />
                 </mesh>
               ))}
             </>
           )}
           {n.type === 'shell' && (
-            <>
-              <mesh position={[0, 0.16, 0]} rotation={[0.5, n.rot, 0]} material={mats.shell}>
-                <sphereGeometry args={[0.28, 8, 6, 0, Math.PI]} />
+            <group rotation={[0, n.rot, 0]}>
+              {/* scallop: squashed pink dome + cream ridge dots, lying on the sand */}
+              <mesh position={[0, 0.09, 0]} scale={[1, 0.45, 0.85]} material={mats.shellPink}>
+                <sphereGeometry args={[0.26, 8, 5]} />
               </mesh>
-              <mesh position={[0, 0.12, 0.05]} rotation={[0.5, n.rot, 0]} material={mats.shellPink}>
-                <sphereGeometry args={[0.2, 8, 6, 0, Math.PI]} />
+              <mesh position={[0, 0.13, -0.06]} scale={[0.55, 0.3, 0.5]} material={mats.shell}>
+                <sphereGeometry args={[0.2, 6, 4]} />
               </mesh>
-            </>
+            </group>
           )}
           <Blob r={n.type === 'tree' ? 1.1 : 0.55} />
         </group>

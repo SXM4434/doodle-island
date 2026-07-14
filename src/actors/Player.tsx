@@ -31,6 +31,8 @@ export function Player() {
   const walkDist = useRef(0)
   const lastStep = useRef(0)
   const prev = useRef(new THREE.Vector3(SPAWN.x, 0, SPAWN.z))
+  // smoothed animation state — kills threshold flicker (12-principles: staging)
+  const anim = useRef({ speed: 0, dirX: 0, dirZ: 1, walking: false, facing: 0, flip: 1 })
 
   useFrame(() => {
     const body = rb.current?.group
@@ -52,37 +54,54 @@ export function Player() {
     const g = useGame.getState()
     if (g.hint === 0 && refs.moved > 6) g.setHint(1)
 
-    const speed = moved * 60
     const now = performance.now()
+    const a = anim.current
 
-    // facing: movement vs camera direction → front / side / back cell
-    let cell = 0 // front idle default
-    let flip = 1
-    if (speed > 0.6) {
+    // exponential smoothing on speed + direction (raw physics deltas are noisy)
+    const dt = Math.max(1e-4, Math.min(0.1, moved > 0 || a.speed > 0 ? 1 / 60 : 1 / 60))
+    const rawSpeed = moved / dt
+    a.speed += (rawSpeed - a.speed) * 0.18
+    if (moved > 1e-5) {
+      a.dirX += (dx / moved - a.dirX) * 0.22
+      a.dirZ += (dz / moved - a.dirZ) * 0.22
+    }
+    // hysteresis: start walking above 1.6 u/s, stop below 0.9 — no flicker band
+    if (!a.walking && a.speed > 1.6) a.walking = true
+    else if (a.walking && a.speed < 0.9) a.walking = false
+
+    let cell = a.facing // idle = frame 0 of last facing
+    if (a.walking) {
       const camA = Math.atan2(camera.position.x - t.x, camera.position.z - t.z)
-      const movA = Math.atan2(dx, dz)
+      const movA = Math.atan2(a.dirX, a.dirZ)
       let rel = movA - camA
       while (rel > Math.PI) rel -= Math.PI * 2
       while (rel < -Math.PI) rel += Math.PI * 2
-      const a = Math.abs(rel)
-      const frame = Math.floor(walkDist.current * 1.6) % 2
-      if (a < Math.PI * 0.3) cell = 0 + frame // toward camera → front
-      else if (a > Math.PI * 0.7) cell = 4 + frame // away → back
-      else {
-        cell = 2 + frame
-        flip = rel > 0 ? -1 : 1
+      const abs = Math.abs(rel)
+      // facing bins with ±0.06π hysteresis band — paper-flip stays snappy but deliberate
+      const H = 0.06 * Math.PI
+      if (a.facing !== 0 && abs < 0.3 * Math.PI - H) a.facing = 0
+      else if (a.facing !== 4 && abs > 0.7 * Math.PI + H) a.facing = 4
+      else if (a.facing === 0 && abs > 0.3 * Math.PI + H) a.facing = 2
+      else if (a.facing === 4 && abs < 0.7 * Math.PI - H) a.facing = 2
+      if (a.facing === 2) {
+        // flip only when clearly on one side (dead zone kills the mirror spazz)
+        if (rel > 0.12) a.flip = -1
+        else if (rel < -0.12) a.flip = 1
       }
-      if (now - lastStep.current > 260 - Math.min(speed * 12, 120)) {
+      const frame = Math.floor(walkDist.current * 1.8) % 2
+      cell = a.facing + frame
+      if (now - lastStep.current > 260 - Math.min(a.speed * 12, 120)) {
         lastStep.current = now
         sfx.step()
       }
     }
     tex.offset.x = cell / 6
-    sprite.current.scale.x = flip
+    sprite.current.scale.x = a.flip
     // Y-lock billboard: face camera around Y only
     sprite.current.rotation.y = Math.atan2(camera.position.x - t.x, camera.position.z - t.z)
-    // walk bob
-    sprite.current.position.y = 0.58 + (speed > 0.6 ? Math.abs(Math.sin(walkDist.current * 3.2)) * 0.06 : 0)
+    // walk bob (secondary action) — smoothed amplitude so it fades in/out
+    const bobAmp = a.walking ? 0.05 : 0
+    sprite.current.position.y = 0.58 + Math.abs(Math.sin(walkDist.current * 3.2)) * bobAmp
   })
 
   return (

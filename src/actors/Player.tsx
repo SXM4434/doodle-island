@@ -7,6 +7,7 @@ import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
 import { sfx } from '../audio/sfx'
+import { useCombat, combatRefs, DODGE_MS, respawnAtHome } from '../sim/combat'
 
 // Paper-flip billboard kid riding the ecctrl capsule (ARCH §3).
 export function Player() {

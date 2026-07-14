@@ -10,6 +10,8 @@ import { PlacedItems, PlaceGhost } from '../world/Placed'
 import { Player } from '../actors/Player'
 import { HeldItem } from '../actors/HeldItem'
 import { Drops } from '../actors/Drops'
+import { Mobs } from '../actors/Mobs'
+import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { DrawTable } from './DrawTable'
 import { HUD, TitleCard } from './HUD'
@@ -76,6 +78,7 @@ export default function App() {
           </Physics>
           <Props />
           {started && <HeldItem />}
+          {started && <Mobs />}
           <Drops />
           <PlacedItems />
           <PlaceGhost />

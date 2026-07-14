@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
@@ -9,13 +9,15 @@ const DAY_SPAN = 0.75
 const sunColor = new THREE.Color()
 const DAY_SUN = new THREE.Color('#fff4dc')
 const DUSK_SUN = new THREE.Color('#ff9d5c')
-const NIGHT_SUN = new THREE.Color('#41527d')
+const NIGHT_SUN = new THREE.Color('#8a9cc9')
 
 export function DayNight() {
   const sun = useRef<THREE.DirectionalLight>(null)
   const amb = useRef<THREE.AmbientLight>(null)
   const hemi = useRef<THREE.HemisphereLight>(null)
-  const skyPos = useRef(new THREE.Vector3(50, 40, 20))
+  // throttled sky sun position — Sky rebuilds uniforms on prop change, ~every 2s is fine
+  const [skySun, setSkySun] = useState<[number, number, number]>([50, 30, 20])
+  const lastSky = useRef(0)
 
   useFrame((_, delta) => {
     refs.time = (refs.time + delta / 1200) % 1
@@ -27,24 +29,38 @@ export function DayNight() {
       elev = -0.35 * Math.sin(((t - DAY_SPAN) / (1 - DAY_SPAN)) * Math.PI)
     }
     const az = t * Math.PI * 2
-    skyPos.current.set(Math.cos(az) * 60, elev * 55 + 4, Math.sin(az) * 60)
+    const sx = Math.cos(az) * 60
+    const sy = elev * 55 + 2
+    const sz = Math.sin(az) * 60
+
+    const now = performance.now()
+    if (now - lastSky.current > 2000) {
+      lastSky.current = now
+      // drei Sky goes convincingly dark once the sun dips below horizon
+      setSkySun([sx, Math.max(sy, elev < 0 ? -8 : sy), sz])
+    }
+
+    const dayness = Math.max(0, Math.min(1, elev * 2.2))
+    const duskness = Math.max(0, 1 - Math.abs(elev) * 5)
     if (sun.current) {
-      sun.current.position.copy(skyPos.current)
-      const dayness = Math.max(0, Math.min(1, elev * 2.2))
-      const duskness = Math.max(0, 1 - Math.abs(elev) * 5)
+      sun.current.position.set(sx, Math.max(sy, 6), sz)
       sunColor.copy(NIGHT_SUN).lerp(DAY_SUN, dayness).lerp(DUSK_SUN, duskness * 0.6)
       sun.current.color.copy(sunColor)
-      sun.current.intensity = 0.55 + dayness * 1.75
+      // night is DARK: 0.12 floor (moonlight), not 0.55
+      sun.current.intensity = 0.12 + dayness * 2.1
     }
-    if (amb.current) amb.current.intensity = 0.35 + Math.max(0, elev) * 0.45
-    if (hemi.current) hemi.current.intensity = 0.28 + Math.max(0, elev) * 0.25
+    if (amb.current) {
+      amb.current.intensity = 0.12 + dayness * 0.6
+      amb.current.color.set(dayness > 0.15 ? '#fdf3df' : '#26314f')
+    }
+    if (hemi.current) hemi.current.intensity = 0.1 + dayness * 0.4
   })
 
   return (
     <>
       <Sky
         distance={4000}
-        sunPosition={[50, 30, 20]}
+        sunPosition={skySun}
         turbidity={6}
         rayleigh={1.6}
         mieCoefficient={0.004}

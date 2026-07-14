@@ -266,3 +266,8 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
   .heart.thunk { animation: none; }
   .death-veil { animation-duration: 400ms; }
 }
+
+/* ---------- character easel ---------- */
+.step-dots { margin-left: 10px; font-size: 0.8rem; }
+.step-dots .dot { opacity: 0.25; margin-right: 3px; }
+.step-dots .dot.on { opacity: 1; color: var(--leaf); }

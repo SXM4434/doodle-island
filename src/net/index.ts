@@ -44,7 +44,7 @@ class NetAdapter {
     this.status = 'joining'
     try {
       const pk = await import('playroomkit')
-      await pk.insertCoin({ skipLobby: true, maxPlayersPerRoom: 8 })
+      await pk.insertCoin({ gameId: 'doodle-island', skipLobby: true, maxPlayersPerRoom: 8 })
       this.setGlobal = pk.setState
       this.getGlobal = pk.getState
       this.me = pk.myPlayer() as unknown as PlayroomPlayer

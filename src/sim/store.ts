@@ -91,6 +91,7 @@ interface State {
   toast: string
   toastAt: number
   hint: number // 0 move, 1 whack, 2 table, 3 place, 4 done
+  kidVersion: number // bumped when the custom character changes
   // actions
   start: () => void
   addRes: (res: ResKind, n: number) => void
@@ -139,6 +140,7 @@ export const useGame = create<State>((set, get) => ({
   toast: '',
   toastAt: 0,
   hint: saved ? 4 : 0,
+  kidVersion: 0,
 
   start: () => set({ started: true }),
 

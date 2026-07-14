@@ -87,7 +87,7 @@ export function HUD() {
   )
 }
 
-export function TitleCard() {
+export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
   const started = useGame((s) => s.started)
   const start = useGame((s) => s.start)
   if (started) return null
@@ -105,6 +105,16 @@ export function TitleCard() {
           }}
         >
           Wash ashore →
+        </button>
+        <button
+          className="btn"
+          style={{ marginTop: 10 }}
+          onClick={() => {
+            import('../audio/sfx').then((m) => m.initAudio())
+            onDrawSelf?.()
+          }}
+        >
+          ✏️ Draw yourself first
         </button>
         <p className="controls-line">WASD move · drag to look · E interact · 1–8 hotbar</p>
       </div>

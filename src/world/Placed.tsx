@@ -20,6 +20,15 @@ export function PlacedItems() {
 
 function Standee({ p }: { p: PlacedT }) {
   const { tex, aspect } = useMemo(() => itemTexture(p.item), [p.item])
+  const bornAt = useMemo(() => performance.now(), [])
+  const inner = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (!inner.current) return
+    // pop-in: 0 → 110% → 100% over 260ms (ART-STYLE §5)
+    const t = Math.min(1, (performance.now() - bornAt) / 260)
+    const s = t < 0.7 ? (t / 0.7) * 1.1 : 1.1 - 0.1 * ((t - 0.7) / 0.3)
+    inner.current.scale.setScalar(Math.max(0.001, s))
+  })
   const size = itemWorldSize(p.item.cls)
   const w = size * Math.min(aspect, 1.6)
   const h = size / Math.max(aspect, 0.7)
@@ -37,9 +46,11 @@ function Standee({ p }: { p: PlacedT }) {
   const y = groundY(p.x, p.z)
   return (
     <group position={[p.x, y, p.z]} rotation={[0, p.rot, 0]}>
-      <mesh position={[0, h / 2 + 0.02, 0]} material={mat}>
-        <planeGeometry args={[w, h]} />
-      </mesh>
+      <group ref={inner}>
+        <mesh position={[0, h / 2 + 0.02, 0]} material={mat}>
+          <planeGeometry args={[w, h]} />
+        </mesh>
+      </group>
       <primitive object={shadow} position={[0, 0.04, 0]} />
     </group>
   )

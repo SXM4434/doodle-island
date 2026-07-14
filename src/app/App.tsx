@@ -1,9 +1,10 @@
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { Island } from '../world/Island'
+import { Ripples } from '../world/Ripples'
 import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
 import { PlacedItems, PlaceGhost } from '../world/Placed'
@@ -16,6 +17,7 @@ import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { DrawTable } from './DrawTable'
 import { HUD, TitleCard } from './HUD'
+import { CharacterEasel } from './CharacterEasel'
 import { useGame } from '../sim/store'
 import { initAudio } from '../audio/sfx'
 import './app.css'
@@ -52,6 +54,7 @@ function Outlined() {
 
 export default function App() {
   const started = useGame((s) => s.started)
+  const [drawingSelf, setDrawingSelf] = useState(false)
   useEffect(() => {
     const resume = () => initAudio()
     window.addEventListener('pointerdown', resume, { once: true })
@@ -78,6 +81,7 @@ export default function App() {
             )}
           </Physics>
           <Props />
+          <Ripples />
           {started && <HeldItem />}
           {started && <Mobs />}
           {started && <RemotePlayers />}
@@ -89,10 +93,18 @@ export default function App() {
           <Outlined />
         </Suspense>
       </Canvas>
-      <TitleCard />
+      <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD />}
       {started && <Hearts />}
       <DrawTable />
+      {drawingSelf && (
+        <CharacterEasel
+          onDone={() => {
+            setDrawingSelf(false)
+            useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 }))
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Ecctrl, { type CustomEcctrlRigidBody } from 'ecctrl'
 import { kidAtlas } from './kidSprite'
+import { loadCustomKid, bakeCustomAtlas } from '../draw/customKid'
 import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
@@ -16,8 +17,10 @@ export function Player() {
   const sprite = useRef<THREE.Mesh>(null)
   const drawOpen = useGame((s) => s.drawOpen)
 
+  const kidVersion = useGame((s) => s.kidVersion)
   const { tex, mat } = useMemo(() => {
-    const tex = kidAtlas()
+    const custom = loadCustomKid()
+    const tex = custom ? bakeCustomAtlas(custom) : kidAtlas()
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       alphaTest: 0.5,
@@ -27,7 +30,8 @@ export function Player() {
     })
     mat.userData.outlineParameters = { visible: false }
     return { tex, mat }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kidVersion])
   const shadow = useMemo(() => makeBlobShadow(0.5), [])
   const camera = useThree((s) => s.camera)
   const walkDist = useRef(0)

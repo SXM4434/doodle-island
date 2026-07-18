@@ -4,12 +4,12 @@ import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { avatarFacingProblem, drawAvatarGuide, drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { sfx } from '../audio/sfx'
 
-// This is a character drawing flow, not a skin editor. The dashed silhouette is a
-// temporary proportional scaffold; the three drawings become the actual paper avatar.
+// Optional character stylizer: the normal filled island kid remains playable. When a
+// player draws, their marks are converted into filled, inked features on that same body.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'Draw your whole character: head, body, arms, and feet.' },
-  { key: 'side', label: 'Side', hint: 'Draw the side view of that same character, facing right.' },
-  { key: 'back', label: 'Back', hint: 'Draw their back view — hair, backpack, cape, or shirt included.' },
+  { key: 'front', label: 'Front', hint: 'Sketch hair, face, shirt, or stickers. We fill it into an island kid.' },
+  { key: 'side', label: 'Side', hint: 'Add side-view hair, outfit, or accessories for the turn.' },
+  { key: 'back', label: 'Back', hint: 'Add a backpack, cape, hair, or back-of-shirt detail.' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -31,9 +31,9 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, PX, PX)
-    drawAvatarGuide(ctx, PX, facing.key)
     const all = live.current ? [...strokes, live.current] : strokes
-    drawCharacterStrokes(ctx, all, PX)
+    drawCharacterStrokes(ctx, all, PX, 0, facing.key)
+    drawAvatarGuide(ctx, PX, facing.key)
   }, [strokes, facing.key])
   useEffect(repaint, [repaint])
 
@@ -81,16 +81,16 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
         <div className="sheet-head">
           <button className="btn ghost" onClick={onDone}>skip</button>
           <h2>
-            Draw your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => (
+            Style your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => (
               <span key={i} className={i <= step ? 'dot on' : 'dot'}>{dot}</span>
             ))}</span>
           </h2>
           <button className="btn confirm" disabled={!!problem} onClick={next}>
-            {step < 2 ? 'Next view →' : 'Become this character'}
+            {step < 2 ? 'Next view →' : 'Make my character'}
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint} The dashed outline is only a size guide. Your ink becomes the full in-world paper character.
+          {facing.hint} Your marks stay visible; the game adds the complete filled paper-character body.
         </p>
         {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">

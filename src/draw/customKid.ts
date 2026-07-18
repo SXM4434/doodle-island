@@ -2,7 +2,8 @@
 // decals on a preset body. We only restyle their exact strokes into the island's felt-tip
 // paper language, then bake front/side/back cells for the paper-flip walk atlas.
 import * as THREE from 'three'
-import { strokeBounds, strokeOutline, outlineToPath, type Stroke, INKS } from './strokes'
+import { strokeOutline, outlineToPath, type Stroke, INKS } from './strokes'
+import { drawKid } from '../actors/kidSprite'
 
 export interface CustomKid {
   front: Stroke[]
@@ -22,44 +23,40 @@ export function loadCustomKid(): CustomKid | null {
 }
 export function clearCustomKid(): void { localStorage.removeItem(KEY) }
 
-// Starting validation rails: a character should occupy a person-shaped vertical span,
-// rather than accept a face-sized scribble as a whole avatar. Validate in playtest: if
-// expressive full figures fail, relax these bounds; if tiny marks pass, tighten them.
+// Avatar creation is optional. One mark in each view is enough because a complete,
+// filled paper person is deterministically composed beneath it. The player can always
+// keep the default island kid instead.
 export function avatarFacingProblem(strokes: Stroke[]): string | null {
-  const ink = strokes.filter((s) => !s.erase && s.pts.length > 1)
-  if (!ink.length) return 'Draw your whole character before continuing.'
-  const b = strokeBounds(ink)
-  if (b.maxY - b.minY < 0.58) return 'Make the character taller: head, body, and feet need to fit in the guide.'
-  if (b.maxX - b.minX < 0.16) return 'Give the character a body width, not just one line.'
-  if (b.minY > 0.22 || b.maxY < 0.78) return 'Use the guide from head to feet before continuing.'
-  return null
+  return strokes.some((s) => !s.erase && s.pts.length > 1) ? null : 'Add at least one mark to this view.'
 }
 
 export function isCompleteCustomKid(kid: CustomKid | null): kid is CustomKid {
   return !!kid && !avatarFacingProblem(kid.front) && !avatarFacingProblem(kid.side) && !avatarFacingProblem(kid.back)
 }
 
-// Restyle, never redraw. A white paper halo separates even a wild doodle from the
-// diorama; a dark marker contour unifies it with the game's other paper characters.
-function drawAvatarStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number): void {
+// Deterministic avatar conversion: the authored filled kid gives every sketch a
+// complete, readable person silhouette; the player's raw marks become its inked
+// features, clothes, hair, and accessories. This is conversion, not ML guessing.
+function drawAvatarStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, facing: Facing, frame: number): void {
+  const scale = px / CELL
+  ctx.save()
+  ctx.scale(scale, scale)
+  drawKid(ctx, facing, frame)
   for (const stroke of strokes) {
-    const path = outlineToPath(strokeOutline(stroke, px))
-    if (stroke.erase) {
-      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(path); ctx.restore()
-      continue
-    }
-    const paperEdge = { ...stroke, size: stroke.size + 13 / px }
+    if (stroke.erase) continue
+    const paperEdge = { ...stroke, size: stroke.size + 13 / CELL }
     ctx.fillStyle = '#fffdf4'
-    ctx.fill(outlineToPath(strokeOutline(paperEdge, px)))
+    ctx.fill(outlineToPath(strokeOutline(paperEdge, CELL)))
   }
   for (const stroke of strokes) {
     if (stroke.erase) continue
-    const contour = { ...stroke, size: stroke.size + 3.4 / px }
+    const contour = { ...stroke, size: stroke.size + 3.4 / CELL }
     ctx.fillStyle = '#33291f'
-    ctx.fill(outlineToPath(strokeOutline(contour, px)))
+    ctx.fill(outlineToPath(strokeOutline(contour, CELL)))
     ctx.fillStyle = INKS[stroke.color] ?? INKS.ink
-    ctx.fill(outlineToPath(strokeOutline(stroke, px)))
+    ctx.fill(outlineToPath(strokeOutline(stroke, CELL)))
   }
+  ctx.restore()
 }
 
 // A faint anatomy scaffold appears only on the easel. It is deliberately absent from
@@ -84,18 +81,21 @@ export function drawAvatarGuide(ctx: CanvasRenderingContext2D, px: number, facin
   ctx.restore()
 }
 
-// Preview and atlas use this identical renderer. No preset kid is drawn beneath it.
-export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0): void {
-  ctx.save(); ctx.translate(ox, 0); drawAvatarStrokes(ctx, strokes, px); ctx.restore()
+// Preview and atlas use this identical renderer. The result is a complete filled
+// Doodle Island character carrying the player’s unaltered linework.
+export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0, facing: Facing = 'front', frame = 0): void {
+  ctx.save(); ctx.translate(ox, 0); drawAvatarStrokes(ctx, strokes, px, facing, frame); ctx.restore()
 }
 
-// Six cells match kidAtlas: front0/front1/side0/side1/back0/back1. Frames repeat the
-// drawing; the runtime sprite supplies the small walk bob and paper-flip turn.
+// Six cells match kidAtlas: front0/front1/side0/side1/back0/back1.
 export function bakeCustomAtlas(kid: CustomKid): THREE.CanvasTexture {
   const c = document.createElement('canvas'); c.width = CELL * 6; c.height = CELL
   const ctx = c.getContext('2d')!
-  const cells: Stroke[][] = [kid.front, kid.front, kid.side, kid.side, kid.back, kid.back]
-  cells.forEach((strokes, i) => drawCharacterStrokes(ctx, strokes, CELL, i * CELL))
+  const cells: Array<[Stroke[], Facing, number]> = [
+    [kid.front, 'front', 0], [kid.front, 'front', 1], [kid.side, 'side', 0],
+    [kid.side, 'side', 1], [kid.back, 'back', 0], [kid.back, 'back', 1],
+  ]
+  cells.forEach(([strokes, facing, frame], i) => drawCharacterStrokes(ctx, strokes, CELL, i * CELL, facing, frame))
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
   t.minFilter = THREE.LinearFilter

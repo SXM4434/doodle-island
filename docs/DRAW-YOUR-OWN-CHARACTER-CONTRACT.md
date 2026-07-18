@@ -1,50 +1,35 @@
-# Draw Your Own Character — Correct Contract
+# Optional Character Styling Contract
 
-Revised: 2026-07-18
+Updated: 2026-07-18
 
-## The player promise
+## Player promise
 
-**The player draws their own front, side, and back character. Those three drawings become the actual in-world character.**
+Doodle Island always starts with a complete, playable filled paper-kid character. No player is required to draw an avatar before playing.
 
-This is not a preset avatar with doodle decals. The previous implementation treated the player’s marks as identity overlays on an authored kid. That did not fulfill the “draw yourself” fantasy and has been replaced.
+Choosing **“Style your character”** is optional. The player adds quick front, side, and back marks—hair, face, clothing, badge, cape, or backpack—and the game converts those marks into a complete Doodle Island character.
 
-## What the system does
+## Deterministic conversion
 
-1. The player draws a complete character in each facing: front, side, then back.
-2. A faint dashed anatomy silhouette is visible only while drawing. It is a proportional scaffold, never part of the final character.
-3. The game validates that each drawing reads as a full, upright character (not a tiny mark): it needs a substantial vertical head-to-feet span and some body width.
-4. The exact raw strokes are preserved.
-5. The game restyles those strokes in the Doodle Island paper language:
-   - white paper halo;
-   - dark felt-tip contour;
-   - player-selected game ink colors;
-   - no stock body rendered beneath the drawing.
-6. The front, side, and back drawings bake to a six-cell atlas: front/side/back each repeat for the two walk frames. The existing paper-flip, bob, and turn behavior animate the drawing without pretending to derive limbs from arbitrary strokes.
+For each of the three views:
 
-## Why this is the correct conversion
+1. The game renders the authored filled paper-kid body for that facing.
+2. The player’s raw strokes are preserved exactly.
+3. Each stroke gains a white paper halo and dark felt-tip contour.
+4. The mark is composited onto the filled body in the same position shown in the drawing preview.
+5. The result is baked into the matching front / side / back atlas cells.
 
-A freehand character cannot honestly be transformed into a polished skeletal 3D mesh without redrawing it or hiding the player’s input. Doodle Island does neither.
+The system does not use an opaque classifier or pretend to generate a 3D character from a scribble. It uses the selected facing as explicit intent and a consistent hand-inked paper-character kit for the readable filled result.
 
-Instead, the player’s full drawing becomes a flat 2D paper character in a 3D diorama—the documented visual language of the game. The game supplies:
+## Why this fits the game
 
-- stroke cleanup and game palette;
-- paper outline and separation from the environment;
-- camera-facing billboard behavior;
-- front / side / back paper-flip turns;
-- a small walk bob and action lean.
+- The player retains visible authorship: their marks remain their own paths and colors.
+- The game retains readable animation: the existing front / side / back body and walk frames remain coherent.
+- The result belongs with the other flat paper characters in the chunky 3D island.
 
-The player supplies the silhouette, proportions, clothes, hair, face, limbs, and back details.
+## Acceptance checks
 
-## Acceptance check
-
-A successful first-time player should be able to say:
-
-> “I drew that little person, and that exact little person is walking around the island.”
-
-Required human test:
-
-1. Draw a stick-person-like but complete character in all three views.
-2. Confirm the default kid sprite is absent.
-3. Confirm the front, side, and back drawings appear in their matching turn states.
-4. Confirm a visually distinct character (wide hat, long arms, cape, backpack) retains those traits in the world.
-5. Confirm invalid tiny/face-only drawings explain what is missing instead of silently accepting them.
+- A fresh player can select “Wash ashore” without drawing.
+- A fresh player can select “Style your character” and preview a complete filled kid while drawing.
+- A hair/shirt/backpack mark remains visibly present in the matching world-facing sprite.
+- The saved character and easel preview use the same conversion renderer.
+- If no complete custom set is saved, the normal island kid renders.

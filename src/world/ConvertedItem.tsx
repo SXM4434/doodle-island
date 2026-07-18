@@ -3,41 +3,43 @@ import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier'
 import type { Placed } from '../sim/store'
 import { makeBlobShadow } from './toon'
 import { convertDrawing } from '../draw/conversion'
-import { DrawnConstructionPart } from './DrawnConstructionPart'
+import { Beam, Flame, Post, Pot, Slab, Stone } from './ConstructionGeometry'
 
-// Constructed crafts occupy Layer A: shallow, faceted, toon-lit geometry from the player's
-// own construction strokes. Paper crafts remain Layer B billboard items in Placed.tsx.
+// Layer A construction: authored marks parameterize real chunky 3D primitives.
+// Layer B paper items are rendered separately by Placed.tsx as paper cutouts.
 export function ConvertedItem({ placed, y }: { placed: Placed; y: number }) {
   const conversion = convertDrawing(placed.item)
-  const parts = placed.item.construction ?? { board: placed.item.strokes, back: placed.item.strokes, pot: placed.item.strokes, apron: placed.item.strokes, flame: placed.item.strokes }
+  const parts = placed.item.construction ?? {}
+  const fallback = placed.item.strokes
+  const strokes = (role: string) => parts[role] ?? fallback
   const shadow = useMemo(() => makeBlobShadow(.82), [])
-  const Part = ({ role, position, size, rotation }: { role: string; position: [number, number, number]; size: [number, number]; rotation?: [number, number, number] }) => <DrawnConstructionPart strokes={parts[role] ?? placed.item.strokes} width={size[0]} height={size[1]} position={position} rotation={rotation} />
-  const root = (children: ReactNode, collider?: [number, number, number, number, number, number]) => <group position={[placed.x, y, placed.z]} rotation={[0, placed.rot, 0]}>{children}{collider && <RigidBody type="fixed" colliders={false}><CuboidCollider args={[collider[0], collider[1], collider[2]]} position={[collider[3], collider[4], collider[5]]} /></RigidBody>}<primitive object={shadow} position={[0, .03, 0]} /></group>
+  const root = (children: ReactNode, collider?: [number, number, number, number, number, number]) => <group position={[placed.x, y, placed.z]} rotation={[0, placed.rot, 0]}>{children}{collider && <RigidBody type="fixed" colliders={false}><CuboidCollider args={[collider[0],collider[1],collider[2]]} position={[collider[3],collider[4],collider[5]]} /></RigidBody>}<primitive object={shadow} position={[0,.03,0]} /></group>
 
   if (conversion.archetype === 'fence') return root(<>
-    <Part role="post" position={[-.76,.6,.08]} size={[.28,1.2]} /><Part role="post" position={[.76,.6,.08]} size={[.28,1.2]} />
-    <Part role="rail" position={[0,.72,.12]} size={[1.48,.25]} /><Part role="rail" position={[0,.34,.12]} size={[1.48,.25]} />
-    <Part role="board" position={[0,.62,-.04]} size={[1.22,1.1]} />{parts.cap && <Part role="cap" position={[0,1.2,-.04]} size={[1.18,.25]} />}
+    <Post strokes={strokes('post')} height={1.25} radius={.14} position={[-.76,.625,0]} /><Post strokes={strokes('post')} height={1.25} radius={.14} position={[.76,.625,0]} />
+    <Beam strokes={strokes('rail')} length={1.44} radius={.075} position={[0,.83,.02]} rotation={[0,0,Math.PI/2]} /><Beam strokes={strokes('rail')} length={1.44} radius={.075} position={[0,.39,.02]} rotation={[0,0,Math.PI/2]} />
+    <Slab strokes={strokes('board')} width={1.22} height={.78} depth={.08} position={[0,.62,-.08]} />
+    {parts.cap && <Beam strokes={strokes('cap')} length={1.54} radius={.09} position={[0,1.27,0]} rotation={[0,0,Math.PI/2]} />}
   </>, [.84,.65,.18,0,.65,0])
 
   if (conversion.archetype === 'campfire') return root(<>
-    <Part role="log" position={[-.22,.2,.08]} size={[.92,.28]} rotation={[0,.44,0]} /><Part role="log" position={[.22,.22,.12]} size={[.92,.28]} rotation={[0,-.44,0]} />
-    {(parts.stone ? [0,1,2,3,4] : []).map((index) => <Part key={index} role="stone" position={[Math.cos(index * 1.256)*.48,.14,Math.sin(index * 1.256)*.48+.14]} size={[.3,.24]} rotation={[0,index * 1.256,0]} />)}
-    <Part role="flame" position={[0,.82,-.08]} size={[1.0,1.35]} /><RigidBody type="fixed" colliders={false}><BallCollider args={[.62]} position={[0,.34,0]} /></RigidBody>
+    <Beam strokes={strokes('log')} length={1.22} radius={.16} position={[-.16,.22,.04]} rotation={[0,.55,Math.PI/2]} /><Beam strokes={strokes('log')} length={1.22} radius={.16} position={[.16,.24,.04]} rotation={[0,-.55,Math.PI/2]} />
+    {(parts.stone ? [0,1,2,3,4] : []).map(i => <Stone key={i} strokes={strokes('stone')} radius={.22} position={[Math.cos(i * 1.256)*.48,.13,Math.sin(i * 1.256)*.48]} />)}
+    <Flame strokes={strokes('flame')} height={.9} position={[0,.66,0]} /><RigidBody type="fixed" colliders={false}><BallCollider args={[.62]} position={[0,.34,0]} /></RigidBody>
   </>)
 
   if (conversion.archetype === 'chair') return root(<>
-    <Part role="back" position={[0,.98,-.05]} size={[1.05,1.05]} /><Part role="seat" position={[0,.47,-.04]} size={[1.02,.58]} />
-    {[-.34,.34].flatMap((x) => [-.24,.24].map((z) => <Part key={`${x}:${z}`} role="leg" position={[x,.2,z]} size={[.18,.48]} />))}
+    <Slab strokes={strokes('back')} width={1.04} height={.9} depth={.12} position={[0,1.03,-.28]} /><Slab strokes={strokes('seat')} width={1.06} height={.16} depth={.8} position={[0,.55,0]} />
+    {[-.36,.36].flatMap(x => [-.26,.26].map(z => <Post key={`${x}:${z}`} strokes={strokes('leg')} height={.58} radius={.105} position={[x,.29,z]} />))}
   </>, [.54,.7,.49,0,.7,0])
 
   if (conversion.archetype === 'planter') return root(<>
-    <Part role="pot" position={[0,.48,-.05]} size={[1.1,.92]} /><Part role="rim" position={[0,.9,-.04]} size={[1.1,.28]} />
-    {[-.22,.22].map((x, index) => <Part key={index} role="leaf" position={[x,1.18,.04]} size={[.52,.68]} rotation={[0,index ? -.25 : .25,0]} />)}
+    <Pot strokes={strokes('pot')} radius={.56} height={.78} position={[0,.44,0]} /><Beam strokes={strokes('rim')} length={1.12} radius={.105} position={[0,.85,0]} rotation={[0,0,Math.PI/2]} />
+    {[-.24,.24].map((x,i) => <Slab key={i} strokes={strokes('leaf')} width={.36} height={.62} depth={.08} position={[x,1.16,0]} rotation={[0,i ? -.38 : .38,0]} />)}
   </>, [.62,.7,.56,0,.7,0])
 
   return root(<>
-    <Part role="apron" position={[0,.48,-.05]} size={[1.22,.84]} /><Part role="top" position={[0,.88,.04]} size={[1.55,.54]} />
-    {[-.55,.55].flatMap((x) => [-.32,.32].map((z) => <Part key={`${x}:${z}`} role="leg" position={[x,.34,z]} size={[.18,.7]} />))}
+    <Slab strokes={strokes('top')} width={1.55} height={.16} depth={1.12} position={[0,.91,0]} /><Slab strokes={strokes('apron')} width={1.26} height={.3} depth={.84} position={[0,.66,0]} />
+    {[-.55,.55].flatMap(x => [-.34,.34].map(z => <Post key={`${x}:${z}`} strokes={strokes('leg')} height={.75} radius={.1} position={[x,.375,z]} />))}
   </>, [.9,.7,.86,0,.7,0])
 }

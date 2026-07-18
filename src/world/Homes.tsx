@@ -3,216 +3,100 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGame, refs, type Villager } from '../sim/store'
 import { groundY, islandHeight } from '../sim/terrain'
-import { toon } from './toon'
+import { toon, makeBlobShadow } from './toon'
 
-// Villager houses rise as they build them: foundation → walls → doughy roof.
-// Storybook proportions per ART-STYLE (roof = 50%+ of silhouette, wonky charm).
+// A tiny reusable cottage kit: plinth, crooked timber frame, and one oversized
+// faceted roof. Deliberately fewer materials/forms than the old generic house.
 export function Homes() {
   const villagers = useGame((s) => s.villagers)
-  const withHomes = useMemo(() => villagers.filter((v) => v.fed >= 1), [villagers])
-  return (
-    <group>
-      {withHomes.map((v) => (
-        <House key={v.id} id={v.id} x={v.homeX} z={v.homeZ} />
-      ))}
-    </group>
-  )
+  return <group>{villagers.filter((v) => v.fed >= 1).map((v) => <House key={v.id} id={v.id} x={v.homeX} z={v.homeZ} />)}</group>
 }
 
 function House({ id, x, z }: { id: string; x: number; z: number }) {
-  const mats = useMemo(
-    () => ({
-      wall: toon('#F2E3C6'),
-      wood: toon('#a8703d'),
-      roof: toon('#F0785A'),
-      door: toon('#8A5A3B'),
-    }),
-    [],
-  )
-  const group = useRef<THREE.Group>(null)
   const walls = useRef<THREE.Group>(null)
   const roof = useRef<THREE.Group>(null)
   const y = groundY(x, z)
-  const lean = useMemo(() => (Math.sin(x * 7 + z * 13) * 3 * Math.PI) / 180, [x, z]) // wonky ±3°
-
+  const lean = useMemo(() => Math.sin(x * 7 + z * 13) * .045, [x, z])
+  const shadow = useMemo(() => makeBlobShadow(1.65), [])
+  const mats = useMemo(() => ({ cream: toon('#F0D8B0'), timber: toon('#955C3B'), roof: toon('#D96557'), roofDark: toon('#B94F4B'), door: toon('#6F4132'), window: toon('#82B9C6'), brass: toon('#E8B94F') }), [])
   useFrame(() => {
     const built = useGame.getState().villagers.find((v) => v.id === id)?.built ?? 0
-    if (walls.current) {
-      // walls rise 0→full through first 60% of the build
-      const k = Math.min(1, built / 0.6)
-      walls.current.scale.y = Math.max(0.02, k)
-      walls.current.visible = built > 0.02
-    }
-    if (roof.current) {
-      // roof drops in during the last 40% with a settle
-      const k = Math.max(0, (built - 0.6) / 0.4)
-      roof.current.visible = k > 0
-      roof.current.position.y = 1.15 + (1 - k) * 1.6
-      roof.current.scale.setScalar(0.8 + Math.min(1, k) * 0.2)
-    }
+    const wallK = Math.min(1, built / .62)
+    const roofK = Math.max(0, Math.min(1, (built - .56) / .44))
+    if (walls.current) { walls.current.visible = built > .02; walls.current.scale.y = Math.max(.02, wallK) }
+    if (roof.current) { roof.current.visible = roofK > 0; roof.current.position.y = 1.42 + (1 - roofK) * 1.25; roof.current.scale.setScalar(.76 + roofK * .24) }
   })
-
-  return (
-    <group ref={group} position={[x, y, z]} rotation={[0, lean, 0]}>
-      {/* foundation pad — appears immediately (marks the site) */}
-      <mesh position={[0, 0.06, 0]} material={mats.wood}>
-        <boxGeometry args={[1.9, 0.12, 1.7]} />
-      </mesh>
-      <BlueprintSign id={id} mats={mats} />
-      {/* walls — scale up from the pad */}
-      <group ref={walls} position={[0, 0.12, 0]}>
-        <mesh position={[0, 0.5, 0]} material={mats.wall}>
-          <boxGeometry args={[1.7, 1.0, 1.5]} />
-        </mesh>
-        <mesh position={[0, 0.35, 0.76]} material={mats.door}>
-          <boxGeometry args={[0.5, 0.7, 0.06]} />
-        </mesh>
-        {/* doorGlow: warm sliver saying "enterable" */}
-        <mesh position={[0, 0.06, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[0.6, 0.25]} />
-          <meshBasicMaterial color="#ffd9a0" transparent opacity={0.5} toneMapped={false} />
-        </mesh>
-        {/* round window */}
-        <mesh position={[0.5, 0.65, 0.76]} rotation={[Math.PI / 2, 0, 0]} material={mats.wood}>
-          <cylinderGeometry args={[0.16, 0.16, 0.06, 10]} />
-        </mesh>
-      </group>
-      {/* roof — big doughy wedge, drops in near the end */}
-      <group ref={roof} position={[0, 1.15, 0]} visible={false}>
-        <mesh material={mats.roof} rotation={[0, Math.PI / 4, 0]}>
-          <coneGeometry args={[1.55, 1.0, 4]} />
-        </mesh>
-        {/* chimney */}
-        <mesh position={[0.5, 0.45, 0]} material={mats.wood}>
-          <boxGeometry args={[0.22, 0.5, 0.22]} />
-        </mesh>
-      </group>
+  return <group position={[x, y, z]} rotation={[0, lean, 0]}>
+    <primitive object={shadow} position={[0, .03, .04]} />
+    {/* irregularly layered foundation; reads even before construction begins */}
+    <mesh position={[0, .1, 0]} material={mats.timber} rotation={[0, .12, 0]}><cylinderGeometry args={[1.55, 1.72, .2, 7]} /></mesh>
+    <BlueprintMarker id={id} mats={mats} />
+    <group ref={walls} position={[0, .2, 0]}>
+      <mesh position={[0, .62, 0]} material={mats.cream}><boxGeometry args={[2.35, 1.24, 1.9]} /></mesh>
+      {/* exposed timber is a silhouette device, not surface noise */}
+      {[[0, 1.19, .98, 2.55, .11, .12], [-1.1, .72, .99, .13, 1.2, .13], [1.1, .72, .99, .13, 1.2, .13], [0, .2, .99, 2.55, .12, .13]].map((v, i) => <mesh key={i} position={[v[0], v[1], v[2]]} material={mats.timber}><boxGeometry args={[v[3], v[4], v[5]]} /></mesh>)}
+      <mesh position={[0, .49, 1.005]} material={mats.door}><boxGeometry args={[.62, .94, .12]} /></mesh>
+      <mesh position={[0, .78, 1.075]} material={mats.brass}><sphereGeometry args={[.065, 6, 4]} /></mesh>
+      <mesh position={[.72, .74, 1.01]} material={mats.window} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.27, .27, .13, 7]} /></mesh>
+      <mesh position={[.72, .74, 1.09]} material={mats.timber} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.28, .045, 4, 7]} /></mesh>
     </group>
-  )
+    <group ref={roof} position={[0, 1.42, 0]} visible={false} rotation={[0, .14, 0]}>
+      {/* two wedges, not a generic cone: a hand-built doughy roof silhouette */}
+      <mesh position={[-.57, .22, 0]} material={mats.roof} rotation={[0, 0, -.54]}><boxGeometry args={[1.62, .42, 2.45]} /></mesh>
+      <mesh position={[.57, .22, 0]} material={mats.roofDark} rotation={[0, 0, .54]}><boxGeometry args={[1.62, .42, 2.45]} /></mesh>
+      <mesh position={[.62, .7, -.45]} material={mats.timber} rotation={[0, .08, 0]}><boxGeometry args={[.3, .85, .3]} /></mesh>
+      <mesh position={[.62, 1.17, -.45]} material={mats.roofDark}><boxGeometry args={[.42, .14, .4]} /></mesh>
+    </group>
+  </group>
 }
 
-function BlueprintSign({ id, mats }: { id: string; mats: { wood: THREE.MeshToonMaterial } }) {
+function BlueprintMarker({ id, mats }: { id: string; mats: Record<string, THREE.MeshToonMaterial> }) {
   const v = useGame((s) => s.villagers.find((x) => x.id === id))
   if (!v || v.built >= 1) return null
-  const funded = v.homeWood ?? 0
-  const need = v.homeNeed ?? 10
-  const tex = useMemo(() => {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 112
-    const ctx = c.getContext('2d')!
-    ctx.fillStyle = '#fffdf4'; ctx.fillRect(0, 0, 256, 112)
-    ctx.strokeStyle = '#33291f'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, 250, 106)
-    ctx.fillStyle = '#33291f'; ctx.textAlign = 'center'; ctx.font = 'bold 26px sans-serif'
-    ctx.fillText('HOME BLUEPRINT', 128, 39)
-    ctx.font = 'bold 30px sans-serif'; ctx.fillText(`${funded}/${need} WOOD`, 128, 80)
-    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex
-  }, [funded, need])
-  return <group position={[1.35, 0, 0.6]} rotation={[0, -0.35, 0]}>
-    <mesh position={[0, .5, 0]} material={mats.wood}><cylinderGeometry args={[.06, .08, 1, 6]} /></mesh>
-    <mesh position={[0, 1.05, 0]}><planeGeometry args={[1.2, .55]} /><meshBasicMaterial map={tex} toneMapped={false} /></mesh>
+  const funded = v.homeWood ?? 0; const need = v.homeNeed ?? 10
+  // Physical storyboard stake: color-fill ticks communicate work without a HUD label.
+  const ticks = Math.ceil((funded / need) * 4)
+  return <group position={[1.55, 0, .7]} rotation={[0, -.28, 0]}>
+    <mesh position={[0, .52, 0]} material={mats.timber}><cylinderGeometry args={[.06, .08, 1.04, 6]} /></mesh>
+    <mesh position={[0, 1.12, 0]} material={mats.cream}><boxGeometry args={[.74, .58, .1]} /></mesh>
+    <mesh position={[0, 1.12, .07]} material={mats.timber}><boxGeometry args={[.82, .66, .05]} /></mesh>
+    <mesh position={[0, 1.12, .11]} material={mats.cream}><boxGeometry args={[.68, .52, .03]} /></mesh>
+    {[0, 1, 2, 3].map((i) => <mesh key={i} position={[-.22 + i * .145, .97, .14]} material={i < ticks ? mats.roof : mats.window}><circleGeometry args={[.047, 6]} /></mesh>)}
   </group>
 }
 
 export function nearbyHomeBlueprint(): Villager | null {
   const p = refs.playerPos
   if (p.x > 200) return null
-  const g = useGame.getState()
-  let candidate: Villager | null = null
-  let distance = 2.15
-  for (const v of g.villagers) {
+  let candidate: Villager | null = null; let distance = 2.15
+  for (const v of useGame.getState().villagers) {
     if (v.fed < 1 || v.built >= 1 || (v.homeWood ?? 0) >= (v.homeNeed ?? 10)) continue
-    const d = Math.hypot(v.homeX + 1.35 - p.x, v.homeZ + .6 - p.z)
+    const d = Math.hypot(v.homeX + 1.55 - p.x, v.homeZ + .7 - p.z)
     if (d < distance) { candidate = v; distance = d }
   }
   return candidate
 }
 
-// wooden sign marking the dock project: shows progress, E to donate wood
 export function DockSign() {
   const project = useGame((s) => s.project)
-  const mats = useMemo(() => ({ post: toon('#8A5A3B'), board: toon('#B07A4F') }), [])
-  const tex = useMemo(() => {
-    const c = document.createElement('canvas')
-    c.width = 256
-    c.height = 128
-    const g = c.getContext('2d')!
-    g.fillStyle = '#B07A4F'
-    g.fillRect(0, 0, 256, 128)
-    g.fillStyle = '#33291f'
-    g.font = 'bold 34px sans-serif'
-    g.textAlign = 'center'
-    if (project.doneAt) {
-      g.fillText('DOCK DONE!', 128, 56)
-      g.font = '26px sans-serif'
-      g.fillText('thanks, everyone', 128, 96)
-    } else {
-      g.fillText('BUILD THE DOCK', 128, 48)
-      g.font = 'bold 30px sans-serif'
-      g.fillText(`${project.given} / ${project.need} wood`, 128, 92)
-    }
-    const t = new THREE.CanvasTexture(c)
-    t.colorSpace = THREE.SRGBColorSpace
-    return t
-  }, [project.given, project.doneAt, project.need])
-  const boardMat = useMemo(() => {
-    const m = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })
-    m.userData.outlineParameters = { thickness: 0.003, color: [0.24, 0.18, 0.13] }
-    return m
-  }, [tex])
+  const mats = useMemo(() => ({ post: toon('#8A5A3B'), board: toon('#E8D5B0'), mark: toon('#D96557') }), [])
+  const ticks = Math.ceil((project.given / project.need) * 4)
   const y = groundY(0, -46)
-  return (
-    <group position={[0, y, -46]}>
-      <mesh position={[0, 0.55, 0]} material={mats.post}>
-        <cylinderGeometry args={[0.07, 0.09, 1.1, 6]} />
-      </mesh>
-      <mesh position={[0, 1.15, 0]} material={boardMat}>
-        <boxGeometry args={[1.5, 0.75, 0.08]} />
-      </mesh>
-    </group>
-  )
+  return <group position={[0, y, -46]} rotation={[0, -.12, 0]}>
+    <mesh position={[0, .62, 0]} material={mats.post}><cylinderGeometry args={[.08, .1, 1.24, 6]} /></mesh>
+    <mesh position={[0, 1.3, 0]} material={mats.board}><boxGeometry args={[1.58, .8, .12]} /></mesh>
+    {[0, 1, 2, 3].map((i) => <mesh key={i} position={[-.4 + i * .27, 1.3, .075]} material={i < ticks ? mats.mark : mats.post}><circleGeometry args={[.08, 6]} /></mesh>)}
+  </group>
 }
 
-// ---- the community dock: village-scale project (Minecraft "we built that") ----
 export function Dock() {
   const project = useGame((s) => s.project)
   const mats = useMemo(() => ({ plank: toon('#B07A4F'), post: toon('#8A5A3B') }), [])
-  // find the beach point nearest spawn heading north (out to sea)
-  const spot = useMemo(() => {
-    for (let r = 30; r < 70; r += 0.5) {
-      if (islandHeight(0, -r) < 0.05) return { z: -r + 1 }
-    }
-    return { z: -52 }
-  }, [])
-
-  const k = Math.min(1, project.given / project.need) // build progress 0..1
-  const planks = Math.ceil(k * 7)
-  if (project.given <= 0) return null
-  return (
-    <group position={[0, 0, spot.z]}>
-      {Array.from({ length: planks }, (_, i) => (
-        <group key={i} position={[0, 0, -i * 1.6]}>
-          <mesh position={[0, 0.35, 0]} material={mats.plank}>
-            <boxGeometry args={[2.2, 0.12, 1.5]} />
-          </mesh>
-          <mesh position={[-0.9, -0.1, 0]} material={mats.post}>
-            <cylinderGeometry args={[0.11, 0.11, 1.1, 6]} />
-          </mesh>
-          <mesh position={[0.9, -0.1, 0]} material={mats.post}>
-            <cylinderGeometry args={[0.11, 0.11, 1.1, 6]} />
-          </mesh>
-        </group>
-      ))}
-      {/* lantern post at the end once done */}
-      {project.doneAt > 0 && (
-        <group position={[0.8, 0.4, -planks * 1.6 + 0.8]}>
-          <mesh position={[0, 0.5, 0]} material={mats.post}>
-            <cylinderGeometry args={[0.06, 0.08, 1.0, 6]} />
-          </mesh>
-          <mesh position={[0, 1.05, 0]} material={mats.plank}>
-            <boxGeometry args={[0.24, 0.28, 0.24]} />
-          </mesh>
-          <pointLight position={[0, 1.05, 0]} color="#F5D76E" intensity={1.6} distance={7} decay={1.8} />
-        </group>
-      )}
-    </group>
-  )
+  const spot = useMemo(() => { for (let r = 30; r < 70; r += .5) if (islandHeight(0, -r) < .05) return { z: -r + 1 }; return { z: -52 } }, [])
+  const planks = Math.ceil(Math.min(1, project.given / project.need) * 7)
+  if (!project.given) return null
+  return <group position={[0, 0, spot.z]}>{Array.from({ length: planks }, (_, i) => <group key={i} position={[0, 0, -i * 1.6]}>
+    <mesh position={[0, .35, 0]} material={mats.plank}><boxGeometry args={[2.2, .12, 1.5]} /></mesh>
+    {[-.9, .9].map((x) => <mesh key={x} position={[x, -.1, 0]} material={mats.post}><cylinderGeometry args={[.11, .11, 1.1, 6]} /></mesh>)}
+  </group>)}</group>
 }

@@ -1,6 +1,10 @@
 // Procedural-first sound (PRD §9). One AudioContext, tiny synth helpers.
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
+let ambience: GainNode | null = null
+let dayDrone: OscillatorNode | null = null
+let nightDrone: OscillatorNode | null = null
+let ambientNight = false
 let muted = false
 
 export function initAudio(): void {
@@ -9,6 +13,35 @@ export function initAudio(): void {
   master = ctx.createGain()
   master.gain.value = 0.5
   master.connect(ctx.destination)
+  ambience = ctx.createGain()
+  ambience.gain.value = 0.0001
+  ambience.connect(master)
+  buildAmbience()
+}
+
+
+function buildAmbience(): void {
+  if (!ctx || !ambience) return
+  dayDrone = ctx.createOscillator(); dayDrone.type = 'sine'; dayDrone.frequency.value = 174.61
+  const dayGain = ctx.createGain(); dayGain.gain.value = .035
+  dayDrone.connect(dayGain).connect(ambience); dayDrone.start()
+  nightDrone = ctx.createOscillator(); nightDrone.type = 'triangle'; nightDrone.frequency.value = 110
+  const nightGain = ctx.createGain(); nightGain.gain.value = .022
+  nightDrone.connect(nightGain).connect(ambience); nightDrone.start()
+}
+
+// Called only on a day/night transition. Kept deliberately spare so it reads as
+// atmosphere, never as a competing soundtrack. Mute remains the global control.
+export function setAmbientMood(night: boolean): void {
+  if (!ctx || !ambience) return
+  if (night === ambientNight && ambience.gain.value > .0002) return
+  ambientNight = night
+  const t = ctx.currentTime
+  ambience.gain.cancelScheduledValues(t)
+  ambience.gain.setValueAtTime(Math.max(.0001, ambience.gain.value), t)
+  ambience.gain.exponentialRampToValueAtTime(night ? .028 : .04, t + .5)
+  if (dayDrone) dayDrone.frequency.setTargetAtTime(night ? 130.81 : 174.61, t, .35)
+  if (nightDrone) nightDrone.frequency.setTargetAtTime(night ? 110 : 146.83, t, .35)
 }
 
 export function setMuted(m: boolean): void {

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Sky } from '@react-three/drei'
 import * as THREE from 'three'
 import { refs, useGame } from '../sim/store'
+import { setAmbientMood } from '../audio/sfx'
 
 // 20-min full cycle, night = last 25% (PRD §2). refs.time in 0..1.
 const DAY_SPAN = 0.75
@@ -21,10 +22,13 @@ export function DayNight() {
   // throttled sky sun position — Sky rebuilds uniforms on prop change, ~every 2s is fine
   const [skySun, setSkySun] = useState<[number, number, number]>([50, 30, 20])
   const lastSky = useRef(0)
+  const lastNight = useRef<boolean | null>(null)
 
   useFrame((_, delta) => {
     refs.time = (refs.time + delta / 1200) % 1
     const t = refs.time
+    const night = t > .75 || t < .02
+    if (lastNight.current !== night) { lastNight.current = night; setAmbientMood(night) }
     // narrative beats (once per cycle)
     if (t > 0.68 && t < 0.75 && !duskWarned) {
       duskWarned = true

@@ -3,6 +3,7 @@ import { useGame, refs, RES_LABEL, type ResKind } from '../sim/store'
 import { itemThumb } from '../draw/itemTexture'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { sfx, setMuted, isMuted, initAudio } from '../audio/sfx'
+import { isCompleteCustomKid, loadCustomKid } from '../draw/customKid'
 
 const HINTS = [
   'WASD to wander · drag to look',
@@ -88,32 +89,27 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
 export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
   const started = useGame((s) => s.started)
   const start = useGame((s) => s.start)
+  // Re-render after the easel saves so its primary action immediately changes.
+  useGame((s) => s.kidVersion)
+  const hasCharacter = isCompleteCustomKid(loadCustomKid())
   if (started) return null
+  const begin = () => {
+    if (!hasCharacter) { onDrawSelf?.(); return }
+    start()
+    initAudio()
+    sfx.chime()
+  }
   return (
     <div className="title-veil">
       <div className="title-card">
         <h1>Doodle&nbsp;Island</h1>
-        <p>Gather stuff. Draw your tools. Everything you make keeps your hand in it.</p>
-        <button
-          className="btn confirm big"
-          onClick={() => {
-            start()
-            initAudio()
-            sfx.chime()
-          }}
-        >
-          Wash ashore →
+        <p>{hasCharacter ? 'Your paper character is ready for the island.' : 'First, draw the little paper character who will live on this island.'}</p>
+        <button className="btn confirm big" onClick={begin}>
+          {hasCharacter ? 'Wash ashore →' : 'Draw my character →'}
         </button>
-        <button
-          className="btn"
-          style={{ marginTop: 10 }}
-          onClick={() => {
-            initAudio()
-            onDrawSelf?.()
-          }}
-        >
-          ✏️ Draw yourself first
-        </button>
+        {hasCharacter && <button className="btn" style={{ marginTop: 10 }} onClick={() => { initAudio(); onDrawSelf?.() }}>
+          Redraw my character
+        </button>}
         <p className="controls-line">WASD move · drag to look · E interact · 1–8 hotbar</p>
       </div>
     </div>

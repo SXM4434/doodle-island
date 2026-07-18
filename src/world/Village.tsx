@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
+import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { groundY, POND, TABLE } from '../sim/terrain'
 import { makeBlobShadow, toon } from './toon'
 import { PLAYER_HOME } from './Interiors'
@@ -48,6 +49,7 @@ function ResidentCottage({ x, z, roof, door, detail, personal = false }: Cottage
     <group position={[x, y, z]} rotation={[0, detail === 'cat' ? -0.22 : 0.18, 0]}>
       <primitive object={shadow} position={[0, 0.025, 0.1]} />
       <mesh position={[0, 0.1, 0]} material={mats.timber} rotation={[0, 0.16, 0]}><cylinderGeometry args={[1.7, 1.86, 0.2, 7]} /></mesh>
+      <CottageCollider />
       <mesh position={[0, 0.82, 0]} material={mats.plaster}><boxGeometry args={[2.65, 1.46, 2.15]} /></mesh>
       {/* timber pieces explain the silhouette rather than covering it in noise */}
       <mesh position={[0, 1.48, 1.11]} material={mats.timber}><boxGeometry args={[2.82, 0.12, 0.13]} /></mesh>
@@ -66,6 +68,18 @@ function ResidentCottage({ x, z, roof, door, detail, personal = false }: Cottage
       {personal ? <WelcomeBench mats={mats} /> : detail === 'cat' ? <CatPlanter mat={mats.detail} /> : <ShellPot mat={mats.detail} />}
     </group>
   )
+}
+
+function CottageCollider() {
+  // Three forgiving volumes keep the façade solid while leaving a centered door
+  // gap. The roof stays non-blocking so the camera can look over it cleanly.
+  return <RigidBody type="fixed" colliders={false}>
+    <CuboidCollider args={[.18, .82, 1.08]} position={[-1.14, .84, 0]} />
+    <CuboidCollider args={[.18, .82, 1.08]} position={[1.14, .84, 0]} />
+    <CuboidCollider args={[.8, .82, .18]} position={[0, .84, -.9]} />
+    <CuboidCollider args={[.42, .82, .18]} position={[-.92, .84, .9]} />
+    <CuboidCollider args={[.42, .82, .18]} position={[.92, .84, .9]} />
+  </RigidBody>
 }
 
 function CatPlanter({ mat }: { mat: THREE.MeshToonMaterial }) {

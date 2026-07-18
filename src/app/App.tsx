@@ -96,22 +96,22 @@ export default function App() {
           <DayNight />
           <Physics timeStep={1 / 60} paused={!started}>
             <Island />
+            <Props />
             <PlacedItems />
             <Interiors />
+            <Village />
+            <Homes />
+            <Dock />
+            <DockSign />
             {started && (
               <KeyboardControls map={keyMap}>
                 <Player />
               </KeyboardControls>
             )}
           </Physics>
-          <Props />
           <Ripples />
           <Campfires />
           <Garden />
-          <Village />
-          <Homes />
-          <Dock />
-          <DockSign />
           {started && <Villagers />}
           {started && <Critters />}
           {started && <Islanders />}

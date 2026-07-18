@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { useGame, refs, type Villager } from '../sim/store'
 import { groundY, islandHeight } from '../sim/terrain'
 import { toon, makeBlobShadow } from './toon'
@@ -32,6 +33,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
     <mesh position={[0, .1, 0]} material={mats.timber} rotation={[0, .12, 0]}><cylinderGeometry args={[1.55, 1.72, .2, 7]} /></mesh>
     <BlueprintMarker id={id} mats={mats} />
     <group ref={walls} position={[0, .2, 0]}>
+      <CottageShellCollider />
       <mesh position={[0, .62, 0]} material={mats.cream}><boxGeometry args={[2.35, 1.24, 1.9]} /></mesh>
       {/* exposed timber is a silhouette device, not surface noise */}
       {[[0, 1.19, .98, 2.55, .11, .12], [-1.1, .72, .99, .13, 1.2, .13], [1.1, .72, .99, .13, 1.2, .13], [0, .2, .99, 2.55, .12, .13]].map((v, i) => <mesh key={i} position={[v[0], v[1], v[2]]} material={mats.timber}><boxGeometry args={[v[3], v[4], v[5]]} /></mesh>)}
@@ -48,6 +50,16 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
       <mesh position={[.62, 1.17, -.45]} material={mats.roofDark}><boxGeometry args={[.42, .14, .4]} /></mesh>
     </group>
   </group>
+}
+
+function CottageShellCollider() {
+  return <RigidBody type="fixed" colliders={false}>
+    <CuboidCollider args={[.16, .72, .96]} position={[-1.01, .62, 0]} />
+    <CuboidCollider args={[.16, .72, .96]} position={[1.01, .62, 0]} />
+    <CuboidCollider args={[.74, .72, .16]} position={[0, .62, -.77]} />
+    <CuboidCollider args={[.35, .72, .16]} position={[-.83, .62, .78]} />
+    <CuboidCollider args={[.35, .72, .16]} position={[.83, .62, .78]} />
+  </RigidBody>
 }
 
 function BlueprintMarker({ id, mats }: { id: string; mats: Record<string, THREE.MeshToonMaterial> }) {

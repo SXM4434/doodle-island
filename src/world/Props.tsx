@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { BallCollider, RigidBody } from '@react-three/rapier'
 import { useGame, refs } from '../sim/store'
 import { groundY } from '../sim/terrain'
 import { toon, blobShadowTexture } from './toon'
@@ -145,6 +146,9 @@ export function Props() {
 
   return (
     <group>
+      {/* Only substantial nodes collide. Fiber and shells remain easy-to-reach pickups.
+          Fixed spheres are cheaper and more forgiving than per-prop mesh colliders. */}
+      {nodes.filter((n) => n.type === 'tree' || n.type === 'rock').map((n) => <NodeCollider key={`collider-${n.id}`} id={n.id} type={n.type as 'tree' | 'rock'} x={n.x} z={n.z} scale={n.scale} />)}
       {pieces.map((pc, i) => (
         <instancedMesh
           key={i}
@@ -161,6 +165,15 @@ export function Props() {
       />
     </group>
   )
+}
+
+function NodeCollider({ id, type, x, z, scale }: { id: number; type: 'tree' | 'rock'; x: number; z: number; scale: number }) {
+  const node = useGame((s) => s.nodes.find((n) => n.id === id))
+  if (node?.respawnAt) return null
+  const radius = (type === 'tree' ? .68 : .54) * scale
+  return <RigidBody type="fixed" colliders={false} position={[x, groundY(x, z) + radius, z]}>
+    <BallCollider args={[radius]} />
+  </RigidBody>
 }
 
 // merged cone rosette (n cones fanned around center) — one geometry, one draw

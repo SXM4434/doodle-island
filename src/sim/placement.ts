@@ -29,6 +29,21 @@ export interface PlacementContext {
 export function placementProblem(item: DrawnItem, x: number, z: number, context: PlacementContext): string | null {
   if (!canPlaceHere(item, x, z, context.indoors)) return 'Big builds belong on your cottage plot.'
 
+  if (context.indoors && isStructural(item)) {
+    const roomX = 400 + (context.room ?? 0) * 34
+    // These are the actual fixed bed/chest/table/exit positions in the small
+    // dollhouse kit. Drawn wall art can still sit anywhere; only solid pieces
+    // respect the furnishing and doorway footprints.
+    const fixtures: Array<[number, number, string]> = [
+      [roomX - 3.65, -3.65, 'bed'], [roomX + 3.75, 3.45, 'chest'],
+      [roomX + 3.45, -3.65, 'plant'], [roomX + 2.05, -.8, 'table'],
+      [roomX, 5.34, 'doorway'],
+    ]
+    for (const [fx, fz, name] of fixtures) {
+      if (Math.hypot(x - fx, z - fz) < 1.25) return `Leave room around the ${name}.`
+    }
+  }
+
   if (!context.indoors && isStructural(item)) {
     // The cottage is a useful room, not a place to bury props in its walls or
     // block the little approach to its real door (south/front side).

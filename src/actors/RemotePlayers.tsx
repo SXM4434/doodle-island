@@ -106,14 +106,12 @@ export function NetSync() {
     const now = performance.now()
     if (now - lastPull.current > 1000) {
       lastPull.current = now
-      void import('../sim/store').then(({ useGame }) => {
-        const world = net.pullWorld()
-        if (world) useGame.setState(world)
-        else {
-          const incoming = net.pullPlaced()
-          if (incoming) useGame.setState({ placed: incoming })
-        }
-      })
+      const world = net.pullWorld()
+      if (world) useGame.setState(world)
+      else {
+        const incoming = net.pullPlaced()
+        if (incoming) useGame.setState({ placed: incoming })
+      }
     }
   })
   return null

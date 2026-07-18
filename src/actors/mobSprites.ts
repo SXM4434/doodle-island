@@ -97,7 +97,6 @@ export function mobAtlas(kind: 'scribble' | 'wasp'): THREE.CanvasTexture {
 
 // heart + berry icons for HUD / drops
 export function heartCanvas(full: boolean): string {
-  const key = `heart-${full}`
   const c = document.createElement('canvas')
   c.width = c.height = 40
   const ctx = c.getContext('2d')!

@@ -7,7 +7,7 @@ import { sfx } from '../audio/sfx'
 
 // "Draw yourself" — three facings, one easel each. Minecraft-skin energy,
 // Doodle-Island rules: your strokes, restyled, become YOU.
-const FACINGS: Array<{ key: keyof CustomKid; label: string; hint: string }> = [
+const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
   { key: 'front', label: 'Front', hint: 'facing you — eyes, smile, the works' },
   { key: 'side', label: 'Side', hint: 'walking right (we mirror the other way)' },
   { key: 'back', label: 'Back', hint: 'the back of your head' },
@@ -59,7 +59,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       if (step > 0) {
         ctx.save()
         ctx.globalAlpha = 0.15
-        drawStrokes(ctx, drawings[FACINGS[step - 1].key], PX)
+        drawStrokes(ctx, drawings[FACINGS[step - 1].key] ?? [], PX)
         ctx.restore()
       }
       const all = live.current ? [...strokes, live.current] : strokes
@@ -131,7 +131,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
         </p>
         <div className="easel-row">
           <div className="tools">
-            {BRUSHES.map((b, i) => (
+            {BRUSHES.map((_, i) => (
               <button key={i} className={`tool-dot ${brush === i ? 'on' : ''}`} onClick={() => setBrush(i)} aria-label={`brush ${i + 1}`}>
                 <span style={{ width: 6 + i * 7, height: 6 + i * 7 }} />
               </button>

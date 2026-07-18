@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { fishing, tickFishing, fishColor } from '../sim/fishing'
+import { fishing, tickFishing } from '../sim/fishing'
 
 // The bobber makes fishing legible: idle float → hard dip on BITE.
 export function Fishing() {

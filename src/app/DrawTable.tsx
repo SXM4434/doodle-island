@@ -168,7 +168,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
       </div>
       <div className="easel-row">
         <div className="tools">
-          {BRUSHES.map((b, i) => (
+          {BRUSHES.map((_, i) => (
             <button
               key={i}
               className={`tool-dot ${brush === i && !eraser ? 'on' : ''}`}

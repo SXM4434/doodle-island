@@ -221,7 +221,7 @@ export const useGame = create<State>((set, get) => ({
   drops: [],
   placed: saved?.placed ?? [],
   villagers: (saved?.villagers ?? []).map((v) => ({
-    built: 0, ...v,
+    ...v,
     // Preserve finished legacy homes; unfinished legacy homes now need funding.
     homeNeed: v.homeNeed ?? 10,
     homeWood: v.homeWood ?? (v.built >= 1 ? (v.homeNeed ?? 10) : 0),
@@ -384,7 +384,7 @@ export const useGame = create<State>((set, get) => ({
       }],
       placing: null,
     })
-    g.deed('place-' + g.placing.item.cls)
+    g.deed('place-' + g.placing.cls)
     if (g.hint === 3) set({ hint: 4 })
   },
   cancelPlace: () => {
@@ -413,7 +413,7 @@ export const useGame = create<State>((set, get) => ({
     set({ journal: { deeds: { ...g.journal.deeds, [key]: n } } })
     if (n === 1) {
       // first time = sticker moment
-      setTimeout(() => get().say('📖 New sticker: ' + DEED_LABEL[key] ?? key), 400)
+      setTimeout(() => get().say('📖 New sticker: ' + (DEED_LABEL[key] ?? key)), 400)
     }
   },
   openJournal: (open) => set({ journalOpen: open }),

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
 import { useGame, refs } from '../sim/store'
 import { groundY } from '../sim/terrain'
 import { toon } from './toon'

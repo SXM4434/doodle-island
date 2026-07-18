@@ -14,7 +14,7 @@ export function gradientMap(): THREE.DataTexture {
 
 export function toon(color: string): THREE.MeshToonMaterial {
   // flatShading = the faceted "carved toy" look (ART-STYLE §2A: facets are a feature)
-  return new THREE.MeshToonMaterial({ color, gradientMap: gradientMap(), flatShading: true })
+  return new THREE.MeshToonMaterial({ color, gradientMap: gradientMap() })
 }
 
 export function noOutline(m: THREE.Material): THREE.Material {

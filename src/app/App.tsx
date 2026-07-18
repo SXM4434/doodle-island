@@ -16,6 +16,7 @@ import { Shop } from './Shop'
 import { InteractionPrompt } from './InteractionPrompt'
 import { HomeStorage } from './HomeStorage'
 import { Bag } from './Bag'
+import { Settings, applySavedSettings } from './Settings'
 import { Critters } from '../actors/Critters'
 import { Islanders } from '../actors/Islanders'
 import { Journal } from './Journal'
@@ -73,7 +74,9 @@ function Outlined() {
 export default function App() {
   const started = useGame((s) => s.started)
   const [drawingSelf, setDrawingSelf] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
+    applySavedSettings()
     const resume = () => initAudio()
     window.addEventListener('pointerdown', resume, { once: true })
     return () => window.removeEventListener('pointerdown', resume)
@@ -124,7 +127,7 @@ export default function App() {
         </Suspense>
       </Canvas>
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
-      {started && <HUD />}
+      {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}
       <DrawTable />
@@ -132,6 +135,7 @@ export default function App() {
       <Shop />
       <HomeStorage />
       <Bag />
+      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {drawingSelf && (
         <CharacterEasel
           onDone={() => {

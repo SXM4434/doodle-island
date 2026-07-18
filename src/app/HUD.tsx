@@ -12,7 +12,7 @@ const HINTS = [
   '',
 ]
 
-export function HUD() {
+export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
   const slots = useGame((s) => s.slots)
   const equipped = useGame((s) => s.equipped)
   const equip = useGame((s) => s.equip)
@@ -49,13 +49,8 @@ export function HUD() {
         {refs.time > 0.72 || refs.time < 0.04 ? '☾' : '☀'} {clock}
       </div>
 
-      <button
-        className="chip-mute"
-        onClick={() => { setMuted(!muted); setM(!muted) }}
-        aria-label={muted ? 'unmute' : 'mute'}
-      >
-        {muted ? 'sound off' : 'sound on'}
-      </button>
+      <button className="chip-mute" onClick={() => { setMuted(!muted); setM(!muted) }} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}>{muted ? 'sound off' : 'sound on'}</button>
+      <button className="chip-settings" onClick={onOpenSettings} aria-label="Open settings">settings</button>
 
       {/* contextual hint */}
       {hint < 4 && !placing && <div className="hint-bubble">{HINTS[hint]}</div>}

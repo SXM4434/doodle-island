@@ -12,12 +12,12 @@ export function Journal() {
   const got = Object.keys(deeds).filter((k) => DEED_LABEL[k]).length
   return (
     <div className="table-veil" onClick={() => close(false)}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="sheet journal-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-head">
-          <h2>Sticker Journal</h2>
-          <span className="journal-count">{got} / {ALL_DEEDS.length}</span>
-          <button className="btn ghost" onClick={() => close(false)}>close</button>
+          <div><p className="eyebrow">Island record</p><h2>Sticker journal</h2></div>
+          <div className="journal-tools"><span className="journal-count">{got} / {ALL_DEEDS.length}</span><button className="close-button" onClick={() => close(false)} aria-label="Close sticker journal">×</button></div>
         </div>
+        <p className="panel-note">First-time discoveries earn a page. Keep exploring to fill the blank spaces.</p>
         <div className="sticker-grid">
           {ALL_DEEDS.map((k) => {
             const n = deeds[k] ?? 0
@@ -30,7 +30,6 @@ export function Journal() {
             )
           })}
         </div>
-        <p className="hint-line">Every first-time deed earns a sticker. Fill the book!</p>
       </div>
     </div>
   )

@@ -45,8 +45,8 @@ function ClassPick({ onPick }: { onPick: (c: CraftKey) => void }) {
   return (
     <div className="sheet">
       <div className="sheet-head">
-        <h2>What are we making?</h2>
-        <button className="btn ghost" onClick={() => openDraw(false)}>close</button>
+        <div><p className="eyebrow">Draw table</p><h2>Make something useful</h2></div>
+        <button className="close-button" onClick={() => openDraw(false)} aria-label="Close draw table">×</button>
       </div>
       <div className="class-grid">
         {CLASSES.map((c) => {
@@ -72,7 +72,7 @@ function ClassPick({ onPick }: { onPick: (c: CraftKey) => void }) {
           )
         })}
       </div>
-      <p className="hint-line">No materials? Whack a tree or plant bare-handed first.</p>
+      <p className="panel-note">Pick a purpose first. The material cost is spent only when you finish the drawing.</p>
     </div>
   )
 }

@@ -364,3 +364,22 @@ button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--paper), 0 0 0 
 
 @media (hover: hover) { .btn:hover { transform: translateY(-1px); } }
 @media (max-width: 620px) { .sheet { padding: 19px; } .shop-columns { grid-template-columns:1fr; gap:20px; } .shop-special { padding:18px 0 0; border-left:0; border-top:2px dashed rgba(51,41,31,.28); } .storage-grid { grid-template-columns:repeat(4, minmax(42px,1fr)); } }
+
+/* The craft chooser is a workshop catalogue, not a collection of dashboard cards. */
+.class-grid { grid-template-columns:repeat(2, minmax(0,1fr)); gap:0; overflow:hidden; border:2px solid rgba(51,41,31,.72); border-radius:14px; background:#fffdf4; }
+.class-card { min-height:96px; padding:12px; border:0; border-radius:0; border-right:1px solid rgba(51,41,31,.2); border-bottom:1px solid rgba(51,41,31,.2); box-shadow:none; background:transparent; }
+.class-card:nth-child(even) { border-right:0; }
+.class-card:hover:not(:disabled) { transform:none; background:#fff1cb; }
+.class-card:focus-visible { position:relative; z-index:1; }
+.class-card.poor { opacity:.5; background:#f4eee0; }
+.class-name { font-size:1rem; letter-spacing:-.02em; }
+.class-blurb { font-size:.76rem; line-height:1.25; }
+.chips { margin-top:auto; gap:4px; }
+.chip { padding:1px 7px 1px 3px; border-width:1px; font-size:.67rem; }
+.chip img { width:15px; height:15px; }
+.journal-tools { display:flex; align-items:center; gap:12px; }
+.journal-count { color:#8a5a3b; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.sticker-grid { grid-template-columns:repeat(auto-fill, minmax(104px,1fr)); gap:7px; max-height:52vh; padding:0; }
+.sticker { min-height:76px; border-radius:10px; background:#fffdf4; }
+.sticker.got { box-shadow:0 2px 0 rgba(51,41,31,.58); }
+@media (max-width: 520px) { .class-grid { grid-template-columns:1fr; } .class-card, .class-card:nth-child(even) { border-right:0; } }

@@ -45,6 +45,7 @@ function playNoise(t: number, freq: number, q: number, peak: number, d: number):
   src.connect(f).connect(g).connect(master)
   src.start(t)
   src.stop(t + d + 0.05)
+  src.onended = () => { src.disconnect(); f.disconnect(); g.disconnect() }
 }
 
 function playTone(t: number, f0: number, f1: number, type: OscillatorType, peak: number, d: number): void {
@@ -58,6 +59,7 @@ function playTone(t: number, f0: number, f1: number, type: OscillatorType, peak:
   o.connect(g).connect(master)
   o.start(t)
   o.stop(t + d + 0.05)
+  o.onended = () => { o.disconnect(); g.disconnect() }
 }
 
 const now = () => ctx?.currentTime ?? 0
@@ -117,5 +119,13 @@ export const sfx = {
     const t = now()
     playTone(t, 200, 140, 'triangle', 0.4, 0.1)
     playNoise(t + 0.02, 600, 1, 0.15, 0.07)
+  },
+  warmth(): void {
+    if (!ctx) return
+    const t = now()
+    // A low ember puff followed by a soft major third: rest, not a reward fanfare.
+    playNoise(t, 420, 0.7, 0.08, 0.18)
+    playTone(t + 0.03, 262, 330, 'sine', 0.16, 0.24)
+    playTone(t + 0.11, 330, 392, 'sine', 0.12, 0.3)
   },
 }

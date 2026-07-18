@@ -10,6 +10,7 @@ import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
 import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
+import { restAtCampfire } from '../world/Campfires'
 import { nearbyHomeBlueprint } from '../world/Homes'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
@@ -51,6 +52,12 @@ export function tryInteract(): void {
   }
 
   const p = refs.playerPos
+  const rest = restAtCampfire()
+  if (rest !== 'none') {
+    if (rest === 'healed') { sfx.warmth(); g.say('Warmth returns. +1 heart') }
+    else if (rest === 'full') { sfx.knock('soft'); g.say('You are already feeling good.') }
+    return
+  }
   // Waddles' shop is a real stall with a real trade screen
   if (Math.hypot(p.x - SHOP.x, p.z - SHOP.z) < 2.4) {
     g.openShop(true)

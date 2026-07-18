@@ -11,6 +11,8 @@ import { nearestQuestVillager } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { nearestNode } from './Interact'
 import { fishing } from './fishing'
+import { nearestCampfire } from '../world/Campfires'
+import { useCombat, MAX_HP } from './combat'
 
 export interface InteractionTarget {
   id: string
@@ -47,6 +49,11 @@ export function getInteractionTarget(): InteractionTarget | null {
     const need = blueprint.homeNeed ?? 10
     return { id: `blueprint-${blueprint.id}`, label: `${blueprint.name}'s Home Blueprint`, detail: `E donate wood · ${funded}/${need}`, verb: 'build' }
   }
+  const fire = nearestCampfire()
+  if (fire) {
+    const hp = useCombat.getState().hp
+    return { id: `fire-${fire.id}`, label: hp < MAX_HP ? 'Rest by your fire' : 'Warm campfire', detail: hp < MAX_HP ? 'E recover one heart' : 'You are already well', verb: 'build' }
+  }
   if (Math.hypot(p.x - SHOP.x, p.z - SHOP.z) < 2.4) return { id: 'shop', label: "Waddles' Swap Stand", detail: 'E trade supplies', verb: 'trade' }
   if (Math.hypot(p.x - TABLE.x, p.z - TABLE.z) < 2.6) return { id: 'table', label: 'Draw Table', detail: 'E create something useful', verb: 'draw' }
   const v = nearestQuestVillager()
@@ -57,7 +64,7 @@ export function getInteractionTarget(): InteractionTarget | null {
   if (plant) return { id: `plant-${plant.id}`, label: 'Ripe berry bush', detail: 'E harvest 3 berries', verb: 'harvest' }
   for (const pl of g.placed) {
     const py = pl.area === 'interior' ? pl.room : undefined
-    const sameArea = (pl.area === 'interior') === isInside(p.x) && (py === undefined || py === Math.round((p.x - 400) / 40))
+    const sameArea = (pl.area === 'interior') === isInside(p.x) && (py === undefined || py === Math.round((p.x - 400) / 34))
     if (sameArea && Math.hypot(pl.x - p.x, pl.z - p.z) < 1.4) return { id: `placed-${pl.id}`, label: 'Your creation', detail: 'E pick it up', verb: 'pick-up' }
   }
   if (equippedTool() === 'rod') {

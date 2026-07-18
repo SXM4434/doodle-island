@@ -1,14 +1,15 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useGame, refs } from '../sim/store'
+import { useGame, refs, type Placed } from '../sim/store'
 import { groundY } from '../sim/terrain'
-import { useCombat, combatRefs, MAX_HP } from '../sim/combat'
+import { interiorSlot } from './Interiors'
+import { useCombat, MAX_HP } from '../sim/combat'
 
-// Placed campfires come ALIVE: flickering point light, ember particles,
-// fast regen inside the warm circle. The drawn campfire itself is the standee;
-// this adds the fire on top of it.
+// A drawn campfire remains a paper standee; these small world-layer embers and
+// light make it a legible night refuge. Healing is an explicit E interaction.
 export const WARM_R = 4
+const warmFlash = new Map<string, number>()
 
 const _v = new THREE.Vector3()
 
@@ -18,25 +19,50 @@ export function Campfires() {
   return (
     <group>
       {fires.map((f) => (
-        <Fire key={f.id} x={f.x} z={f.z} />
+        <Fire key={f.id} fire={f} />
       ))}
     </group>
   )
 }
 
-// warm-regen tick shared across all fires (called once from the first Fire)
-let lastWarmHeal = 0
-export function nearFire(x: number, z: number): boolean {
-  const placed = useGame.getState().placed
-  for (const p of placed) {
-    if (p.item.cls === 'campfire' && Math.hypot(p.x - x, p.z - z) < WARM_R) return true
+export function nearestCampfire(): Placed | null {
+  const p = refs.playerPos
+  const inside = p.x > 200
+  let best: Placed | null = null
+  let distance = 2.25
+  for (const fire of useGame.getState().placed) {
+    if (fire.item.cls !== 'campfire') continue
+    const sameArea = (fire.area === 'interior') === inside
+    const sameRoom = !inside || fire.room === Math.round((p.x - 400) / 34)
+    if (!sameArea || !sameRoom) continue
+    const d = Math.hypot(fire.x - p.x, fire.z - p.z)
+    if (d < distance) { best = fire; distance = d }
   }
-  return false
+  return best
+}
+
+// Starting value: one heart every 2 seconds. Test: a hurt player understands that
+// the fire is a refuge without being able to ignore a nearby mob; if resting makes
+// night combat trivial, raise the cooldown before changing healing amount.
+let restedAt = 0
+export function restAtCampfire(): 'healed' | 'full' | 'cooldown' | 'none' {
+  const fire = nearestCampfire()
+  if (!fire) return 'none'
+  const combat = useCombat.getState()
+  if (combat.dead) return 'none'
+  if (combat.hp >= MAX_HP) return 'full'
+  const now = performance.now()
+  if (now - restedAt < 2000) return 'cooldown'
+  restedAt = now
+  warmFlash.set(fire.id, now)
+  combat.heal(2)
+  return 'healed'
 }
 
 const EMBERS = 12
 
-function Fire({ x, z }: { x: number; z: number }) {
+function Fire({ fire }: { fire: Placed }) {
+  const { x, z } = fire
   const light = useRef<THREE.PointLight>(null)
   const embers = useRef<THREE.InstancedMesh>(null)
   const seeds = useMemo(
@@ -48,7 +74,7 @@ function Fire({ x, z }: { x: number; z: number }) {
     m.userData.outlineParameters = { visible: false }
     return m
   }, [])
-  const y = groundY(x, z)
+  const y = fire.area === 'interior' ? interiorSlot(fire.room ?? 0).y : groundY(x, z)
   const _m = useMemo(() => new THREE.Matrix4(), [])
   const _q = useMemo(() => new THREE.Quaternion(), [])
   const _s = useMemo(() => new THREE.Vector3(), [])
@@ -57,11 +83,10 @@ function Fire({ x, z }: { x: number; z: number }) {
     const t = clock.elapsedTime
     if (light.current) {
       // flicker: two sines beat against each other
-      light.current.intensity = 2.6 + Math.sin(t * 9.3) * 0.5 + Math.sin(t * 23.7) * 0.3
+      light.current.intensity = 2.6 + Math.sin(t * 9.3) * 0.5 + Math.sin(t * 23.7) * 0.3 + (performance.now() - (warmFlash.get(fire.id) ?? 0) < 380 ? 1.5 : 0)
     }
     const im = embers.current
     if (im) {
-      const now = performance.now()
       for (let i = 0; i < EMBERS; i++) {
         const s = seeds[i]
         const k = ((t * s.sp + s.ph) % 1.4) / 1.4 // 0..1 rise cycle
@@ -76,19 +101,6 @@ function Fire({ x, z }: { x: number; z: number }) {
       }
       im.instanceMatrix.needsUpdate = true
 
-      // warm regen: +1 heart/2s near any fire (much faster than calm regen)
-      const p = refs.playerPos
-      if (Math.hypot(p.x - x, p.z - z) < WARM_R && now - lastWarmHeal > 2000) {
-        const c = useCombat.getState()
-        if (c.hp < MAX_HP && !c.dead) {
-          lastWarmHeal = now
-          c.heal(2)
-        }
-      }
-      // fires also calm the hurt timer (sitting by fire = out of combat)
-      if (Math.hypot(p.x - x, p.z - z) < WARM_R && now - combatRefs.hurtAt < 8000) {
-        combatRefs.hurtAt = now - 8000
-      }
     }
   })
 

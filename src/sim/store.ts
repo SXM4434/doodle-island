@@ -380,7 +380,7 @@ export const useGame = create<State>((set, get) => ({
       placed: [...g.placed, {
         id: g.placing.id, item: g.placing, x, z, rot: g.placingRot,
         area: refs.playerPos.x > 200 ? 'interior' : 'island',
-        room: refs.playerPos.x > 200 ? Math.round((refs.playerPos.x - 400) / 40) : undefined,
+        room: refs.playerPos.x > 200 ? Math.round((refs.playerPos.x - 400) / 34) : undefined,
       }],
       placing: null,
     })

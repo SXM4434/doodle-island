@@ -84,9 +84,9 @@ export function PlaceGhost() {
     const x = Math.round((refs.playerPos.x + (fx / fl) * 2) * 2) / 2
     const z = Math.round((refs.playerPos.z + (fz / fl) * 2) * 2) / 2
     const inside = isInside(refs.playerPos.x)
-    const y = inside ? interiorSlot(Math.round((refs.playerPos.x - 400) / 40)).y : groundY(x, z)
+    const y = inside ? interiorSlot(Math.round((refs.playerPos.x - 400) / 34)).y : groundY(x, z)
     // indoors: all floor space is valid; outdoors: grass, away from the Draw Table
-    const slot = interiorSlot(Math.round((refs.playerPos.x - 400) / 40))
+    const slot = interiorSlot(Math.round((refs.playerPos.x - 400) / 34))
     const valid = inside
       ? Math.abs(x - slot.x) < 5.4 && Math.abs(z - slot.z) < 5.3
       : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2

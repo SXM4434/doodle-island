@@ -90,10 +90,40 @@ function autoFillClosedRegions(ctx: CanvasRenderingContext2D, strokes: Stroke[],
   ctx.putImageData(fill, 0, 0)
 }
 
-export function drawConvertedSketch(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, kind: StyleFill, opts?: { normalize?: boolean }): void {
+type CharacterFacing = 'front' | 'side' | 'back'
+
+// The character grammar is what makes a rough person read as an island resident rather
+// than a filled scribble: friendly marker eyes/smile in front, one eye/nose in side, and
+// a hair cap/whorl in back. These features are placed inside the player-drawn silhouette;
+// they never replace its outer contour, proportions, colors, or accessories.
+function drawCharacterGrammar(ctx: CanvasRenderingContext2D, art: Stroke[], px: number, facing: CharacterFacing): void {
+  const b = strokeBounds(art.filter((s) => !s.erase))
+  const minX = b.minX * px; const maxX = b.maxX * px; const minY = b.minY * px; const h = Math.max(1, (b.maxY - b.minY) * px)
+  const cx = (minX + maxX) / 2
+  const headY = minY + h * .19
+  const headW = Math.max(18, (maxX - minX) * .22)
+  ctx.save(); ctx.strokeStyle = '#33291f'; ctx.fillStyle = '#33291f'; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  if (facing === 'front') {
+    ctx.beginPath(); ctx.ellipse(cx - headW * .5, headY, Math.max(2.8, headW * .09), Math.max(3.4, headW * .11), 0, 0, Math.PI * 2); ctx.fill()
+    ctx.beginPath(); ctx.ellipse(cx + headW * .5, headY, Math.max(2.8, headW * .09), Math.max(3.4, headW * .11), 0, 0, Math.PI * 2); ctx.fill()
+    ctx.lineWidth = Math.max(2.5, headW * .07); ctx.beginPath(); ctx.moveTo(cx - headW * .35, headY + headW * .55); ctx.quadraticCurveTo(cx, headY + headW * .83, cx + headW * .35, headY + headW * .55); ctx.stroke()
+  } else if (facing === 'side') {
+    ctx.beginPath(); ctx.ellipse(cx + headW * .3, headY, Math.max(2.8, headW * .09), Math.max(3.4, headW * .11), 0, 0, Math.PI * 2); ctx.fill()
+    ctx.lineWidth = Math.max(2.5, headW * .07); ctx.beginPath(); ctx.moveTo(cx + headW * .78, headY + headW * .13); ctx.lineTo(cx + headW * 1.02, headY + headW * .3); ctx.lineTo(cx + headW * .78, headY + headW * .43); ctx.stroke()
+  } else {
+    ctx.lineWidth = Math.max(3, headW * .09); ctx.beginPath(); ctx.arc(cx, headY - headW * .08, headW * .55, .25, Math.PI * 1.72); ctx.stroke()
+  }
+  // Shirt-to-shorts seam: a small authored cue, clipped by the player silhouette’s fill.
+  ctx.strokeStyle = 'rgba(51,41,31,.55)'; ctx.lineWidth = Math.max(2, headW * .06)
+  ctx.beginPath(); ctx.moveTo(cx - headW * 1.05, minY + h * .67); ctx.quadraticCurveTo(cx, minY + h * .7, cx + headW * 1.05, minY + h * .67); ctx.stroke()
+  ctx.restore()
+}
+
+export function drawConvertedSketch(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, kind: StyleFill, opts?: { normalize?: boolean; facing?: CharacterFacing }): void {
   const art = opts?.normalize === false ? strokes : normalized(strokes)
   if (!art.length) return
   autoFillClosedRegions(ctx, art, px, kind)
+  if (kind === 'character') drawCharacterGrammar(ctx, art, px, opts?.facing ?? 'front')
   for (const stroke of art) {
     if (stroke.erase) continue
     const paper = { ...stroke, size: stroke.size + 12 / px }

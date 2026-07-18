@@ -90,7 +90,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint} The preview is the final conversion: your exact lines, cleaned into Doodle Island’s filled paper style.
+          {facing.hint} The preview is the final conversion: your silhouette and details stay, while the engine adds Doodle Island’s face, clothes, fills, and paper-ink finish.
         </p>
         {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">

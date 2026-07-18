@@ -49,9 +49,10 @@ export function drawAvatarGuide(ctx: CanvasRenderingContext2D, px: number, facin
 }
 
 // Shared by the easel preview and runtime atlas. The player drawing is normalized and
-// converted once in the exact same way at both destinations.
-export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0, _facing: Facing = 'front', _frame = 0): void {
-  ctx.save(); ctx.translate(ox, 0); drawConvertedSketch(ctx, strokes, px, 'character'); ctx.restore()
+// converted once in the exact same way at both destinations, including the matching
+// front/side/back facial grammar.
+export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0, facing: Facing = 'front', _frame = 0): void {
+  ctx.save(); ctx.translate(ox, 0); drawConvertedSketch(ctx, strokes, px, 'character', { facing }); ctx.restore()
 }
 
 export function bakeCustomAtlas(kid: CustomKid): THREE.CanvasTexture {

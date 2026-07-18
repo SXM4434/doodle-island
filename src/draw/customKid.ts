@@ -6,7 +6,7 @@ import { DEFAULT_CHARACTER, type CharacterConfig } from './characterKit'
 const KEY = 'doodle-island-character-v2'
 
 function merged(value: Partial<CharacterConfig> | null): CharacterConfig {
-  return { ...DEFAULT_CHARACTER, ...value, patch: value?.patch ?? [] }
+  return { ...DEFAULT_CHARACTER, ...value, patch: value?.patch ?? [], marks: value?.marks ?? {} }
 }
 
 export function saveCharacter(config: CharacterConfig): void {

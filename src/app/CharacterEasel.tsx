@@ -4,16 +4,57 @@ import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { avatarFacingProblem, drawAvatarGuide, drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { sfx } from '../audio/sfx'
 
-// Optional draw-yourself flow. The player draws the figure; the style engine turns
-// closed line-art regions into the flat, filled paper-character language of the island.
+// The character easel is a construction tool, not a blank white test. Players can build
+// a readable paper person from parts, then add their own drawing marks. Every part is
+// still stored as an ordinary stroke and passes through the same conversion renderer.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'Draw one full little person from head to feet. The engine inks and fills it into the island style.' },
-  { key: 'side', label: 'Side', hint: 'Draw the same character from the side, facing right. One closed outline is enough.' },
-  { key: 'back', label: 'Back', hint: 'Draw the back view. Add hair, backpack, cape, or outfit details inside the silhouette.' },
+  { key: 'front', label: 'Front', hint: 'Build a little person, then add your own face, hair, clothes, and stickers.' },
+  { key: 'side', label: 'Side', hint: 'Build the side view facing right, then add its matching details.' },
+  { key: 'back', label: 'Back', hint: 'Build the back view, then add hair, cape, backpack, or shirt details.' },
 ]
 
+type ConstructTool = 'pen' | 'head' | 'body' | 'arms' | 'legs' | 'hair' | 'cape'
+const CONSTRUCT: Array<{ key: ConstructTool; label: string; title: string }> = [
+  { key: 'pen', label: '✎', title: 'Draw freehand' },
+  { key: 'head', label: '○', title: 'Add head' },
+  { key: 'body', label: '▢', title: 'Add body' },
+  { key: 'arms', label: '⌁', title: 'Add arms' },
+  { key: 'legs', label: '∩', title: 'Add legs' },
+  { key: 'hair', label: '⌇', title: 'Add hair' },
+  { key: 'cape', label: '◢', title: 'Add cape' },
+]
 const BRUSHES = [0.012, 0.022, 0.042]
 const PX = 480
+
+function stamp(tool: Exclude<ConstructTool, 'pen'>, x: number, y: number, color: string): Stroke[] {
+  const ellipse = (rx: number, ry: number, n = 18) => Array.from({ length: n + 1 }, (_, i) => {
+    const a = (i / n) * Math.PI * 2; return [x + Math.cos(a) * rx, y + Math.sin(a) * ry, .7]
+  })
+  const closed = (pts: number[][]): Stroke => ({ pts: [...pts, pts[0]], size: .021, color })
+  if (tool === 'head') return [closed(ellipse(.105, .12))]
+  if (tool === 'body') return [closed([[x - .075, y - .12, .7], [x + .075, y - .12, .7], [x + .1, y + .13, .7], [x - .1, y + .13, .7]])]
+  if (tool === 'arms') return [
+    { pts: [[x - .075, y - .08, .7], [x - .18, y + .06, .7], [x - .22, y + .13, .7]], size: .024, color },
+    { pts: [[x + .075, y - .08, .7], [x + .18, y + .06, .7], [x + .22, y + .13, .7]], size: .024, color },
+  ]
+  if (tool === 'legs') return [
+    { pts: [[x - .045, y - .1, .7], [x - .075, y + .12, .7], [x - .105, y + .16, .7]], size: .03, color },
+    { pts: [[x + .045, y - .1, .7], [x + .075, y + .12, .7], [x + .105, y + .16, .7]], size: .03, color },
+  ]
+  if (tool === 'hair') return [{ pts: [[x - .1, y + .02, .7], [x - .07, y - .12, .7], [x, y - .16, .7], [x + .08, y - .12, .7], [x + .11, y + .02, .7]], size: .035, color }]
+  return [closed([[x - .06, y - .13, .7], [x + .12, y - .07, .7], [x + .17, y + .17, .7], [x - .08, y + .12, .7]])]
+}
+
+function starterCharacter(facing: 'front' | 'side' | 'back'): Stroke[] {
+  const center = facing === 'side' ? .52 : .5
+  return [
+    ...stamp('head', center, .25, 'ink'),
+    ...stamp('body', center, .52, 'ink'),
+    ...stamp('arms', center, .53, 'ink'),
+    ...stamp('legs', center, .79, 'ink'),
+    ...(facing === 'back' ? stamp('hair', center, .24, 'ink') : []),
+  ]
+}
 
 export function CharacterEasel({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0)
@@ -22,6 +63,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   const [strokes, setStrokes] = useState<Stroke[]>([])
   const [brush, setBrush] = useState(1)
   const [color, setColor] = useState('ink')
+  const [tool, setTool] = useState<ConstructTool>('pen')
   const live = useRef<Stroke | null>(null)
   const say = useGame((s) => s.say)
   const facing = FACINGS[step]
@@ -33,17 +75,23 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     ctx.clearRect(0, 0, PX, PX)
     const all = live.current ? [...strokes, live.current] : strokes
     drawCharacterStrokes(ctx, all, PX, 0, facing.key)
-    drawAvatarGuide(ctx, PX, facing.key)
+    if (!strokes.length && !live.current) drawAvatarGuide(ctx, PX, facing.key)
   }, [strokes, facing.key])
   useEffect(repaint, [repaint])
 
   const toLocal = (e: React.PointerEvent) => {
     const r = canvasRef.current!.getBoundingClientRect()
-    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, e.pressure || 0.6]
+    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, e.pressure || .6]
   }
   const onDown = (e: React.PointerEvent) => {
+    const point = toLocal(e)
+    if (tool !== 'pen') {
+      setStrokes((all) => [...all, ...stamp(tool, point[0], point[1], color)])
+      sfx.knock('soft')
+      return
+    }
     canvasRef.current!.setPointerCapture(e.pointerId)
-    live.current = { pts: [toLocal(e)], size: BRUSHES[brush], color }
+    live.current = { pts: [point], size: BRUSHES[brush], color }
     repaint()
   }
   const onMove = (e: React.PointerEvent) => {
@@ -58,21 +106,18 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     live.current = null
     setStrokes((prev) => [...prev, stroke])
   }
-
+  const buildStarter = () => {
+    setStrokes(starterCharacter(facing.key))
+    setTool('pen')
+    sfx.chime()
+  }
   const next = () => {
     const issue = avatarFacingProblem(strokes)
     if (issue) { say(issue); return }
     const updated = { ...drawings, [facing.key]: strokes }
-    setDrawings(updated)
-    sfx.chime()
-    if (step < 2) {
-      setStep((current) => current + 1)
-      setStrokes([])
-    } else {
-      saveCustomKid(updated)
-      say('Your drawing became your island character!')
-      onDone()
-    }
+    setDrawings(updated); sfx.chime()
+    if (step < 2) { setStep((current) => current + 1); setStrokes([]); setTool('pen') }
+    else { saveCustomKid(updated); say('Your constructed drawing became your island character!'); onDone() }
   }
 
   return (
@@ -80,45 +125,24 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       <div className="sheet easel avatar-easel">
         <div className="sheet-head">
           <button className="btn ghost" onClick={onDone}>skip</button>
-          <h2>
-            Style your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => (
-              <span key={i} className={i <= step ? 'dot on' : 'dot'}>{dot}</span>
-            ))}</span>
-          </h2>
-          <button className="btn confirm" disabled={!!problem} onClick={next}>
-            {step < 2 ? 'Next view →' : 'Make my character'}
-          </button>
+          <h2>Build your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => <span key={i} className={i <= step ? 'dot on' : 'dot'}>{dot}</span>)}</span></h2>
+          <button className="btn confirm" disabled={!!problem} onClick={next}>{step < 2 ? 'Next view →' : 'Make my character'}</button>
         </div>
-        <p className="hint-line">
-          {facing.hint} The preview is the final conversion: your silhouette and details stay, while the engine adds Doodle Island’s face, clothes, fills, and paper-ink finish.
-        </p>
+        <p className="hint-line">{facing.hint} Build with parts or use the starter, then draw details. Your construction becomes the final filled paper character.</p>
+        <div className="construct-bar" role="toolbar" aria-label="Character construction tools">
+          {CONSTRUCT.map((entry) => <button key={entry.key} className={`construct-tool ${tool === entry.key ? 'selected' : ''}`} onClick={() => setTool(entry.key)} title={entry.title} aria-label={entry.title}>{entry.label}</button>)}
+          <span className="construct-rule" />
+          <button className="btn small build-starter" onClick={buildStarter}>Build starter</button>
+          <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((all) => all.slice(0, -1))}>undo</button>
+        </div>
         {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">
           <div className="tools">
-            {BRUSHES.map((_, i) => (
-              <button key={i} className={`tool-dot ${brush === i ? 'on' : ''}`} onClick={() => setBrush(i)} aria-label={`brush ${i + 1}`}>
-                <span style={{ width: 6 + i * 7, height: 6 + i * 7 }} />
-              </button>
-            ))}
+            {BRUSHES.map((_, i) => <button key={i} className={`tool-dot ${brush === i && tool === 'pen' ? 'on' : ''}`} onClick={() => { setBrush(i); setTool('pen') }} aria-label={`brush ${i + 1}`}><span style={{ width: 6 + i * 7, height: 6 + i * 7 }} /></button>)}
             <div className="tool-sep" />
-            {Object.entries(INKS).map(([key, hex]) => (
-              <button key={key} className={`ink ${color === key ? 'on' : ''}`} style={{ background: hex }} onClick={() => setColor(key)} aria-label={key} />
-            ))}
-            <div className="tool-sep" />
-            <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((all) => all.slice(0, -1))}>
-              undo
-            </button>
+            {Object.entries(INKS).map(([key, hex]) => <button key={key} className={`ink ${color === key ? 'on' : ''}`} style={{ background: hex }} onClick={() => setColor(key)} aria-label={key} />)}
           </div>
-          <canvas
-            ref={canvasRef}
-            width={PX}
-            height={PX}
-            className="paper"
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={onUp}
-          />
+          <canvas ref={canvasRef} width={PX} height={PX} className={`paper ${tool !== 'pen' ? 'constructing' : ''}`} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
         </div>
       </div>
     </div>

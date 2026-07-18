@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useGame } from '../sim/store'
+import { useGame, refs, type Villager } from '../sim/store'
 import { groundY, islandHeight } from '../sim/terrain'
 import { toon } from './toon'
 
@@ -58,6 +58,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
       <mesh position={[0, 0.06, 0]} material={mats.wood}>
         <boxGeometry args={[1.9, 0.12, 1.7]} />
       </mesh>
+      <BlueprintSign id={id} mats={mats} />
       {/* walls — scale up from the pad */}
       <group ref={walls} position={[0, 0.12, 0]}>
         <mesh position={[0, 0.5, 0]} material={mats.wall}>
@@ -88,6 +89,41 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
       </group>
     </group>
   )
+}
+
+function BlueprintSign({ id, mats }: { id: string; mats: { wood: THREE.MeshToonMaterial } }) {
+  const v = useGame((s) => s.villagers.find((x) => x.id === id))
+  if (!v || v.built >= 1) return null
+  const funded = v.homeWood ?? 0
+  const need = v.homeNeed ?? 10
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 112
+    const ctx = c.getContext('2d')!
+    ctx.fillStyle = '#fffdf4'; ctx.fillRect(0, 0, 256, 112)
+    ctx.strokeStyle = '#33291f'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, 250, 106)
+    ctx.fillStyle = '#33291f'; ctx.textAlign = 'center'; ctx.font = 'bold 26px sans-serif'
+    ctx.fillText('HOME BLUEPRINT', 128, 39)
+    ctx.font = 'bold 30px sans-serif'; ctx.fillText(`${funded}/${need} WOOD`, 128, 80)
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex
+  }, [funded, need])
+  return <group position={[1.35, 0, 0.6]} rotation={[0, -0.35, 0]}>
+    <mesh position={[0, .5, 0]} material={mats.wood}><cylinderGeometry args={[.06, .08, 1, 6]} /></mesh>
+    <mesh position={[0, 1.05, 0]}><planeGeometry args={[1.2, .55]} /><meshBasicMaterial map={tex} toneMapped={false} /></mesh>
+  </group>
+}
+
+export function nearbyHomeBlueprint(): Villager | null {
+  const p = refs.playerPos
+  if (p.x > 200) return null
+  const g = useGame.getState()
+  let candidate: Villager | null = null
+  let distance = 2.15
+  for (const v of g.villagers) {
+    if (v.fed < 1 || v.built >= 1 || (v.homeWood ?? 0) >= (v.homeNeed ?? 10)) continue
+    const d = Math.hypot(v.homeX + 1.35 - p.x, v.homeZ + .6 - p.z)
+    if (d < distance) { candidate = v; distance = d }
+  }
+  return candidate
 }
 
 // wooden sign marking the dock project: shows progress, E to donate wood

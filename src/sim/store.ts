@@ -56,7 +56,9 @@ export interface Villager {
   quest: { res: ResKind; n: number } | null
   questAt: number // when current quest was asked (0 = none yet)
   fed: number // total quests completed (friendship)
-  built: number // 0..1 house progress — they build it themselves once befriended
+  built: number // 0..1 house progress — grows only after the player funds the blueprint
+  homeWood?: number // contributed timber; old saves migrate to a complete funded home when built
+  homeNeed?: number // starting value: 10 wood; test whether a new resident feels reachable in one outing
 }
 export interface Journal {
   deeds: Record<string, number> // deedKey -> count (first time = sticker unlock)
@@ -99,7 +101,7 @@ export const DEED_LABEL: Record<string, string> = {
   'craft-wallhang': 'Trophy Maker', 'craft-friend': 'Life Giver', 'craft-fence': 'Fence Builder',
   'place-furniture': 'Home Maker', 'place-campfire': 'Warm Heart', 'place-fence': 'Land Shaper',
   'place-decoration': 'Island Stylist', 'place-wallhang': 'Proud Hunter',
-  'feed-friend': 'Good Neighbor', 'slay-scribble': 'Scribble Slayer', 'slay-wasp': 'Wasp Whacker',
+  'feed-friend': 'Good Neighbor', 'fund-home': 'Home Sponsor', 'home-finished': 'Housewarming', 'slay-scribble': 'Scribble Slayer', 'slay-wasp': 'Wasp Whacker',
   'dock-done': 'Dock Founder', 'daily-gift': 'Early Bird', 'plant-berry': 'Green Thumb',
   'survive-night': 'Night Owl',
   'craft-rod': 'Rod Wobbler', 'catch-doodlefish': 'Pond Doodler', 'catch-squiggle': 'Sea Squiggler',
@@ -183,6 +185,7 @@ interface State {
   setHint: (h: number) => void
   addVillager: (item: DrawnItem) => void
   contributeProject: (n: number) => void
+  contributeHome: (id: string, n: number) => void
   buildTick: (id: string, amt: number) => void
   deed: (key: string) => void
   openJournal: (open: boolean) => void
@@ -217,7 +220,12 @@ export const useGame = create<State>((set, get) => ({
   nodes: scatterNodes().map((n) => ({ ...n, hp: NODE_HITS[n.type], respawnAt: 0 })),
   drops: [],
   placed: saved?.placed ?? [],
-  villagers: (saved?.villagers ?? []).map((v) => ({ built: 0, ...v })),
+  villagers: (saved?.villagers ?? []).map((v) => ({
+    built: 0, ...v,
+    // Preserve finished legacy homes; unfinished legacy homes now need funding.
+    homeNeed: v.homeNeed ?? 10,
+    homeWood: v.homeWood ?? (v.built >= 1 ? (v.homeNeed ?? 10) : 0),
+  })),
   plants: saved?.plants ?? [],
   project: saved?.project ?? { key: 'dock', need: 20, given: 0, doneAt: 0 },
   journal: saved?.journal ?? { deeds: {} },
@@ -484,7 +492,7 @@ export const useGame = create<State>((set, get) => ({
           id: item.id, name, item,
           homeX: p.x + Math.cos(a) * 2.5,
           homeZ: p.z + Math.sin(a) * 2.5,
-          quest: null, questAt: 0, fed: 0, built: 0,
+          quest: null, questAt: 0, fed: 0, built: 0, homeWood: 0, homeNeed: 10,
         },
       ],
     })
@@ -563,13 +571,42 @@ export const useGame = create<State>((set, get) => ({
     g.say(done ? 'THE DOCK IS DONE!! The whole island came to see.' : `+${give} wood — dock is ${Math.round((given / g.project.need) * 100)}% built`)
   },
 
+  contributeHome: (id, n) => {
+    const g = get()
+    const v = g.villagers.find((x) => x.id === id)
+    if (!v) return
+    const need = v.homeNeed ?? 10
+    const funded = v.homeWood ?? 0
+    if (v.built >= 1 || funded >= need) { g.say(`${v.name}'s home is funded — they are building it now!`); return }
+    const give = Math.min(n, g.countRes('wood'), need - funded)
+    if (give <= 0) { g.say(`${v.name}'s blueprint needs wood — go chop a tree!`); return }
+    const slots = g.slots.map((s) => ({ ...s }))
+    let left = give
+    for (const slot of slots) {
+      if (slot.res !== 'wood' || left <= 0) continue
+      const take = Math.min(left, slot.count ?? 0)
+      slot.count = (slot.count ?? 0) - take
+      left -= take
+      if (!slot.count) { delete slot.res; delete slot.count }
+    }
+    const total = funded + give
+    set({ slots, villagers: g.villagers.map((x) => x.id === id ? { ...x, homeWood: total } : x) })
+    g.deed('fund-home')
+    g.say(total >= need ? `${v.name}: "That's every plank! Watch me build!"` : `${v.name}'s home: ${total}/${need} wood`)
+  },
+
   buildTick: (id, amt) => {
     const g = get()
+    const resident = g.villagers.find((v) => v.id === id)
+    if (!resident || resident.built >= 1 || (resident.homeWood ?? 0) < (resident.homeNeed ?? 10)) return
+    const finished = resident.built + amt >= 1
     set({
-      villagers: g.villagers.map((v) =>
-        v.id === id ? { ...v, built: Math.min(1, v.built + amt) } : v,
-      ),
+      villagers: g.villagers.map((v) => v.id === id ? { ...v, built: Math.min(1, v.built + amt) } : v),
     })
+    if (finished) {
+      g.deed('home-finished')
+      g.say(`${resident.name}'s home is ready! Visit the door, then make it your own.`)
+    }
   },
 
   harvestPlant: (id) => {

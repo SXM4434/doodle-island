@@ -83,8 +83,9 @@ function VillagerSprite({ v }: { v: Villager }) {
     // FSM
     if (isNight()) b.state = 'sleep'
     else if (b.state === 'sleep') b.state = 'potter'
-    const hasWork = !!live && live.fed >= 1 && live.built < 1
-    // work ethic: building beats socializing (only pause if player is right on top of them)
+    const hasWork = !!live && live.fed >= 1 && live.built < 1 && (live.homeWood ?? 0) >= (live.homeNeed ?? 10)
+    // A resident only builds after the player has funded the blueprint. This makes
+    // the house a shared project instead of an unattended timer.
     if (hasWork && b.state !== 'sleep') b.state = distP < 1.2 ? 'approach' : 'build'
     else {
       if (b.state === 'build') b.state = 'potter'

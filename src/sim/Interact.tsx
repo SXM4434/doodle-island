@@ -10,6 +10,7 @@ import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
 import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
+import { nearbyHomeBlueprint } from '../world/Homes'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
 // or pick up a placed item. Swing cooldown 0.5s (PRD §6 starting value).
@@ -78,6 +79,11 @@ export function tryInteract(): void {
   // a home is a utility space: chest before door / exterior interactions
   const chest = chestRoomNearby()
   if (chest !== null) { g.openChest(chest); sfx.chime(); return }
+
+  // Blueprint contribution is deliberately before the exterior door: a foundation
+  // is a construction site until its timber goal is met.
+  const blueprint = nearbyHomeBlueprint()
+  if (blueprint) { g.contributeHome(blueprint.id, 5); sfx.place(); return }
 
   // inside a house? doormat exits. outside? door enters.
   if (tryExitHouse()) { sfx.chime(); return }

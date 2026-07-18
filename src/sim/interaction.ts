@@ -5,6 +5,7 @@ import { useGame, refs, equippedTool } from './store'
 import { TABLE } from './terrain'
 import { SHOP } from '../world/ShopStall'
 import { ROOM, isInside, interiorSlot, chestRoomNearby } from '../world/Interiors'
+import { nearbyHomeBlueprint } from '../world/Homes'
 import { nearestCritter } from '../actors/Critters'
 import { nearestQuestVillager } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
@@ -39,6 +40,12 @@ export function getInteractionTarget(): InteractionTarget | null {
         return { id: `home-${v.id}`, label: `Enter ${v.name}'s home`, detail: 'E step inside', verb: 'enter' }
       }
     }
+  }
+  const blueprint = nearbyHomeBlueprint()
+  if (blueprint) {
+    const funded = blueprint.homeWood ?? 0
+    const need = blueprint.homeNeed ?? 10
+    return { id: `blueprint-${blueprint.id}`, label: `${blueprint.name}'s Home Blueprint`, detail: `E donate wood · ${funded}/${need}`, verb: 'build' }
   }
   if (Math.hypot(p.x - SHOP.x, p.z - SHOP.z) < 2.4) return { id: 'shop', label: "Waddles' Swap Stand", detail: 'E trade supplies', verb: 'trade' }
   if (Math.hypot(p.x - TABLE.x, p.z - TABLE.z) < 2.6) return { id: 'table', label: 'Draw Table', detail: 'E create something useful', verb: 'draw' }

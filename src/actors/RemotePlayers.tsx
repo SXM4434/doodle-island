@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { net, type Remote } from '../net'
+import { useGame } from '../sim/store'
 import { kidAtlas } from './kidSprite'
 import { makeBlobShadow } from '../world/toon'
 
@@ -93,7 +94,12 @@ function RemoteKid({ id }: { id: string }) {
 // Drives outgoing pos + incoming world edits. Mounted once when started.
 export function NetSync() {
   useEffect(() => {
-    void net.join()
+    void net.join().then(() => {
+      // A late joiner needs a complete island immediately, not only after the
+      // host's next edit. Private inventory remains deliberately excluded.
+      const s = useGame.getState()
+      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+    })
   }, [])
   const lastPull = useRef(0)
   useFrame(() => {

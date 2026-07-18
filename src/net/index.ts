@@ -1,7 +1,9 @@
 // The net seam (ARCHITECTURE §7): NOTHING outside net/ touches playroomkit.
 // Tier 1 = Playroom Kit (positions unreliable @12Hz, world edits reliable).
 // If join fails (offline / blocked), the game silently stays solo (Tier 0).
-import type { Placed } from '../sim/store'
+import type { Placed, Plant, Project, Villager } from '../sim/store'
+
+export interface WorldSnapshot { placed: Placed[]; plants: Plant[]; project: Project; villagers: Villager[] }
 
 export interface RemoteSample {
   t: number
@@ -38,6 +40,8 @@ class NetAdapter {
   private setGlobal: ((k: string, v: unknown, reliable?: boolean) => void) | null = null
   private getGlobal: ((k: string) => unknown) | null = null
   private lastPushedPlaced = ''
+  private lastPushedWorld = ''
+  private host = false
 
   async join(): Promise<void> {
     if (this.status !== 'off') return
@@ -46,6 +50,7 @@ class NetAdapter {
       const pk = await import('playroomkit')
       await pk.insertCoin({ gameId: 'doodle-island', skipLobby: true, maxPlayersPerRoom: 8 })
       this.setGlobal = pk.setState
+      this.host = pk.isHost()
       this.getGlobal = pk.getState
       this.me = pk.myPlayer() as unknown as PlayroomPlayer
       pk.onPlayerJoin((p: unknown) => {
@@ -87,6 +92,28 @@ class NetAdapter {
 
   remotes(): Remote[] {
     return [...this.remotesMap.values()]
+  }
+
+  // Host-owned world snapshot: decorative creations, gardening, dock, and residents
+  // are shared; private pockets and custom player drawings never leave the client.
+  pushWorld(world: WorldSnapshot): void {
+    if (this.status !== 'on' || !this.setGlobal || !this.host) return
+    const json = JSON.stringify(world)
+    if (json === this.lastPushedWorld) return
+    this.lastPushedWorld = json
+    this.setGlobal('world', json, true)
+  }
+
+  pullWorld(): WorldSnapshot | null {
+    if (this.status !== 'on' || !this.getGlobal || this.host) return null
+    const json = this.getGlobal('world') as string | undefined
+    if (!json || json === this.lastPushedWorld) return null
+    try {
+      const world = JSON.parse(json) as WorldSnapshot
+      if (!Array.isArray(world.placed) || !Array.isArray(world.plants) || !Array.isArray(world.villagers) || !world.project) return null
+      this.lastPushedWorld = json
+      return world
+    } catch { return null }
   }
 
   // ---- world edits: placed items travel as stroke JSON, never pixels ----

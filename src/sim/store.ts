@@ -637,6 +637,9 @@ export const useGame = create<State>((set, get) => ({
 import('../net').then(({ net }) => {
   useGame.subscribe((s, prev) => {
     if (s.placed !== prev.placed) net.pushPlaced(s.placed)
+    if (s.placed !== prev.placed || s.plants !== prev.plants || s.project !== prev.project || s.villagers !== prev.villagers) {
+      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+    }
   })
 })
 

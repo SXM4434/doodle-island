@@ -9,8 +9,7 @@ import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow } from './toon'
 import { ConvertedItem } from './ConvertedItem'
 import { convertDrawing } from '../draw/conversion'
-import { canPlaceHere } from '../sim/placement'
-import { isStructural, PLAYER_PLOT } from '../sim/placement'
+import { isStructural, PLAYER_PLOT, placementProblem } from '../sim/placement'
 
 // Placed drawn items = paper standees in the world (Route A billboards, ARCH §5).
 export function PlacedItems() {
@@ -79,6 +78,8 @@ function PaperStandee({ p, y }: { p: PlacedT; y: number }) {
 export function PlaceGhost() {
   const placing = useGame((s) => s.placing)
   const rot = useGame((s) => s.placingRot)
+  const placed = useGame((s) => s.placed)
+  const nodes = useGame((s) => s.nodes)
   const ref = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.MeshBasicMaterial>(null)
   const ringRef = useRef<THREE.Mesh>(null)
@@ -97,9 +98,9 @@ export function PlaceGhost() {
     // indoors: all floor space is valid; outdoors: grass, away from the Draw Table
     const slot = interiorSlot(Math.round((refs.playerPos.x - 400) / 34))
     const inRoom = Math.abs(x - slot.x) < 5.4 && Math.abs(z - slot.z) < 5.3
-    const valid = inside
-      ? inRoom
-      : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2 && canPlaceHere(placing, x, z, false)
+    const room = Math.round((refs.playerPos.x - 400) / 34)
+    const problem = placementProblem(placing, x, z, { indoors: inside, room, placed, nodes })
+    const valid = (inside ? inRoom : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2) && !problem
     refs.placePos.set(x, y, z)
     refs.placeValid = valid
     ref.current.position.set(x, y, z)

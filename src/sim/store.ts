@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
-import { canPlaceHere } from './placement'
+import { placementProblem } from './placement'
 import { net } from '../net'
 
 export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink' | 'fish'
@@ -398,12 +398,14 @@ export const useGame = create<State>((set, get) => ({
     const g = get()
     if (!g.placing) return
     const inside = refs.playerPos.x > 200
-    if (!canPlaceHere(g.placing, x, z, inside)) { g.say('Big builds belong on your cottage plot.'); return }
+    const room = inside ? Math.round((refs.playerPos.x - 400) / 34) : undefined
+    const problem = placementProblem(g.placing, x, z, { indoors: inside, room, placed: g.placed, nodes: g.nodes })
+    if (problem) { g.say(problem); return }
     set({
       placed: [...g.placed, {
         id: g.placing.id, item: g.placing, x, z, rot: g.placingRot,
         area: inside ? 'interior' : 'island',
-        room: inside ? Math.round((refs.playerPos.x - 400) / 34) : undefined,
+        room,
       }],
       placing: null,
     })

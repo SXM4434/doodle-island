@@ -2,8 +2,8 @@ import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Ecctrl, { type CustomEcctrlRigidBody } from 'ecctrl'
-import { kidAtlas } from './kidSprite'
-import { loadCustomKid, bakeCustomAtlas, isCompleteCustomKid } from '../draw/customKid'
+import { loadCharacter } from '../draw/customKid'
+import { bakeCharacterAtlas } from '../draw/characterKit'
 import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
@@ -19,9 +19,9 @@ export function Player() {
 
   const kidVersion = useGame((s) => s.kidVersion)
   const { tex, mat } = useMemo(() => {
-    const savedKid = loadCustomKid()
-    // Partial/legacy doodles never replace the authored baseline character.
-    const tex = isCompleteCustomKid(savedKid) ? bakeCustomAtlas(savedKid) : kidAtlas()
+    // The configurable paper-doll is baked into the same 6-cell atlas used in-world.
+    // There is no separate preview renderer and no conversion surprise.
+    const tex = bakeCharacterAtlas(loadCharacter())
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       alphaTest: 0.5,

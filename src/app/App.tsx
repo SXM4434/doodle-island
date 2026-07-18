@@ -34,7 +34,7 @@ import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { DrawTable } from './DrawTable'
 import { HUD, TitleCard } from './HUD'
-import { CharacterEasel } from './CharacterEasel'
+import { CharacterStudio } from './CharacterStudio'
 import { useGame } from '../sim/store'
 import { initAudio } from '../audio/sfx'
 import './app.css'
@@ -139,7 +139,7 @@ export default function App() {
       <Bag />
       <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {drawingSelf && (
-        <CharacterEasel
+        <CharacterStudio
           onDone={() => {
             setDrawingSelf(false)
             useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 }))

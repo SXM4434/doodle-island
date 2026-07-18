@@ -98,9 +98,9 @@ export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
           Wash ashore →
         </button>
         <button className="btn" style={{ marginTop: 10 }} onClick={() => { initAudio(); onDrawSelf?.() }}>
-          Style your character
+          Make your character
         </button>
-        <p className="controls-line">Optional — your normal island kid is always ready. WASD move · drag to look · E interact · 1–8 hotbar</p>
+        <p className="controls-line">Optional — begin with the island kid, or shape every part now. WASD move · drag to look · E interact · 1–8 hotbar</p>
       </div>
     </div>
   )

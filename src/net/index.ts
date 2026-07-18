@@ -108,8 +108,10 @@ class NetAdapter {
     this.me.setState('drawing', drawing, true)
   }
 
-  drawingVisitors(): readonly Remote[] {
-    return [...this.remotesMap.values()].filter((r) => r.drawing)
+  drawingVisitorCount(): number {
+    let count = 0
+    for (const remote of this.remotesMap.values()) if (remote.drawing) count++
+    return count
   }
 
   ownsWorld(): boolean {

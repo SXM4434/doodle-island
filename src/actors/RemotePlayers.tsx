@@ -42,7 +42,7 @@ function DrawingSignal() {
   }, [])
   useFrame(({ clock }) => {
     if (!bubble.current) return
-    const active = net.drawingVisitors().length > 0
+    const active = net.drawingVisitorCount() > 0
     bubble.current.visible = active
     bubble.current.position.set(TABLE.x, 3.6 + Math.sin(clock.elapsedTime * 2) * .08, TABLE.z)
   })

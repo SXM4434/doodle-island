@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { RigidBody } from '@react-three/rapier'
+import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { useGame, refs } from '../sim/store'
 import { toon, noOutline, makeBlobShadow } from './toon'
 
@@ -93,6 +93,7 @@ function WallFrame({ mats, pos }: { mats: Record<string, THREE.MeshToonMaterial>
 
 function Bed({ pos, mats }: { pos: [number, number, number]; mats: Record<string, THREE.MeshToonMaterial> }) {
   return <group position={pos} rotation={[0, -.16, 0]}>
+    <RigidBody type="fixed" colliders={false}><CuboidCollider args={[1.05, .62, 1.35]} position={[0, .55, 0]} /></RigidBody>
     <mesh position={[0, .18, 0]} material={mats.trimDark}><boxGeometry args={[2.08, .35, 2.7]} /></mesh>
     <mesh position={[0, .42, .06]} material={mats.bed}><boxGeometry args={[1.86, .28, 2.42]} /></mesh>
     <mesh position={[0, .61, -.48]} material={mats.quilt} rotation={[0, 0, -.035]}><boxGeometry args={[1.86, .15, 1.35]} /></mesh>
@@ -104,6 +105,7 @@ function Bed({ pos, mats }: { pos: [number, number, number]; mats: Record<string
 
 function Chest({ pos, mats }: { pos: [number, number, number]; mats: Record<string, THREE.MeshToonMaterial> }) {
   return <group position={pos} rotation={[0, -.23, 0]}>
+    <RigidBody type="fixed" colliders={false}><CuboidCollider args={[.68, .48, .45]} position={[0, .45, 0]} /></RigidBody>
     <mesh position={[0, .3, 0]} material={mats.chest}><boxGeometry args={[1.34, .6, .82]} /></mesh>
     <mesh position={[0, .66, -.02]} material={mats.brass} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[.44, .44, 1.36, 6, 1, false, 0, Math.PI]} /></mesh>
     <mesh position={[0, .46, .44]} material={mats.brass}><boxGeometry args={[.18, .19, .08]} /></mesh>
@@ -120,6 +122,7 @@ function Plant({ pos, mats }: { pos: [number, number, number]; mats: Record<stri
 
 function RoundTable({ pos, mats }: { pos: [number, number, number]; mats: Record<string, THREE.MeshToonMaterial> }) {
   return <group position={pos}>
+    <RigidBody type="fixed" colliders={false}><CuboidCollider args={[.82, .5, .82]} position={[0, .5, 0]} /></RigidBody>
     <mesh position={[0, .63, 0]} material={mats.chest}><cylinderGeometry args={[.78, .9, .17, 7]} /></mesh>
     <mesh position={[0, .3, 0]} material={mats.trimDark}><cylinderGeometry args={[.15, .22, .63, 6]} /></mesh>
     <mesh position={[-.22, .78, -.04]} material={mats.paper} rotation={[0, .2, -.16]}><boxGeometry args={[.35, .03, .27]} /></mesh>
@@ -129,6 +132,7 @@ function RoundTable({ pos, mats }: { pos: [number, number, number]; mats: Record
 
 function WindowSeat({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
   return <group position={[-2.25, 0, -5.42]}>
+    <RigidBody type="fixed" colliders={false}><CuboidCollider args={[1.1, .38, .38]} position={[0, .38, 0]} /></RigidBody>
     <mesh position={[0, .42, 0]} material={mats.trim}><boxGeometry args={[2.18, .18, .68]} /></mesh>
     <mesh position={[0, .62, .03]} material={mats.rug}><boxGeometry args={[1.86, .16, .5]} /></mesh>
     {[-.78, .78].map((x) => <mesh key={x} position={[x, .2, 0]} material={mats.trimDark}><boxGeometry args={[.13, .42, .16]} /></mesh>)}
@@ -146,6 +150,7 @@ function WallShelf({ mats, personal }: { mats: Record<string, THREE.MeshToonMate
 
 function TeaCorner({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
   return <group position={[4.38, 0, -1.9]} rotation={[0, -.35, 0]}>
+    <RigidBody type="fixed" colliders={false}><CuboidCollider args={[.52, .38, .52]} position={[0, .38, 0]} /></RigidBody>
     <mesh position={[0, .42, 0]} material={mats.trim}><cylinderGeometry args={[.42, .5, .1, 7]} /></mesh>
     <mesh position={[0, .2, 0]} material={mats.trimDark}><cylinderGeometry args={[.1, .16, .42, 6]} /></mesh>
     <mesh position={[0, .6, 0]} material={mats.paper}><sphereGeometry args={[.15, 7, 5]} /></mesh>

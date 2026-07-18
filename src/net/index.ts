@@ -39,6 +39,7 @@ class NetAdapter {
   private lastSend = 0
   private setGlobal: ((k: string, v: unknown, reliable?: boolean) => void) | null = null
   private getGlobal: ((k: string) => unknown) | null = null
+  private isHostNow: (() => boolean) | null = null
   private lastPushedPlaced = ''
   private lastPushedWorld = ''
   private host = false
@@ -51,14 +52,16 @@ class NetAdapter {
       await pk.insertCoin({ gameId: 'doodle-island', skipLobby: true, maxPlayersPerRoom: 8 })
       this.setGlobal = pk.setState
       this.host = pk.isHost()
+      this.isHostNow = pk.isHost
       this.getGlobal = pk.getState
       this.me = pk.myPlayer() as unknown as PlayroomPlayer
-      pk.onPlayerJoin((p: unknown) => {
+      // Playroom reports only future joins. Seed the visitor map from the room
+      // roster so a late arrival sees everyone already exploring.
+      const attachRemote = (p: unknown) => {
         const player = p as PlayroomPlayer
-        if (player.id === this.me?.id) return
+        if (player.id === this.me?.id || this.remotesMap.has(player.id)) return
         const r: Remote = { id: player.id, name: player.getProfile()?.name ?? null, buf: [] }
         this.remotesMap.set(player.id, r)
-        // poll this player's pos state on an interval (playroom pushes internally)
         const iv = setInterval(() => {
           const s = player.getState('p') as number[] | undefined
           if (s && s.length >= 6) {
@@ -74,6 +77,10 @@ class NetAdapter {
           clearInterval(iv)
           this.remotesMap.delete(player.id)
         })
+      }
+      for (const player of Object.values(pk.getParticipants() as Record<string, unknown>)) attachRemote(player)
+      pk.onPlayerJoin((p: unknown) => {
+        attachRemote(p)
       })
       this.status = 'on'
     } catch (e) {
@@ -97,6 +104,7 @@ class NetAdapter {
   // Host-owned world snapshot: decorative creations, gardening, dock, and residents
   // are shared; private pockets and custom player drawings never leave the client.
   pushWorld(world: WorldSnapshot): void {
+    this.host = this.isHostNow?.() ?? this.host
     if (this.status !== 'on' || !this.setGlobal || !this.host) return
     const json = JSON.stringify(world)
     if (json === this.lastPushedWorld) return
@@ -105,6 +113,7 @@ class NetAdapter {
   }
 
   pullWorld(): WorldSnapshot | null {
+    this.host = this.isHostNow?.() ?? this.host
     if (this.status !== 'on' || !this.getGlobal || this.host) return null
     const json = this.getGlobal('world') as string | undefined
     if (!json || json === this.lastPushedWorld) return null

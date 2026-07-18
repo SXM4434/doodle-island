@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { groundY, POND, TABLE } from '../sim/terrain'
 import { makeBlobShadow, toon } from './toon'
+import { PLAYER_HOME } from './Interiors'
 
 // Three fixed landmarks make the island read as an inhabited place before a
 // player has drawn their first friend. They deliberately use the same small
@@ -11,15 +12,16 @@ export function Village() {
   return (
     <group>
       <WorkshopPavilion />
+      <ResidentCottage x={PLAYER_HOME.x} z={PLAYER_HOME.z} roof="#E9C55B" door="#704737" detail="cat" personal />
       <ResidentCottage x={POND.x + 11.5} z={POND.z - 7} roof="#D96557" door="#704737" detail="cat" />
       <ResidentCottage x={-10} z={-39.5} roof="#5B91B6" door="#465D6E" detail="shell" />
     </group>
   )
 }
 
-type CottageProps = { x: number; z: number; roof: string; door: string; detail: 'cat' | 'shell' }
+type CottageProps = { x: number; z: number; roof: string; door: string; detail: 'cat' | 'shell'; personal?: boolean }
 
-function ResidentCottage({ x, z, roof, door, detail }: CottageProps) {
+function ResidentCottage({ x, z, roof, door, detail, personal = false }: CottageProps) {
   const y = groundY(x, z)
   const mats = useMemo(() => ({
     plaster: toon('#F0D8B0'), timber: toon('#955C3B'), roof: toon(roof), roofShade: toon('#9E4B43'),
@@ -44,8 +46,8 @@ function ResidentCottage({ x, z, roof, door, detail }: CottageProps) {
       </group>
       <mesh position={[0.9, 2.36, -0.55]} material={mats.timber}><boxGeometry args={[0.35, 0.85, 0.35]} /></mesh>
       <mesh position={[0.9, 2.84, -0.55]} material={mats.roofShade}><boxGeometry args={[0.47, 0.14, 0.45]} /></mesh>
-      {/* Each resident gets one quiet, physical calling-card by their own door. */}
-      {detail === 'cat' ? <CatPlanter mat={mats.detail} /> : <ShellPot mat={mats.detail} />}
+      {/* Each home gets one quiet, physical calling-card by its own door. */}
+      {personal ? <WelcomeBench mats={mats} /> : detail === 'cat' ? <CatPlanter mat={mats.detail} /> : <ShellPot mat={mats.detail} />}
     </group>
   )
 }
@@ -61,6 +63,13 @@ function ShellPot({ mat }: { mat: THREE.MeshToonMaterial }) {
   return <group position={[1.1, 0.26, 1.1]} rotation={[0.1, -0.6, 0]}>
     <mesh material={mat}><sphereGeometry args={[0.34, 7, 4]} /></mesh>
     <mesh position={[0, 0.08, -0.22]} material={toon('#FFF4D8')}><sphereGeometry args={[0.17, 6, 4]} /></mesh>
+  </group>
+}
+function WelcomeBench({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[-1.18, 0, 1.05]} rotation={[0, 0.22, 0]}>
+    <mesh position={[0, .42, 0]} material={mats.timber}><boxGeometry args={[.98, .13, .36]} /></mesh>
+    {[-.37, .37].map((x) => <mesh key={x} position={[x, .2, 0]} material={mats.timber}><boxGeometry args={[.1, .4, .12]} /></mesh>)}
+    <mesh position={[0, .62, -.1]} material={mats.roof}><boxGeometry args={[.82, .35, .1]} /></mesh>
   </group>
 }
 

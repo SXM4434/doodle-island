@@ -1,104 +1,71 @@
-// Custom drawn character: player draws front / side / back at the table.
-// Same canonical rule as items — strokes are the truth, atlas re-bakes locally.
+// Custom drawn character: the authored kid is the shared body language; your three
+// drawings become inked identity marks on top. This avoids a raw doodle replacing the
+// player with an unreadable unrelated shape while preserving every mark you made.
 import * as THREE from 'three'
-import { strokeOutline, outlineToPath, strokeBounds, type Stroke, INKS } from './strokes'
+import { strokeOutline, outlineToPath, type Stroke, INKS } from './strokes'
+import { drawKid } from '../actors/kidSprite'
 
 export interface CustomKid {
   front: Stroke[]
   side: Stroke[]
   back: Stroke[]
-  riggable?: boolean // drawn on the mannequin guide → parts can swing
+  riggable?: boolean
 }
 
 const CELL = 256
 const KEY = 'doodle-island-kid-v1'
 
 export function saveCustomKid(kid: CustomKid): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(kid))
-  } catch { /* full */ }
+  try { localStorage.setItem(KEY, JSON.stringify(kid)) } catch { /* storage full */ }
 }
-
 export function loadCustomKid(): CustomKid | null {
-  try {
-    const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as CustomKid) : null
-  } catch {
-    return null
-  }
+  try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) as CustomKid : null } catch { return null }
 }
-
-export function clearCustomKid(): void {
-  localStorage.removeItem(KEY)
-}
-
+export function clearCustomKid(): void { localStorage.removeItem(KEY) }
 export function isCompleteCustomKid(kid: CustomKid | null): kid is CustomKid {
   return !!kid && kid.front.length > 0 && kid.side.length > 0 && kid.back.length > 0
 }
 
-// The character restyle is intentionally stronger than an item restyle. Player strokes
-// retain their silhouette, then receive the same dark felt-tip contour + cream paper
-// separation that makes the standard kid readable against the 3D diorama.
-export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0): void {
-  const b = strokeBounds(strokes)
-  const w = b.maxX - b.minX
-  const h = b.maxY - b.minY
-  const scale = 0.76 / Math.max(w, h, 0.01)
-  const remapped = strokes.map((s) => ({
-    ...s,
-    size: Math.max(s.size * scale, 0.014),
-    pts: s.pts.map((p) => [
-      0.5 + (p[0] - (b.minX + w / 2)) * scale,
-      0.54 + (p[1] - (b.minY + h / 2)) * scale,
-      p[2],
-    ]),
-  }))
+// Marks fit into the kid's torso/head space. We intentionally do not normalize them
+// to a giant silhouette: a tiny heart, hair scribble, or shirt design remains legible
+// without deleting the default kid's proportions and walk animation.
+function drawIdentityMarks(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number): void {
+  if (!strokes.length) return
   ctx.save()
-  ctx.translate(ox, 0)
-  // cream cutout halo: a drawing stays a drawing, but never disappears into grass/roof.
-  for (const s of remapped) {
-    if (s.erase) continue
-    const halo = { ...s, size: s.size + 18 / px }
-    ctx.fillStyle = '#fff4d8'
-    ctx.fill(outlineToPath(strokeOutline(halo, px)))
-  }
-  // the default kid's confident near-black marker contour.
-  for (const s of remapped) {
-    if (s.erase) continue
-    const contour = { ...s, size: s.size + 8 / px }
-    ctx.fillStyle = '#33291f'
-    ctx.fill(outlineToPath(strokeOutline(contour, px)))
-  }
-  for (const s of remapped) {
-    const path = outlineToPath(strokeOutline(s, px))
-    if (s.erase) { ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(path); ctx.restore() }
-    else { ctx.fillStyle = INKS[s.color] ?? INKS.ink; ctx.fill(path) }
+  ctx.beginPath(); ctx.ellipse(px * .5, px * .49, px * .28, px * .38, 0, 0, Math.PI * 2); ctx.clip()
+  for (const s of strokes) {
+    const mark: Stroke = {
+      ...s,
+      size: Math.max(0.008, Math.min(0.024, s.size * .52)),
+      pts: s.pts.map((p) => [.5 + (p[0] - .5) * .58, .51 + (p[1] - .5) * .58, p[2]]),
+    }
+    const path = outlineToPath(strokeOutline(mark, px))
+    if (mark.erase) { ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(path); ctx.restore() }
+    else {
+      // A thin dark contour makes personal marks read as intentional felt-tip art.
+      const contour = { ...mark, size: mark.size + 3.5 / px }
+      ctx.fillStyle = '#33291f'; ctx.fill(outlineToPath(strokeOutline(contour, px)))
+      ctx.fillStyle = INKS[mark.color] ?? INKS.ink; ctx.fill(path)
+    }
   }
   ctx.restore()
 }
 
-// Bake a 6-cell atlas matching kidAtlas layout: front0 front1 side0 side1 back0 back1.
-// Walk frame 1 = same drawing nudged up 4% (paper-toy hop — cheap but alive).
+// Preview helper: exactly the same composition the player gets in the world.
+export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0, facing: 'front' | 'side' | 'back' = 'front', frame = 0): void {
+  ctx.save(); ctx.translate(ox, 0); drawKid(ctx, facing, frame); drawIdentityMarks(ctx, strokes, px); ctx.restore()
+}
+
+// Six cells match kidAtlas: front0/front1/side0/side1/back0/back1.
 export function bakeCustomAtlas(kid: CustomKid): THREE.CanvasTexture {
-  const c = document.createElement('canvas')
-  c.width = CELL * 6
-  c.height = CELL
+  const c = document.createElement('canvas'); c.width = CELL * 6; c.height = CELL
   const ctx = c.getContext('2d')!
-  const cells: Array<[Stroke[], number, number]> = [
-    [kid.front, 0, 0], [kid.front, 1, -0.04],
-    [kid.side, 2, 0], [kid.side, 3, -0.04],
-    [kid.back, 4, 0], [kid.back, 5, -0.04],
+  const cells: Array<[Stroke[], 'front' | 'side' | 'back', number]> = [
+    [kid.front, 'front', 0], [kid.front, 'front', 1], [kid.side, 'side', 0],
+    [kid.side, 'side', 1], [kid.back, 'back', 0], [kid.back, 'back', 1],
   ]
-  for (const [strokes, i, dy] of cells) {
-    ctx.save()
-    ctx.translate(0, dy * CELL)
-    drawCharacterStrokes(ctx, strokes, CELL, i * CELL)
-    ctx.restore()
-  }
+  cells.forEach(([strokes, facing, frame], i) => drawCharacterStrokes(ctx, strokes, CELL, i * CELL, facing, frame))
   const t = new THREE.CanvasTexture(c)
-  t.colorSpace = THREE.SRGBColorSpace
-  t.minFilter = THREE.LinearFilter
-  t.magFilter = THREE.LinearFilter
-  t.repeat.set(1 / 6, 1)
+  t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.repeat.set(1 / 6, 1)
   return t
 }

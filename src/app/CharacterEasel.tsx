@@ -8,9 +8,9 @@ import { sfx } from '../audio/sfx'
 // "Draw yourself" — three facings, one easel each. Minecraft-skin energy,
 // Doodle-Island rules: your strokes, restyled, become YOU.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'facing you — eyes, smile, the works' },
-  { key: 'side', label: 'Side', hint: 'walking right (we mirror the other way)' },
-  { key: 'back', label: 'Back', hint: 'the back of your head' },
+  { key: 'front', label: 'Front', hint: 'add your shirt, hair, face, or stickers inside the kid guide' },
+  { key: 'side', label: 'Side', hint: 'your side-view details — the kid body stays consistent' },
+  { key: 'back', label: 'Back', hint: 'backpack, hair, cape, or a back-of-shirt drawing' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -33,37 +33,15 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       const ctx = canvasRef.current?.getContext('2d')
       if (!ctx) return
       ctx.clearRect(0, 0, PX, PX)
-      // mannequin guide: faint body-part zones + stick figure (front step drives the rig)
-      if (step === 0) {
-        ctx.save()
-        ctx.globalAlpha = 0.13
-        ctx.strokeStyle = '#4f8fb8'
-        ctx.lineWidth = 2
-        ctx.setLineDash([6, 5])
-        for (const r of Object.values(REGIONS)) {
-          ctx.strokeRect(r.x0 * PX, r.y0 * PX, (r.x1 - r.x0) * PX, (r.y1 - r.y0) * PX)
-        }
-        ctx.setLineDash([])
-        // stick-figure hint
-        ctx.globalAlpha = 0.18
-        ctx.lineWidth = 5
-        ctx.lineCap = 'round'
-        ctx.beginPath(); ctx.arc(0.5 * PX, 0.24 * PX, 0.13 * PX, 0, 7); ctx.stroke() // head
-        ctx.beginPath(); ctx.moveTo(0.5 * PX, 0.44 * PX); ctx.lineTo(0.5 * PX, 0.68 * PX); ctx.stroke() // spine
-        ctx.beginPath(); ctx.moveTo(0.31 * PX, 0.62 * PX); ctx.lineTo(0.5 * PX, 0.48 * PX); ctx.lineTo(0.69 * PX, 0.62 * PX); ctx.stroke() // arms
-        ctx.beginPath(); ctx.moveTo(0.41 * PX, 0.92 * PX); ctx.lineTo(0.47 * PX, 0.7 * PX); ctx.stroke() // legL
-        ctx.beginPath(); ctx.moveTo(0.59 * PX, 0.92 * PX); ctx.lineTo(0.53 * PX, 0.7 * PX); ctx.stroke() // legR
-        ctx.restore()
-      }
-      // ghost previous facing at low alpha for proportion reference
-      if (step > 0) {
-        ctx.save()
-        ctx.globalAlpha = 0.15
-        drawCharacterStrokes(ctx, drawings[FACINGS[step - 1].key] ?? [], PX)
-        ctx.restore()
-      }
+      // Preview the actual authored kid body first. You are decorating its identity,
+      // not asked to recreate a whole animation rig from scratch.
+      const previous = step > 0 ? drawings[FACINGS[step - 1].key] ?? [] : []
+      if (step > 0) { ctx.save(); ctx.globalAlpha = 0.16; drawCharacterStrokes(ctx, previous, PX, 0, FACINGS[step - 1].key); ctx.restore() }
       const all = live.current ? [...strokes, live.current] : strokes
-      drawCharacterStrokes(ctx, all, PX)
+      drawCharacterStrokes(ctx, all, PX, 0, facing.key)
+      ctx.save(); ctx.globalAlpha = 0.13; ctx.strokeStyle = '#4f8fb8'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      for (const r of Object.values(REGIONS)) ctx.strokeRect(r.x0 * PX, r.y0 * PX, (r.x1 - r.x0) * PX, (r.y1 - r.y0) * PX)
+      ctx.restore()
     },
     [strokes, step, drawings],
   )

@@ -88,7 +88,7 @@ function VillagerSprite({ v }: { v: Villager }) {
     if (isNight()) {
       b.state = 'sleep'
       if ((live?.built ?? 0) >= 1 && !b.indoors) {
-        const room = interiorSlot(villagerIndex)
+        const room = interiorSlot(villagerIndex + 1)
         b.x = room.x - 3.65; b.z = room.z - 3.65; b.tx = b.x; b.tz = b.z; b.indoors = true
       }
     } else {
@@ -140,7 +140,7 @@ function VillagerSprite({ v }: { v: Villager }) {
       b.hopPhase += dt * 9
     }
 
-    const gy = b.indoors ? interiorSlot(villagerIndex).y : groundY(b.x, b.z)
+    const gy = b.indoors ? interiorSlot(villagerIndex + 1).y : groundY(b.x, b.z)
     // hop-based walk (ART-STYLE §5), squash on land
     const hop = speed > 0 ? Math.abs(Math.sin(b.hopPhase)) * 0.14 : 0
     g.position.set(b.x, gy + (b.state === 'sleep' ? -0.05 : hop), b.z)

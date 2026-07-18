@@ -3,6 +3,7 @@ import { useGame, COSTS, RES_LABEL, type CraftKey, type ResKind } from '../sim/s
 import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { sfx } from '../audio/sfx'
 import { dropIconDataURL } from '../actors/kidSprite'
+import { conversionForCraft } from '../draw/conversion'
 
 const CLASSES: Array<{ key: CraftKey; label: string; blurb: string }> = [
   { key: 'axe', label: 'Axe', blurb: 'chops trees' },
@@ -59,7 +60,7 @@ function ClassPick({ onPick }: { onPick: (c: CraftKey) => void }) {
               onClick={() => { sfx.chime(); onPick(c.key) }}
             >
               <span className="class-name">{c.label}</span>
-              <span className="class-blurb">{c.blurb}</span>
+              <span className="class-blurb">{c.blurb} · {conversionForCraft(c.key).language === 'physical' ? 'toy-world form' : 'paper form'}</span>
               <span className="chips">
                 {Object.entries(COSTS[c.key]).map(([r, n]) => (
                   <span key={r} className={`chip ${countRes(r as ResKind) >= (n ?? 0) ? 'have' : 'need'}`}>
@@ -84,6 +85,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const [brush, setBrush] = useState(1)
   const [color, setColor] = useState('ink')
   const [eraser, setEraser] = useState(false)
+  const [form, setForm] = useState<'chair' | 'table' | 'planter'>('chair')
   const live = useRef<Stroke | null>(null)
   const craft = useGame((s) => s.craft)
   const beginPlace = useGame((s) => s.beginPlace)
@@ -138,7 +140,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
 
   const confirm = () => {
     if (!canConfirm) return
-    const item = craft(cls, strokes)
+    const item = craft(cls, strokes, cls === 'furniture' ? form : undefined)
     if (!item) { say('Not enough materials!'); return }
     sfx.chime()
     if (item.cls === 'tool') {
@@ -166,6 +168,10 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
           Make it!
         </button>
       </div>
+      {cls === 'furniture' && <div className="form-picker" role="group" aria-label="Choose the furniture form">
+        <span>Build it as:</span>{(['chair', 'table', 'planter'] as const).map((f) => <button key={f} className={`form-choice ${form === f ? 'selected' : ''}`} onClick={() => setForm(f)}>{f}</button>)}
+      </div>}
+      <p className="conversion-note">{cls === 'furniture' ? `Your marks become the painted maker-mark on this chunky ${form}.` : conversionForCraft(cls).explanation}</p>
       <div className="easel-row">
         <div className="tools">
           {BRUSHES.map((_, i) => (

@@ -7,10 +7,14 @@ export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink' | '
 export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
 export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'stonesword' | 'rod'
 
+export type ObjectForm = 'chair' | 'table' | 'planter'
 export interface DrawnItem {
   id: string
   cls: ItemClass
   tool?: ToolKind
+  // Explicit intent beats opaque recognition: a chair doodle builds a chair,
+  // while its strokes stay visible as the maker-mark on that chair.
+  form?: ObjectForm
   strokes: Stroke[]
 }
 export interface Slot {
@@ -176,7 +180,7 @@ interface State {
   collectDrop: (id: number) => void
   equip: (i: number) => void
   openDraw: (open: boolean) => void
-  craft: (key: CraftKey, strokes: Stroke[]) => DrawnItem | null
+  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm) => DrawnItem | null
   beginPlace: (item: DrawnItem) => void
   rotatePlacing: () => void
   commitPlace: (x: number, z: number) => void
@@ -336,7 +340,7 @@ export const useGame = create<State>((set, get) => ({
 
   openDraw: (open) => set({ drawOpen: open }),
 
-  craft: (key, strokes) => {
+  craft: (key, strokes, form) => {
     const g = get()
     if (!g.canAfford(key)) return null
     const cost = COSTS[key]
@@ -357,6 +361,7 @@ export const useGame = create<State>((set, get) => ({
       id: itemId(),
       cls: isTool ? 'tool' : (key as ItemClass),
       tool: isTool ? (key as ToolKind) : undefined,
+      form: key === 'furniture' ? form ?? 'table' : undefined,
       strokes,
     }
     get().deed('craft-' + key)

@@ -47,7 +47,9 @@ function blob(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, fill: st
   if (stroke) ctx.stroke()
 }
 
-function drawKid(ctx: Ctx, facing: 'front' | 'side' | 'back', frame: number): void {
+// Exported for custom-character baking: custom marks layer on this authored body,
+// so a player-created kid always keeps the exact same readable silhouette.
+export function drawKid(ctx: Ctx, facing: 'front' | 'side' | 'back', frame: number): void {
   ctx.lineWidth = 6.5
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'

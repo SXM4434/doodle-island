@@ -7,6 +7,8 @@ import { groundY, TABLE } from '../sim/terrain'
 import { isInside, interiorSlot } from './Interiors'
 import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow } from './toon'
+import { ConvertedItem } from './ConvertedItem'
+import { convertDrawing } from '../draw/conversion'
 
 // Placed drawn items = paper standees in the world (Route A billboards, ARCH §5).
 export function PlacedItems() {
@@ -21,6 +23,11 @@ export function PlacedItems() {
 }
 
 function Standee({ p }: { p: PlacedT }) {
+  const y = p.area === 'interior' ? interiorSlot(p.room ?? 0).y : groundY(p.x, p.z)
+  return convertDrawing(p.item).language === 'physical' ? <ConvertedItem placed={p} y={y} /> : <PaperStandee p={p} y={y} />
+}
+
+function PaperStandee({ p, y }: { p: PlacedT; y: number }) {
   const { tex, aspect } = useMemo(() => itemTexture(p.item), [p.item])
   const bornAt = useMemo(() => performance.now(), [])
   const inner = useRef<THREE.Group>(null)
@@ -45,7 +52,6 @@ function Standee({ p }: { p: PlacedT }) {
     return m
   }, [tex])
   const shadow = useMemo(() => makeBlobShadow(w * 0.45), [w])
-  const y = p.area === 'interior' ? interiorSlot(p.room ?? 0).y : groundY(p.x, p.z)
   return (
     <group position={[p.x, y, p.z]} rotation={[0, p.rot, 0]}>
       <group ref={inner}>

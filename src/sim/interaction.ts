@@ -4,7 +4,7 @@
 import { useGame, refs, equippedTool } from './store'
 import { TABLE } from './terrain'
 import { SHOP } from '../world/ShopStall'
-import { ROOM, isInside, interiorSlot, chestRoomNearby } from '../world/Interiors'
+import { ROOM, isInside, interiorSlot, chestRoomNearby, PLAYER_HOME } from '../world/Interiors'
 import { nearbyHomeBlueprint } from '../world/Homes'
 import { nearestCritter } from '../actors/Critters'
 import { nearestIslander } from '../actors/Islanders'
@@ -39,6 +39,7 @@ export function getInteractionTarget(): InteractionTarget | null {
       }
     }
   } else {
+    if (Math.hypot(PLAYER_HOME.x - p.x, PLAYER_HOME.z - p.z) < 1.8) return { id: 'player-home', label: 'Your cottage', detail: 'E step inside', verb: 'enter' }
     for (const v of g.villagers) {
       if (v.built >= 1 && Math.hypot(v.homeX - p.x, v.homeZ - p.z) < 1.7) {
         return { id: `home-${v.id}`, label: `Enter ${v.name}'s home`, detail: 'E step inside', verb: 'enter' }

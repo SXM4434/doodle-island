@@ -10,6 +10,10 @@ import { toon, noOutline, makeBlobShadow } from './toon'
 export const INTERIOR_X = 400
 export const INTERIOR_SPACING = 34
 export const ROOM = 12
+// Room zero belongs to the player. Villagers begin at one, so a home chest is
+// always yours even before you draw the first resident.
+export const PLAYER_HOME = { x: -8, z: -30 }
+export const PLAYER_ROOM = 0
 
 export function interiorSlot(i: number): { x: number; z: number; y: number } {
   return { x: INTERIOR_X + i * INTERIOR_SPACING, z: 0, y: 2 }
@@ -18,12 +22,15 @@ export function isInside(x: number): boolean { return x > 200 }
 
 export function Interiors() {
   const villagers = useGame((s) => s.villagers)
-  return <group>{villagers.filter((v) => v.built >= 1).map((v) => (
-    <Room key={v.id} idx={villagers.findIndex((x) => x.id === v.id)} />
-  ))}</group>
+  return <group>
+    <Room idx={PLAYER_ROOM} personal />
+    {villagers.filter((v) => v.built >= 1).map((v) => (
+      <Room key={v.id} idx={villagers.findIndex((x) => x.id === v.id) + 1} />
+    ))}
+  </group>
 }
 
-function Room({ idx }: { idx: number }) {
+function Room({ idx, personal = false }: { idx: number; personal?: boolean }) {
   const slot = useMemo(() => interiorSlot(idx), [idx])
   const mats = useMemo(() => ({
     floor: toon('#B98452'), floorDark: toon('#8E5E3D'), wall: toon('#F1D9AF'),
@@ -50,6 +57,7 @@ function Room({ idx }: { idx: number }) {
     <mesh position={[ROOM / 2 - .08, 2.35, 0]} material={mats.wall}><boxGeometry args={[.16, 4.7, ROOM]} /></mesh>
     <WallFrame pos={[-2.5, 2.7, -5.8]} mat={mats.rug} />
     <WallFrame pos={[2.1, 2.45, -5.8]} mat={mats.leaf} />
+    {personal && <WelcomeShelf mats={mats} />}
     <Bed pos={[-3.65, 0, -3.65]} mats={mats} />
     <Chest pos={[3.75, 0, 3.45]} mats={mats} />
     <Plant pos={[3.45, 0, -3.65]} mats={mats} />
@@ -100,12 +108,20 @@ function WallFrame({ pos, mat }: { pos: [number, number, number]; mat: THREE.Mes
   const frame = useMemo(() => toon('#9E623D'), [])
   return <group position={pos}><mesh material={frame}><boxGeometry args={[1.24, 1.02, .1]} /></mesh><mesh position={[0, 0, .07]} material={mat}><boxGeometry args={[.98, .76, .04]} /></mesh></group>
 }
+function WelcomeShelf({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[0, 0, -5.35]}>
+    <mesh position={[0, 1.15, 0]} material={mats.trim}><boxGeometry args={[2.45, .13, .34]} /></mesh>
+    <mesh position={[-.78, 1.38, 0]} material={mats.cream}><cylinderGeometry args={[.24, .24, .32, 7]} /></mesh>
+    <mesh position={[0, 1.36, 0]} material={mats.quilt}><icosahedronGeometry args={[.25, 0]} /></mesh>
+    <mesh position={[.78, 1.36, 0]} material={mats.leaf}><coneGeometry args={[.23, .42, 5]} /></mesh>
+  </group>
+}
 
 export function chestRoomNearby(): number | null {
   const p = refs.playerPos
   if (!isInside(p.x)) return null
-  const villagers = useGame.getState().villagers
-  for (let i = 0; i < villagers.length; i++) {
+  const rooms = useGame.getState().villagers.length + 1
+  for (let i = 0; i < rooms; i++) {
     const slot = interiorSlot(i)
     if (Math.hypot(p.x - (slot.x + 3.75), p.z - (slot.z + 3.45)) < 1.45) return i
   }
@@ -114,10 +130,16 @@ export function chestRoomNearby(): number | null {
 export function tryEnterHouse(): boolean {
   const g = useGame.getState(); const p = refs.playerPos
   if (isInside(p.x)) return false
+  if (Math.hypot(PLAYER_HOME.x - p.x, PLAYER_HOME.z - p.z) < 1.8) {
+    const slot = interiorSlot(PLAYER_ROOM)
+    refs.returnPos.set(PLAYER_HOME.x + 1.45, 4, PLAYER_HOME.z + 1.45)
+    refs.teleportTo = { x: slot.x, y: slot.y + 3.2, z: slot.z + 1.5 }
+    g.say('Your cottage — decorate it however you like.'); return true
+  }
   for (let i = 0; i < g.villagers.length; i++) {
     const v = g.villagers[i]
     if (v.built < 1 || Math.hypot(v.homeX - p.x, v.homeZ - p.z) >= 1.7) continue
-    const slot = interiorSlot(i)
+    const slot = interiorSlot(i + 1)
     refs.returnPos.set(v.homeX + 1.5, 4, v.homeZ + 1.5)
     refs.teleportTo = { x: slot.x, y: slot.y + 3.2, z: slot.z + 1.5 }
     g.say(`${v.name}'s home — make yourself comfortable.`); g.deed('enter-house'); return true
@@ -127,8 +149,8 @@ export function tryEnterHouse(): boolean {
 export function tryExitHouse(): boolean {
   const p = refs.playerPos
   if (!isInside(p.x)) return false
-  const villagers = useGame.getState().villagers
-  for (let i = 0; i < villagers.length; i++) {
+  const rooms = useGame.getState().villagers.length + 1
+  for (let i = 0; i < rooms; i++) {
     const slot = interiorSlot(i)
     if (Math.hypot(p.x - slot.x, p.z - (slot.z + ROOM / 2 - .66)) < 1.3) {
       refs.teleportTo = { x: refs.returnPos.x, y: refs.returnPos.y, z: refs.returnPos.z }; return true

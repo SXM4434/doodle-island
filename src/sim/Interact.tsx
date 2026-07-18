@@ -9,6 +9,7 @@ import { swingHitMobs, tryDodge, useCombat, SWORD_DMG, OTHER_DMG } from './comba
 import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
+import { islanderSay } from '../actors/Islanders'
 import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
 import { restAtCampfire } from '../world/Campfires'
 import { nearbyHomeBlueprint } from '../world/Homes'
@@ -96,6 +97,8 @@ export function tryInteract(): void {
   if (tryExitHouse()) { sfx.chime(); return }
   if (tryEnterHouse()) { sfx.chime(); return }
 
+  // island regulars before ambient critters: named people own the interaction.
+  if (islanderSay()) { sfx.knock('soft'); return }
   // wild critter nearby? they have opinions
   if (critterSay()) { sfx.knock('soft'); return }
 

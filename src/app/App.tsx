@@ -16,6 +16,7 @@ import { Shop } from './Shop'
 import { InteractionPrompt } from './InteractionPrompt'
 import { HomeStorage } from './HomeStorage'
 import { Critters } from '../actors/Critters'
+import { Islanders } from '../actors/Islanders'
 import { Journal } from './Journal'
 import { Villagers } from '../actors/Villagers'
 import { DayNight } from '../world/DayNight'
@@ -107,6 +108,7 @@ export default function App() {
           <DockSign />
           {started && <Villagers />}
           {started && <Critters />}
+          {started && <Islanders />}
           {started && <DailyBottle />}
           {started && <Fishing />}
           {started && <ShopStall />}

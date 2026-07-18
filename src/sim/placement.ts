@@ -30,8 +30,9 @@ export function placementProblem(item: DrawnItem, x: number, z: number, context:
   if (!canPlaceHere(item, x, z, context.indoors)) return 'Big builds belong on your cottage plot.'
 
   if (!context.indoors && isStructural(item)) {
-    // The cottage is a useful room, not a place to bury props in its walls.
-    if (Math.hypot(x - PLAYER_PLOT.x, z - PLAYER_PLOT.z) < 2.1) return 'Leave room for your cottage door.'
+    // The cottage is a useful room, not a place to bury props in its walls or
+    // block the little approach to its real door (south/front side).
+    if (Math.hypot(x - PLAYER_PLOT.x, z - PLAYER_PLOT.z) < 2.1 || Math.hypot(x - PLAYER_PLOT.x, z - (PLAYER_PLOT.z + 2.1)) < 1.3) return 'Leave room for your cottage door.'
     for (const node of context.nodes) {
       if (!node.respawnAt && (node.type === 'tree' || node.type === 'rock') && Math.hypot(x - node.x, z - node.z) < 1.35 * node.scale) {
         return 'That spot is occupied by a resource.'

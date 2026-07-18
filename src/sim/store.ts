@@ -152,6 +152,7 @@ interface State {
   project: Project
   journal: Journal
   journalOpen: boolean
+  bagOpen: boolean
   goldenInk: boolean // bought from the shop — unlocks gold in the palette
   shopOpen: boolean
   chestOpen: number | null
@@ -189,6 +190,8 @@ interface State {
   buildTick: (id: string, amt: number) => void
   deed: (key: string) => void
   openJournal: (open: boolean) => void
+  openBag: (open: boolean) => void
+  moveSlot: (from: number, to: number) => void
   openShop: (open: boolean) => void
   openChest: (room: number | null) => void
   moveChestSlot: (room: number, fromChest: boolean, index: number) => void
@@ -215,7 +218,8 @@ const saved = loadSave()
 
 export const useGame = create<State>((set, get) => ({
   started: false,
-  slots: saved?.slots ?? Array.from({ length: 8 }, () => ({})),
+  // First eight slots are hotbar; remaining 24 are the backpack (PRD §3).
+  slots: (() => { const slots = saved?.slots ?? []; return [...slots, ...Array.from({ length: Math.max(0, 32 - slots.length) }, () => ({}))].slice(0, 32) })(),
   equipped: -1,
   nodes: scatterNodes().map((n) => ({ ...n, hp: NODE_HITS[n.type], respawnAt: 0 })),
   drops: [],
@@ -230,6 +234,7 @@ export const useGame = create<State>((set, get) => ({
   project: saved?.project ?? { key: 'dock', need: 20, given: 0, doneAt: 0 },
   journal: saved?.journal ?? { deeds: {} },
   journalOpen: false,
+  bagOpen: false,
   goldenInk: saved?.goldenInk ?? false,
   shopOpen: false,
   chestOpen: null,
@@ -417,6 +422,14 @@ export const useGame = create<State>((set, get) => ({
     }
   },
   openJournal: (open) => set({ journalOpen: open }),
+  openBag: (open) => set({ bagOpen: open }),
+  moveSlot: (from, to) => {
+    const slots = get().slots.map((s) => ({ ...s }))
+    if (!slots[from] || !slots[to] || from === to) return
+    // Whole-slot swaps preserve drawn-item identity and stack integrity.
+    const held = slots[from]; slots[from] = slots[to]; slots[to] = held
+    set({ slots })
+  },
   openShop: (open) => set({ shopOpen: open }),
   openChest: (room) => set({ chestOpen: room }),
   moveChestSlot: (room, fromChest, index) => {

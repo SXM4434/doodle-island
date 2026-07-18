@@ -20,6 +20,7 @@ export function HUD() {
   const toast = useGame((s) => s.toast)
   const toastAt = useGame((s) => s.toastAt)
   const placing = useGame((s) => s.placing)
+  const openBag = useGame((s) => s.openBag)
   const [muted, setM] = useState(isMuted())
   const [toastVisible, setToastVisible] = useState(false)
   const [clock, setClock] = useState('')
@@ -65,7 +66,7 @@ export function HUD() {
 
       {/* hotbar */}
       <div className="hotbar">
-        {slots.map((s, i) => (
+        {slots.slice(0, 8).map((s, i) => (
           <button
             key={i}
             className={`slot ${equipped === i ? 'eq' : ''}`}
@@ -82,6 +83,7 @@ export function HUD() {
             <span className="keycap">{i + 1}</span>
           </button>
         ))}
+        <button className="bag-button" onClick={() => openBag(true)} aria-label="Open backpack">bag</button>
       </div>
     </div>
   )

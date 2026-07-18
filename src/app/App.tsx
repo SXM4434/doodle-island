@@ -15,6 +15,7 @@ import { ShopStall } from '../world/ShopStall'
 import { Shop } from './Shop'
 import { InteractionPrompt } from './InteractionPrompt'
 import { HomeStorage } from './HomeStorage'
+import { Bag } from './Bag'
 import { Critters } from '../actors/Critters'
 import { Islanders } from '../actors/Islanders'
 import { Journal } from './Journal'
@@ -130,6 +131,7 @@ export default function App() {
       <Journal />
       <Shop />
       <HomeStorage />
+      <Bag />
       {drawingSelf && (
         <CharacterEasel
           onDone={() => {

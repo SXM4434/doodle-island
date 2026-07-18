@@ -177,6 +177,9 @@ export function InteractDriver() {
       if (e.key === 'j' || e.key === 'J') {
         useGame.getState().openJournal(!useGame.getState().journalOpen)
       }
+      if (e.key === 'i' || e.key === 'I') {
+        useGame.getState().openBag(!useGame.getState().bagOpen)
+      }
       if (e.key === 'p' || e.key === 'P') {
         const p = refs.playerPos
         if (g.plantBerry(Math.round(p.x * 2) / 2, Math.round(p.z * 2) / 2)) sfx.place()

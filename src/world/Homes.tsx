@@ -43,6 +43,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
       <mesh position={[0, .25, .86]} material={mats.timberDark}><boxGeometry args={[2.18, .12, .13]} /></mesh>
       <mesh position={[-.52, .88, .88]} material={mats.timberDark} rotation={[0, 0, -.62]}><boxGeometry args={[.12, 1.15, .1]} /></mesh>
       <CottagePorch mats={mats} />
+      <CottagePath mats={mats} />
       <CottageWindowBox mats={mats} />
     </group>
     <group ref={roof} position={[0, 1.78, -.04]} visible={false} rotation={[0, .14, 0]}>
@@ -67,6 +68,10 @@ function CottagePorch({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }
     <mesh position={[0, 1.42, .2]} material={mats.roofDark} rotation={[.12, 0, 0]}><boxGeometry args={[1.4, .14, .62]} /></mesh>
     {[-.57, .57].map((px) => <mesh key={px} position={[px, .78, .36]} material={mats.timber}><cylinderGeometry args={[.075, .1, 1.24, 6]} /></mesh>)}
   </group>
+}
+
+function CottagePath({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group>{[.72, 1.35, 2.02].map((z, i) => <mesh key={z} position={[i === 1 ? .1 : i === 2 ? -.08 : 0, .055, z]} rotation={[0, i * .2, .08]} material={mats.stone}><dodecahedronGeometry args={[.28 - i * .025, 0]} /></mesh>)}</group>
 }
 
 function CottageWindowBox({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {

@@ -55,6 +55,7 @@ function ResidentCottage({ x, z, roof, roofShade, door, detail }: CottageProps) 
     <TimberFrame mats={mats} />
     <FacetedRoof mats={mats} />
     <Porch mats={mats} />
+    <FrontPath mats={mats} />
     <WindowBox mats={mats} />
     <CottageGlow />
     <CrookedChimney mats={mats} />
@@ -101,6 +102,12 @@ function Porch({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
     {[-.61, .61].map((px) => <mesh key={px} position={[px, .84, .39]} material={mats.timber}><cylinderGeometry args={[.08, .11, 1.34, 6]} /></mesh>)}
     <mesh position={[0, .18, .54]} material={mats.timberDark}><boxGeometry args={[1.22, .08, .1]} /></mesh>
   </group>
+}
+
+function FrontPath({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  // Three offset stones establish a front door approach without building a
+  // decorative road network through the whole island.
+  return <group>{[.72, 1.35, 2.02].map((z, i) => <mesh key={z} position={[i === 1 ? .1 : i === 2 ? -.08 : 0, .055, z]} rotation={[0, i * .2, .08]} material={mats.stone}><dodecahedronGeometry args={[.3 - i * .025, 0]} /></mesh>)}</group>
 }
 
 function WindowBox({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {

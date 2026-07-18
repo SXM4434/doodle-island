@@ -175,7 +175,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
       {cls === 'furniture' && <div className="form-picker" role="group" aria-label="Choose the furniture form">
         <span>Build it as:</span>{(['chair', 'table', 'planter'] as const).map((f) => <button key={f} className={`form-choice ${form === f ? 'selected' : ''}`} onClick={() => setForm(f)}>{f}</button>)}
       </div>}
-      <p className="conversion-note">{cls === 'furniture' ? `Your marks become the painted maker-mark on this chunky ${form}.` : conversionForCraft(cls).explanation}</p>
+      <p className="conversion-note">{cls === 'furniture' ? `Your converted drawing becomes the main visible part of this ${form}; only its legs, rim, or seat are added to make the function clear.` : conversionForCraft(cls).explanation}</p>
       <div className="easel-row">
         <div className="tools">
           {BRUSHES.map((_, i) => (

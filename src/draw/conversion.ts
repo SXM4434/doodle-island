@@ -19,7 +19,7 @@ export function convertDrawing(item: Pick<DrawnItem, 'cls' | 'tool' | 'form'>): 
   if (item.cls === 'tool' && item.tool) return { language: 'paper', verb: TOOL_VERB[item.tool], explanation: 'A tool stays a paper cutout so your exact silhouette is visible in your hand.' }
   const physical: Partial<Record<ItemClass, PhysicalArchetype>> = { furniture: item.form ?? 'table', fence: 'fence', campfire: 'campfire' }
   const archetype = physical[item.cls]
-  if (archetype) return { language: 'physical', archetype, verb: archetype === 'campfire' ? 'warms your island' : archetype === 'fence' ? 'makes a solid boundary' : archetype === 'chair' ? 'becomes a solid chair' : archetype === 'planter' ? 'becomes a solid planter' : 'becomes a solid table', explanation: 'Your drawing becomes the painted maker-mark on a chunky toy-world object.' }
+  if (archetype) return { language: 'physical', archetype, verb: archetype === 'campfire' ? 'warms your island' : archetype === 'fence' ? 'makes a solid boundary' : archetype === 'chair' ? 'becomes a solid chair' : archetype === 'planter' ? 'becomes a solid planter' : 'becomes a solid table', explanation: 'Your converted drawing becomes the main visible panel; the toy-world parts only make its purpose physically clear.' }
   if (item.cls === 'friend') return { language: 'paper', verb: 'becomes an island resident', explanation: 'Friends are paper people, like the player.' }
   return { language: 'paper', verb: item.cls === 'wallhang' ? 'hangs on a wall' : 'decorates your island', explanation: 'This stays a paper cutout so its drawing remains the object itself.' }
 }

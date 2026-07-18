@@ -14,6 +14,7 @@ import { nearestNode } from './Interact'
 import { fishing } from './fishing'
 import { nearestCampfire } from '../world/Campfires'
 import { useCombat, MAX_HP } from './combat'
+import { dailyBottleNearby } from '../world/DailyBottle'
 
 export interface InteractionTarget {
   id: string
@@ -50,6 +51,7 @@ export function getInteractionTarget(): InteractionTarget | null {
     const need = blueprint.homeNeed ?? 10
     return { id: `blueprint-${blueprint.id}`, label: `${blueprint.name}'s Home Blueprint`, detail: `E donate wood · ${funded}/${need}`, verb: 'build' }
   }
+  if (dailyBottleNearby()) return { id: 'daily-bottle', label: 'Message bottle', detail: 'E open today’s gift', verb: 'pick-up' }
   const fire = nearestCampfire()
   if (fire) {
     const hp = useCombat.getState().hp

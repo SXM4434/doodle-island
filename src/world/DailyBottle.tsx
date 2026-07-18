@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useFrame } from '@react-three/fiber'
 import { useGame, refs } from '../sim/store'
 import { groundY } from '../sim/terrain'
 import { toon } from './toon'
@@ -33,28 +32,36 @@ const GIFTS: Array<{ res: 'shine' | 'berry' | 'ink' | 'stone'; n: number; note: 
   { res: 'stone', n: 5, note: 'heavy! full of stones.' },
 ]
 
+let claimedMemory = ''
+
+function currentGift(): (typeof GIFTS)[number] {
+  const d = new Date()
+  return GIFTS[(d.getDate() + d.getMonth()) % GIFTS.length]
+}
+
+export function dailyBottleNearby(): boolean {
+  const claimed = claimedMemory || localStorage.getItem('doodle-island-bottle') || ''
+  if (claimed === todayKey()) return false
+  const spot = todaySpot(); const p = refs.playerPos
+  return Math.hypot(p.x - spot.x, p.z - spot.z) < 1.5
+}
+
+export function collectDailyBottle(): boolean {
+  if (!dailyBottleNearby()) return false
+  const day = todayKey(); const gift = currentGift(); const g = useGame.getState()
+  g.addRes(gift.res, gift.n); g.deed('daily-gift')
+  g.say(`A bottle washed ashore — ${gift.note}`); sfx.chime()
+  claimedMemory = day; localStorage.setItem('doodle-island-bottle', day)
+  return true
+}
+
 export function DailyBottle() {
-  const [claimedDay, setClaimedDay] = useState(() => localStorage.getItem('doodle-island-bottle') ?? '')
+  const [claimedDay, setClaimedDay] = useState(() => claimedMemory || localStorage.getItem('doodle-island-bottle') || '')
   const spot = useMemo(todaySpot, [])
   const mats = useMemo(() => ({ glass: toon('#8ed0dd'), cork: toon('#a8703d') }), [])
   const claimed = claimedDay === todayKey()
-
-  useFrame(() => {
-    if (claimed) return
-    const p = refs.playerPos
-    if (Math.hypot(p.x - spot.x, p.z - spot.z) < 1.4) {
-      const day = todayKey()
-      const d = new Date()
-      const gift = GIFTS[(d.getDate() + d.getMonth()) % GIFTS.length]
-      const g = useGame.getState()
-      g.addRes(gift.res, gift.n)
-      g.deed('daily-gift')
-      g.say('🍾 A bottle washed ashore — ' + gift.note)
-      sfx.chime()
-      localStorage.setItem('doodle-island-bottle', day)
-      setClaimedDay(day)
-    }
-  })
+  // Interactions update the shared claim marker; sync local visual state without an auto-pickup.
+  if (!claimed && claimedMemory === todayKey()) setClaimedDay(claimedMemory)
 
   if (claimed) return null
   const y = groundY(spot.x, spot.z)

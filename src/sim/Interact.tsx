@@ -12,6 +12,7 @@ import { critterSay } from '../actors/Critters'
 import { islanderSay } from '../actors/Islanders'
 import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
 import { restAtCampfire } from '../world/Campfires'
+import { collectDailyBottle } from '../world/DailyBottle'
 import { nearbyHomeBlueprint } from '../world/Homes'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
@@ -53,6 +54,7 @@ export function tryInteract(): void {
   }
 
   const p = refs.playerPos
+  if (collectDailyBottle()) return
   const rest = restAtCampfire()
   if (rest !== 'none') {
     if (rest === 'healed') { sfx.warmth(); g.say('Warmth returns. +1 heart') }

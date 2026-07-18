@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { net, type Remote } from '../net'
 import { useGame } from '../sim/store'
+import { TABLE } from '../sim/terrain'
 import { kidAtlas } from './kidSprite'
 import { makeBlobShadow } from '../world/toon'
 
@@ -21,11 +22,31 @@ export function RemotePlayers() {
   }, [])
   return (
     <group>
-      {ids.map((id) => (
-        <RemoteKid key={id} id={id} />
-      ))}
+      {ids.map((id) => <RemoteKid key={id} id={id} />)}
+      <DrawingSignal />
     </group>
   )
+}
+
+function DrawingSignal() {
+  const bubble = useRef<THREE.Sprite>(null)
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128
+    const g = c.getContext('2d')!; g.lineCap = 'round'; g.lineJoin = 'round'
+    g.fillStyle = '#FFF4D8'; g.strokeStyle = '#33291f'; g.lineWidth = 7
+    g.beginPath(); g.roundRect(10, 10, 236, 82, 23); g.fill(); g.stroke()
+    g.beginPath(); g.moveTo(115, 92); g.lineTo(128, 111); g.lineTo(142, 92); g.closePath(); g.fill(); g.stroke()
+    g.strokeStyle = '#D96557'; g.lineWidth = 8; g.beginPath(); g.moveTo(78, 54); g.quadraticCurveTo(96, 29, 112, 57); g.quadraticCurveTo(130, 81, 148, 48); g.quadraticCurveTo(166, 27, 181, 55); g.stroke()
+    g.fillStyle = '#33291f'; g.font = 'bold 24px sans-serif'; g.textAlign = 'center'; g.fillText('drawing…', 128, 83)
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
+  }, [])
+  useFrame(({ clock }) => {
+    if (!bubble.current) return
+    const active = net.drawingVisitors().length > 0
+    bubble.current.visible = active
+    bubble.current.position.set(TABLE.x, 3.6 + Math.sin(clock.elapsedTime * 2) * .08, TABLE.z)
+  })
+  return <sprite ref={bubble} scale={[1.55, .78, 1]} visible={false}><spriteMaterial map={tex} depthWrite={false} toneMapped={false} /></sprite>
 }
 
 function sample(r: Remote, renderT: number): { x: number; y: number; z: number; cell: number; flip: number } | null {

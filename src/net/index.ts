@@ -16,6 +16,7 @@ export interface RemoteSample {
 export interface Remote {
   id: string
   name: string | null
+  drawing: boolean
   buf: RemoteSample[] // ring of recent samples for 150ms-behind interpolation
 }
 
@@ -60,9 +61,10 @@ class NetAdapter {
       const attachRemote = (p: unknown) => {
         const player = p as PlayroomPlayer
         if (player.id === this.me?.id || this.remotesMap.has(player.id)) return
-        const r: Remote = { id: player.id, name: player.getProfile()?.name ?? null, buf: [] }
+        const r: Remote = { id: player.id, name: player.getProfile()?.name ?? null, drawing: false, buf: [] }
         this.remotesMap.set(player.id, r)
         const iv = setInterval(() => {
+          r.drawing = player.getState('drawing') === true
           const s = player.getState('p') as number[] | undefined
           if (s && s.length >= 6) {
             const buf = r.buf
@@ -99,6 +101,15 @@ class NetAdapter {
 
   remotes(): Remote[] {
     return [...this.remotesMap.values()]
+  }
+
+  setDrawing(drawing: boolean): void {
+    if (this.status !== 'on' || !this.me) return
+    this.me.setState('drawing', drawing, true)
+  }
+
+  drawingVisitors(): readonly Remote[] {
+    return [...this.remotesMap.values()].filter((r) => r.drawing)
   }
 
   ownsWorld(): boolean {

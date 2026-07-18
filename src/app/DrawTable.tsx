@@ -4,6 +4,7 @@ import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { sfx } from '../audio/sfx'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { conversionForCraft } from '../draw/conversion'
+import { net } from '../net'
 
 const CLASSES: Array<{ key: CraftKey; label: string; blurb: string }> = [
   { key: 'axe', label: 'Axe', blurb: 'chops trees' },
@@ -27,7 +28,9 @@ export function DrawTable() {
   const open = useGame((s) => s.drawOpen)
   const [cls, setCls] = useState<CraftKey | null>(null)
   useEffect(() => {
+    net.setDrawing(open)
     if (!open) setCls(null)
+    return () => net.setDrawing(false)
   }, [open])
   if (!open) return null
   return (

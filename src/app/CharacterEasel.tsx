@@ -46,14 +46,18 @@ function stamp(tool: Exclude<ConstructTool, 'pen'>, x: number, y: number, color:
 }
 
 function starterCharacter(facing: 'front' | 'side' | 'back'): Stroke[] {
-  const center = facing === 'side' ? .52 : .5
-  return [
-    ...stamp('head', center, .25, 'ink'),
-    ...stamp('body', center, .52, 'ink'),
-    ...stamp('arms', center, .53, 'ink'),
-    ...stamp('legs', center, .79, 'ink'),
-    ...(facing === 'back' ? stamp('hair', center, .24, 'ink') : []),
-  ]
+  // One continuous paper-doll contour gives the conversion engine a complete body to
+  // fill, instead of assembling a generic circle-and-box person out of disconnected marks.
+  const silhouette = facing === 'side'
+    ? [[.47,.1,.7],[.6,.12,.7],[.65,.23,.7],[.61,.35,.7],[.69,.43,.7],[.64,.61,.7],[.69,.9,.7],[.56,.93,.7],[.5,.69,.7],[.43,.93,.7],[.3,.9,.7],[.35,.61,.7],[.31,.43,.7],[.4,.35,.7],[.36,.23,.7],[.39,.12,.7]]
+    : [[.4,.1,.7],[.6,.1,.7],[.67,.21,.7],[.62,.36,.7],[.75,.45,.7],[.68,.64,.7],[.62,.63,.7],[.61,.91,.7],[.51,.93,.7],[.5,.71,.7],[.49,.93,.7],[.39,.91,.7],[.38,.63,.7],[.32,.64,.7],[.25,.45,.7],[.38,.36,.7],[.33,.21,.7]]
+  const body: Stroke = { pts: [...silhouette, silhouette[0]], size: .026, color: 'ink' }
+  const center = facing === 'side' ? .51 : .5
+  const outfit: Stroke = { pts: [[center - .105,.57,.7],[center + .105,.57,.7]], size: .016, color: 'tomato' }
+  const hair = facing === 'back'
+    ? stamp('hair', center, .24, 'ink')
+    : [{ pts: [[center - .105,.2,.7],[center - .055,.11,.7],[center,.08,.7],[center + .07,.12,.7],[center + .11,.21,.7]], size: .025, color: 'ink' }]
+  return [body, outfit, ...hair]
 }
 
 export function CharacterEasel({ onDone }: { onDone: () => void }) {

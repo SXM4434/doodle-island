@@ -13,7 +13,7 @@ The island now supports the whole loop. The remaining priority is to make that l
 | Pillar | State | Evidence | Remaining gap |
 |---|---|---|---|
 | Your hand is the crafting system | Strong | Stroke JSON remains canonical. The conversion engine preserves tool/decor silhouettes, and physical furniture carries the actual drawing as its maker-mark. | Validate with real players that a first drawing is clearly “mine” within one minute. |
-| Shared persistent place | Partial | Positions, placed items, gardens, dock, and residents pass through `net/`; local save persists the solo island. | Real two-device validation is still required. Harvest, combat, and inventory remain local/solo-authoritative. |
+| Shared persistent place | Partial | Positions, placed items, gardens, dock, residents, and resource-node timers pass through `net/`; local save persists the solo island. Late joins seed existing visitors and host migration republishes the local world snapshot. | Real two-device validation is still required. Guest gathering/progress actions still need action-level host authority; snapshots alone cannot arbitrate simultaneous edits. |
 | Flat things / deep world | Stronger | Paper player/NPCs/mobs/tools live in a toon 3D world. Furniture conversion now uses a limited physical kit with real colliders. | Runtime visual review is blocked by this VM’s WebGL-less automated browser. |
 | A lived-in island | Built baseline | Player cottage + bed/chest, workshop pavilion, Waddles’ stand, Miso/Sluggo cottages, villagers’ fundable homes/interiors/routines. | NPC dialogue is short flavor; expand only from playtest evidence. |
 
@@ -55,7 +55,7 @@ This is intentionally deterministic. A classifier that guesses a child’s doodl
 
 ## Honest remaining ship blockers
 
-1. **Two-client multiplayer test:** Verify late join, host migration, place/fund/harvest ownership, and no duplicate objects. Do not claim this is “shared persistent” until tested.
+1. **Two-client multiplayer test + authority:** Verify late join, host migration, place/fund/harvest ownership, and no duplicate objects. Node timers now snapshot, but guest gathering/progress actions still need host-side arbitration. Do not claim this is “shared persistent” until tested.
 2. **Live visual review:** The automated VM browser cannot create a WebGL context. Use a human preview session to inspect overlap/camera/landmark legibility.
 3. **Bundle size:** Main client is ~5.8 MB minified / ~2.0 MB gzip and the multiplayer chunk is ~842 KB. It builds, but desktop performance should be profiled before adding major packages.
 4. **Preview discipline:** One active production preview only; stop obsolete Vite servers before builds. Old dev-transform graphs caused earlier black screens.

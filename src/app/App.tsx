@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
+import { EcctrlJoystick } from 'ecctrl'
 import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { Island } from '../world/Island'
 import { Ripples } from '../world/Ripples'
@@ -100,6 +101,16 @@ export default function App() {
             {started && (
               <KeyboardControls map={keyMap}>
                 <Player />
+                <EcctrlJoystick
+                  joystickRunSensitivity={0.72}
+                  joystickPositionLeft={72}
+                  joystickPositionBottom={76}
+                  joystickHeightAndWidth={94}
+                  buttonNumber={1}
+                  buttonPositionRight={72}
+                  buttonPositionBottom={78}
+                  buttonHeightAndWidth={72}
+                />
               </KeyboardControls>
             )}
           </Physics>

@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import * as THREE from 'three'
-import { CuboidCollider, RigidBody } from '@react-three/rapier'
+import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier'
 import type { Placed } from '../sim/store'
 import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow, toon } from './toon'
@@ -23,6 +23,7 @@ export function ConvertedItem({ placed, y }: { placed: Placed; y: number }) {
   if (conversion.archetype === 'campfire') return root(<>
     {[0, 1, 2, 3, 4].map((i) => <mesh key={i} position={[Math.cos(i * 1.256) * .48, .13, Math.sin(i * 1.256) * .48]} material={mats.stone}><dodecahedronGeometry args={[.24, 0]} /></mesh>)}
     <mesh position={[0, .31, 0]} material={mats.coal}><coneGeometry args={[.36, .56, 6]} /></mesh><mesh position={[0, .62, .06]} material={mats.ember}><coneGeometry args={[.2, .54, 5]} /></mesh><mesh position={[0, 1.0, .12]} material={emblem}><planeGeometry args={[eW, eH]} /></mesh>
+    <RigidBody type="fixed" colliders={false}><BallCollider args={[.62]} position={[0, .34, 0]} /></RigidBody>
   </>)
   if (conversion.archetype === 'chair') return root(<>
     <mesh position={[0, .54, 0]} material={mats.wood}><boxGeometry args={[.9, .14, .78]} /></mesh><mesh position={[0, 1.06, -.31]} material={mats.dark}><boxGeometry args={[.9, .92, .14]} /></mesh>

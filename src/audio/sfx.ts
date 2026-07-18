@@ -11,12 +11,13 @@ export function initAudio(): void {
   if (ctx) { if (ctx.state === 'suspended') void ctx.resume(); return }
   ctx = new AudioContext()
   master = ctx.createGain()
-  master.gain.value = 0.5
+  master.gain.value = muted ? 0 : 0.5
   master.connect(ctx.destination)
   ambience = ctx.createGain()
   ambience.gain.value = 0.0001
   ambience.connect(master)
   buildAmbience()
+  setAmbientMood(ambientNight)
 }
 
 

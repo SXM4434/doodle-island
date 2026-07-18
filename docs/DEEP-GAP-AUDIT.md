@@ -17,13 +17,13 @@ Last reviewed: 2026-07-18. Sources: OUTLINE, PRD, ARCHITECTURE, BUILD-PLAN, and 
 | Paper player / camera / keyboard | Built | `Player.tsx`; 3 view atlas and bob. Touch joystick needs validation. |
 | Handcrafted island zones | Built | terrain, pond, cliff, beach; landmarks exist. |
 | Gathering + tools + drops | Built | node state, drops, audio and hit feedback. |
-| 8 hotbar + 24 bag | Missing | 8 hotbar exists; 24-slot bag is the highest remaining core inventory gap. |
+| 8 hotbar + 24 bag | Built | Persistent 32-slot inventory: 8 quick slots + 24 backpack slots. |
 | Draw-to-craft | Built | class gate, stroke persistence, restyle, tool/furniture/friend routes. |
 | Placement / pickup persistence | Built | 0.5 snap, rotate, indoor/outdoor persistence. Ownership rules remain solo. |
 | Night combat + healing | Built | mobs, dodge, berry, explicit campfire rest. |
-| Multiplayer | Partial | Playroom seam and positional/placed sync are implemented; projects/harvest/villagers are not host-authoritative. |
-| Settings / reduced motion | Partial | mute exists; reduced motion styles exist; no explicit settings control. |
-| Sound | Partial | event SFX exist; no day/night music loop. |
+| Multiplayer | Partial | Playroom seam, positional sync, placed items, plants, dock project, and residents use host-owned world snapshots. Two-device acceptance still needs a real session. |
+| Settings / reduced motion | Built | Persistent sound and reduce-motion controls are available in the HUD settings panel. |
+| Sound | Built baseline | Event SFX plus sparse procedural day/night ambience; mute is persistent. |
 
 ## Economy flow
 
@@ -33,7 +33,7 @@ Last reviewed: 2026-07-18. Sources: OUTLINE, PRD, ARCHITECTURE, BUILD-PLAN, and 
 
 `fish + surplus resources → Waddles → shine → golden ink`
 
-Current healthy sink issue: the player can overflow the hotbar silently. The 24-slot bag is required before expanding sources or prices.
+Current economy health: a persistent 24-slot backpack prevents silent loss. Do not expand currencies before live playtests show a genuine decision gap.
 
 ## Deliberately parked per BUILD-PLAN
 

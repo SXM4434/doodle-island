@@ -56,68 +56,36 @@ The game instead uses a limited authored toy-world kit for physical affordances.
 
 ---
 
-## 2. Self-avatar design: the intended promise
+## 2. Self-avatar design: corrected promise
 
-“Draw yourself” is **not** supposed to ask a player to make a raw stick figure and then mysteriously turn it into the game’s kid sprite.
+The prior “paper-doll customization” interpretation was wrong for this game. **Draw yourself means the player draws the complete character.**
 
-The intended, honest promise is:
+> **The player’s front, side, and back drawings are the actual in-world character.**
 
-> **You are customizing a real paper-doll character. Your front, side, and back marks are painted directly onto the same hand-inked body that walks around the island.**
+The game does not put the default kid beneath the drawing. It supplies only the conversion that makes raw strokes readable in the established world style:
 
-The authored body supplies:
+- a felt-tip dark contour and white paper halo;
+- the game palette;
+- paper-cutout billboard placement;
+- front / side / back paper-flip turns;
+- a small walk bob and action lean.
 
-- readable proportions;
-- front / side / back turn language;
-- a consistent walk cycle;
-- a coherent paper-character silhouette in the 3D world.
+A faint anatomy outline appears only while drawing. It is a temporary proportional guide and is never baked into the character.
 
-The player supplies identity:
+Each view must contain a full upright figure (head-to-feet span and body width). This prevents a tiny face mark from silently becoming an avatar; player-facing failure text says what needs to be drawn.
 
-- hairstyle and face details;
-- shirt design, badge, stickers, colors;
-- cape, backpack, hair, and back-of-shirt details;
-- different details for each facing.
-
-This avoids two bad outcomes:
-
-1. a player’s arbitrary 2D scribble being falsely “converted” into a polished character mesh;
-2. the player losing their own marks to a generic avatar.
+The full replacement contract is recorded in `DRAW-YOUR-OWN-CHARACTER-CONTRACT.md`.
 
 ---
 
-## 3. Real bug found during review
+## 3. Real bug and design mismatch found during review
 
-The prior implementation did have a genuine visual failure.
+There were two problems:
 
-### The defect
+1. the preview/bake scale mismatch made marks move or shrink; and
+2. more importantly, the system used a default kid beneath the player’s art, which did not fulfill “draw yourself.”
 
-The self-easel preview canvas was **480×480**, while the authored in-world character sprite is designed in a **256×256** cell.
-
-The old code drew the base body at 256px in the upper-left of the 480px preview but rendered player strokes in the 480px coordinate space. Then it squeezed every saved mark into a small generic oval for the final atlas.
-
-That meant the preview and final avatar did not agree:
-
-- a mark could look like it was placed beside or below the body in the easel;
-- hair, shirt, cape, backpack, and side/back marks could shift or shrink after saving;
-- the guide read like a placeholder instead of an honest preview of the real character.
-
-The player complaint was correct.
-
-### Correction applied
-
-`src/draw/customKid.ts` now scales the **entire** authored body and the marks together from the same 256px character coordinate system.
-
-Marks are no longer compressed into an oval. Their original normalized position, path, color, and size are retained between:
-
-- the front/side/back easel;
-- the six-cell runtime sprite atlas;
-- the walking player in the world.
-
-`src/app/CharacterEasel.tsx` was also clarified:
-
-- the copy now says the player is drawing directly on the paper doll;
-- the only remaining faint guide is the torso region, not six disconnected body-part boxes;
-- the obsolete “Found head/arms/legs” rig-analysis feedback was removed because it described a different, unused raw-body system and made the current interaction harder to understand.
+Both are removed. The new renderer uses the same raw strokes for the easel preview and the six-cell runtime atlas. No preset kid body is drawn in either path.
 
 ---
 

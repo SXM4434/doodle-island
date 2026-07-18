@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../sim/store'
 import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
-import { drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
-import { REGIONS } from '../draw/rig'
+import { avatarFacingProblem, drawAvatarGuide, drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { sfx } from '../audio/sfx'
 
-// "Draw yourself" — three facings, one easel each. Minecraft-skin energy,
-// Doodle-Island rules: your strokes, restyled, become YOU.
+// This is a character drawing flow, not a skin editor. The dashed silhouette is a
+// temporary proportional scaffold; the three drawings become the actual paper avatar.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'draw hair, face details, a shirt, or stickers directly on your paper doll' },
-  { key: 'side', label: 'Side', hint: 'draw the side details that should appear when your kid turns' },
-  { key: 'back', label: 'Back', hint: 'draw a backpack, cape, hair, or back-of-shirt design for the turn-around view' },
+  { key: 'front', label: 'Front', hint: 'Draw your whole character: head, body, arms, and feet.' },
+  { key: 'side', label: 'Side', hint: 'Draw the side view of that same character, facing right.' },
+  { key: 'back', label: 'Back', hint: 'Draw their back view — hair, backpack, cape, or shirt included.' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -25,28 +24,17 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   const [color, setColor] = useState('ink')
   const live = useRef<Stroke | null>(null)
   const say = useGame((s) => s.say)
-
   const facing = FACINGS[step]
+  const problem = avatarFacingProblem(strokes)
 
-  const repaint = useMemo(
-    () => () => {
-      const ctx = canvasRef.current?.getContext('2d')
-      if (!ctx) return
-      ctx.clearRect(0, 0, PX, PX)
-      // This is the exact paper-doll body and mark placement used by the world atlas.
-      // The faint prior-facing card is only a continuity reference, never a fake placeholder.
-      const previous = step > 0 ? drawings[FACINGS[step - 1].key] ?? [] : []
-      if (step > 0) { ctx.save(); ctx.globalAlpha = 0.13; drawCharacterStrokes(ctx, previous, PX, 0, FACINGS[step - 1].key); ctx.restore() }
-      const all = live.current ? [...strokes, live.current] : strokes
-      drawCharacterStrokes(ctx, all, PX, 0, facing.key)
-      ctx.save(); ctx.globalAlpha = 0.18; ctx.strokeStyle = '#4f8fb8'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
-      // Regions are a quiet drawing boundary, not separate body-part placeholders.
-      const torso = REGIONS.torso
-      ctx.strokeRect(torso.x0 * PX, torso.y0 * PX, (torso.x1 - torso.x0) * PX, (torso.y1 - torso.y0) * PX)
-      ctx.restore()
-    },
-    [strokes, step, drawings],
-  )
+  const repaint = useMemo(() => () => {
+    const ctx = canvasRef.current?.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, PX, PX)
+    drawAvatarGuide(ctx, PX, facing.key)
+    const all = live.current ? [...strokes, live.current] : strokes
+    drawCharacterStrokes(ctx, all, PX)
+  }, [strokes, facing.key])
   useEffect(repaint, [repaint])
 
   const toLocal = (e: React.PointerEvent) => {
@@ -66,43 +54,45 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   }
   const onUp = () => {
     if (!live.current) return
-    const s = { ...live.current, pts: simplifyStroke(live.current.pts) }
+    const stroke = { ...live.current, pts: simplifyStroke(live.current.pts) }
     live.current = null
-    setStrokes((prev) => [...prev, s])
+    setStrokes((prev) => [...prev, stroke])
   }
 
   const next = () => {
-    if (!strokes.length) return
+    const issue = avatarFacingProblem(strokes)
+    if (issue) { say(issue); return }
     const updated = { ...drawings, [facing.key]: strokes }
     setDrawings(updated)
     sfx.chime()
     if (step < 2) {
-      setStep(step + 1)
+      setStep((current) => current + 1)
       setStrokes([])
     } else {
-      saveCustomKid({ ...updated })
-      say('That’s you now! Looking great.')
+      saveCustomKid(updated)
+      say('Your drawing became your island character!')
       onDone()
     }
   }
 
   return (
     <div className="table-veil">
-      <div className="sheet easel">
+      <div className="sheet easel avatar-easel">
         <div className="sheet-head">
           <button className="btn ghost" onClick={onDone}>skip</button>
           <h2>
-            Draw yourself — {facing.label} <span className="step-dots">{['●', '●', '●'].map((d, i) => (
-              <span key={i} className={i <= step ? 'dot on' : 'dot'}>{d}</span>
+            Draw your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => (
+              <span key={i} className={i <= step ? 'dot on' : 'dot'}>{dot}</span>
             ))}</span>
           </h2>
-          <button className="btn confirm" disabled={!strokes.length} onClick={next}>
-            {step < 2 ? 'Next →' : 'That’s me!'}
+          <button className="btn confirm" disabled={!!problem} onClick={next}>
+            {step < 2 ? 'Next view →' : 'Become this character'}
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint} This is the exact body, position, and ink treatment your in-world character will use.
+          {facing.hint} The dashed outline is only a size guide. Your ink becomes the full in-world paper character.
         </p>
+        {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">
           <div className="tools">
             {BRUSHES.map((_, i) => (
@@ -111,11 +101,11 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
               </button>
             ))}
             <div className="tool-sep" />
-            {Object.entries(INKS).map(([k, hex]) => (
-              <button key={k} className={`ink ${color === k ? 'on' : ''}`} style={{ background: hex }} onClick={() => setColor(k)} aria-label={k} />
+            {Object.entries(INKS).map(([key, hex]) => (
+              <button key={key} className={`ink ${color === key ? 'on' : ''}`} style={{ background: hex }} onClick={() => setColor(key)} aria-label={key} />
             ))}
             <div className="tool-sep" />
-            <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((s) => s.slice(0, -1))}>
+            <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((all) => all.slice(0, -1))}>
               undo
             </button>
           </div>

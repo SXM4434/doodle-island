@@ -271,6 +271,9 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .step-dots { margin-left: 10px; font-size: 0.8rem; }
 .step-dots .dot { opacity: 0.25; margin-right: 3px; }
 .step-dots .dot.on { opacity: 1; color: var(--leaf); }
+.avatar-easel .paper { background: linear-gradient(135deg, rgba(79,143,184,.06), transparent 38%), #fffdf4; }
+.avatar-warning { margin: -6px 0 12px; color: #9f3f31; font-size: .84rem; font-weight: 700; text-align: center; }
+.avatar-easel .hint-line { max-width: 62ch; margin: 0 auto 13px; line-height: 1.35; }
 
 /* ---------- sticker journal ---------- */
 .journal-count { font-weight: 700; color: var(--leaf); }

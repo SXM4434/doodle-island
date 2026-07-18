@@ -7,9 +7,9 @@ import { sfx } from '../audio/sfx'
 // Optional draw-yourself flow. The player draws the figure; the style engine turns
 // closed line-art regions into the flat, filled paper-character language of the island.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'Draw a full little person. Close the head, shirt, and shorts shapes to fill them.' },
-  { key: 'side', label: 'Side', hint: 'Draw the same character from the side, facing right. Closed loops become clean flat color.' },
-  { key: 'back', label: 'Back', hint: 'Draw the back view: hair, backpack, cape, and outfit shapes can all be filled.' },
+  { key: 'front', label: 'Front', hint: 'Draw one full little person from head to feet. The engine inks and fills it into the island style.' },
+  { key: 'side', label: 'Side', hint: 'Draw the same character from the side, facing right. One closed outline is enough.' },
+  { key: 'back', label: 'Back', hint: 'Draw the back view. Add hair, backpack, cape, or outfit details inside the silhouette.' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]

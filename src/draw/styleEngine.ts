@@ -59,12 +59,11 @@ function autoFillClosedRegions(ctx: CanvasRenderingContext2D, strokes: Stroke[],
   const fill = ctx.createImageData(px, px)
   for (let start = 0; start < px * px; start++) {
     if (visited[start] || data[start * 4 + 3] > 40) continue
-    let head = 0; let tail = 0; let touchesEdge = false; let sumY = 0
+    let head = 0; let tail = 0; let touchesEdge = false
     queued[tail++] = start; visited[start] = 1
     while (head < tail) {
       const at = queued[head++]
       const x = at % px; const y = (at / px) | 0
-      sumY += y
       if (x === 0 || y === 0 || x === px - 1 || y === px - 1) touchesEdge = true
       const neighbors = [at - 1, at + 1, at - px, at + px]
       for (const next of neighbors) {
@@ -76,9 +75,15 @@ function autoFillClosedRegions(ctx: CanvasRenderingContext2D, strokes: Stroke[],
     }
     // Tiny loops are line-art accidents, not fill targets.
     if (touchesEdge || tail < Math.max(36, px * px * .00075)) continue
-    const color = fillFor(kind, ((sumY / tail) - minY) / spanY)
+    // A single closed full-body outline is the common novice drawing. Fill it in
+    // horizontal character bands rather than one flat bucket so it reads as a finished
+    // Doodle Island person: skin/head → shirt → shorts → legs. Separate closed loops
+    // still receive the color appropriate to where they sit in the whole figure.
     for (let i = 0; i < tail; i++) {
-      const o = queued[i] * 4
+      const at = queued[i]
+      const o = at * 4
+      const y = (at / px) | 0
+      const color = fillFor(kind, (y - minY) / spanY)
       fill.data[o] = color[0]; fill.data[o + 1] = color[1]; fill.data[o + 2] = color[2]; fill.data[o + 3] = color[3]
     }
   }

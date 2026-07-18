@@ -13,8 +13,8 @@ export type TopStyle = 'tee' | 'jumper' | 'coat' | 'dress'
 export type BottomStyle = 'shorts' | 'pants' | 'skirt' | 'overalls'
 export type ShoeStyle = 'sneakers' | 'boots' | 'sandals'
 export type Accessory = 'none' | 'backpack' | 'cape' | 'bow' | 'scarf'
-export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; hair:HairStyle; hairColor:string; hairVolume:number; eyes:EyeStyle; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; bottoms:BottomStyle; bottomColor:string; legLength:number; shoes:ShoeStyle; shoeColor:string; accessory:Accessory; accessoryColor:string; patch:Stroke[] }
-export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, hair:'sprigs', hairColor:'#33291f', hairVolume:1, eyes:'dots', mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, bottoms:'shorts', bottomColor:'#4f8fb8', legLength:1, shoes:'sneakers', shoeColor:'#33291f', accessory:'none', accessoryColor:'#e0a428', patch:[] }
+export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[] }
+export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, headWidth:1, headHeight:1, headTilt:0, hair:'sprigs', hairColor:'#33291f', hairVolume:1, hairWidth:1, hairHeight:1, hairOffsetX:0, hairOffsetY:0, eyes:'dots', eyeSpacing:1, eyeSize:1, eyeY:1, mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, torsoWidth:1, armLength:1, armThickness:1, bottoms:'shorts', bottomColor:'#4f8fb8', bottomWidth:1, bottomLength:1, legLength:1, legThickness:1, shoes:'sneakers', shoeColor:'#33291f', shoeWidth:1, shoeHeight:1, accessory:'none', accessoryColor:'#e0a428', accessoryScale:1, accessoryX:0, accessoryY:0, patch:[] }
 const INK='#33291f'
 type Ctx=CanvasRenderingContext2D
 
@@ -23,11 +23,13 @@ function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.
 function patch(ctx:Ctx, strokes:Stroke[]) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!,b=strokeBounds(strokes),scale=92/Math.max(.08,b.maxX-b.minX,b.maxY-b.minY);g.save();g.translate(64,64);g.scale(scale,scale);g.translate(-(b.minX+b.maxX)/2,-(b.minY+b.maxY)/2);drawStrokes(g,strokes,1);g.restore();ctx.save();ctx.beginPath();ctx.roundRect(115,148,25,23,5);ctx.clip();ctx.drawImage(c,115,148,25,23);ctx.restore() }
 function overlayHair(ctx:Ctx,c:CharacterConfig,_f:Facing) { const color=c.hairColor, v=c.hairVolume
   if(c.hair==='sprigs') return
-  if(c.hair==='cap'){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(128,59,58*v,32,0,Math.PI,0);ctx.fill();ctx.stroke();line(ctx,[[72,61],[186,61]],5);return}
-  if(c.hair==='hood'){blob(ctx,128,87,61*v,57,c.accessoryColor);blob(ctx,128,92,49,46,c.skin);return}
-  if(c.hair==='puffs'){blob(ctx,80,78,27*v,31,color);blob(ctx,176,78,27*v,31,color);blob(ctx,128,42,37*v,20,color);return}
-  if(c.hair==='bob'){blob(ctx,128,83,59*v,57,color);blob(ctx,128,93,47,44,c.skin);return}
-  if(c.hair==='swoop'){fillShape(ctx,[[72,96],[83,46],[120,33],[178,51],[160,78],[112,68]],color);return}
+  ctx.save(); ctx.translate(c.hairOffsetX, c.hairOffsetY); ctx.translate(128,82); ctx.scale(c.hairWidth,c.hairHeight); ctx.translate(-128,-82)
+  if(c.hair==='cap'){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(128,59,58*v,32,0,Math.PI,0);ctx.fill();ctx.stroke();line(ctx,[[72,61],[186,61]],5);ctx.restore();return}
+  if(c.hair==='hood'){blob(ctx,128,87,61*v,57,c.accessoryColor);blob(ctx,128,92,49,46,c.skin);ctx.restore();return}
+  if(c.hair==='puffs'){blob(ctx,80,78,27*v,31,color);blob(ctx,176,78,27*v,31,color);blob(ctx,128,42,37*v,20,color);ctx.restore();return}
+  if(c.hair==='bob'){blob(ctx,128,83,59*v,57,color);blob(ctx,128,93,47,44,c.skin);ctx.restore();return}
+  if(c.hair==='swoop'){fillShape(ctx,[[72,96],[83,46],[120,33],[178,51],[160,78],[112,68]],color);ctx.restore();return}
+  ctx.restore()
 }
 function overlayFace(ctx:Ctx,c:CharacterConfig,f:Facing) { if(f==='back'||(c.eyes==='dots'&&c.mouth==='smile'))return
   // cover only original face marks before drawing the chosen alternative.
@@ -47,15 +49,17 @@ function overlayClothes(ctx:Ctx,c:CharacterConfig,f:Facing) { if(c.top==='tee'&&
   if(c.shoes==='boots'){blob(ctx,113,232,16,12,c.shoeColor);if(f!=='side')blob(ctx,143,232,16,12,c.shoeColor)}
 }
 function overlayAccessory(ctx:Ctx,c:CharacterConfig,f:Facing) { if(c.accessory==='none')return
-  if(c.accessory==='backpack'&&f!=='front'){ctx.fillStyle=c.accessoryColor;ctx.beginPath();ctx.roundRect(151,145,30,42,9);ctx.fill();ctx.stroke();return}
+  ctx.save();ctx.translate(c.accessoryX,c.accessoryY);ctx.translate(128,150);ctx.scale(c.accessoryScale,c.accessoryScale);ctx.translate(-128,-150)
+  if(c.accessory==='backpack'&&f!=='front'){ctx.fillStyle=c.accessoryColor;ctx.beginPath();ctx.roundRect(151,145,30,42,9);ctx.fill();ctx.stroke();ctx.restore();return}
   if(c.accessory==='cape'&&f!=='front')fillShape(ctx,[[147,148],[181,169],[166,207],[137,185]],c.accessoryColor)
   if(c.accessory==='scarf')line(ctx,[[101,138],[155,138]],10,c.accessoryColor)
   if(c.accessory==='bow'&&f!=='back'){blob(ctx,166,45,14,10,c.accessoryColor);blob(ctx,189,45,14,10,c.accessoryColor)}
+  ctx.restore()
 }
 export function drawCharacter(ctx:Ctx,c:CharacterConfig,facing:Facing,frame=0) {
   // Master sheet always renders first. Default config is pixel-for-pixel its original look.
   resetKidInkSeed(7 + frame * 31 + (facing === 'front' ? 0 : facing === 'side' ? 62 : 124))
-  drawKid(ctx,facing,frame,{skin:c.skin,shirt:c.topColor,shorts:c.bottomColor,hair:c.hairColor,shoes:c.shoeColor})
+  drawKid(ctx,facing,frame,{skin:c.skin,shirt:c.topColor,shorts:c.bottomColor,hair:c.hairColor,shoes:c.shoeColor},{ headShape:c.headShape, headWidth:c.headWidth*c.headScale, headHeight:c.headHeight*c.headScale, headTilt:c.headTilt, torsoWidth:c.torsoWidth, torsoLength:c.topLength, armLength:c.armLength, armThickness:c.armThickness, bottomWidth:c.bottomWidth, bottomLength:c.bottomLength, legLength:c.legLength, legThickness:c.legThickness, shoeWidth:c.shoeWidth, shoeHeight:c.shoeHeight, eyeSpacing:c.eyeSpacing, eyeSize:c.eyeSize, eyeY:c.eyeY })
   overlayAccessory(ctx,c,facing);overlayClothes(ctx,c,facing);overlayHair(ctx,c,facing);overlayFace(ctx,c,facing);if(facing==='front')patch(ctx,c.patch)
 }
 export function bakeCharacterAtlas(config:CharacterConfig):THREE.CanvasTexture { const cell=256,canvas=document.createElement('canvas');canvas.width=cell*6;canvas.height=cell;const ctx=canvas.getContext('2d')!,cells:Array<[Facing,number]>=[['front',0],['front',1],['side',0],['side',1],['back',0],['back',1]];cells.forEach(([f,frame],i)=>{ctx.save();ctx.translate(i*cell,0);drawCharacter(ctx,config,f,frame);ctx.restore()});const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.repeat.set(1/6,1);return tex }

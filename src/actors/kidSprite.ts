@@ -24,22 +24,36 @@ export function blob(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, f
 }
 
 // The master drawing has only palette hooks. Its pose, scale and silhouette stay intact.
-export function drawKid(ctx: Ctx, facing: 'front' | 'side' | 'back', frame: number, palette?: { skin?: string; shirt?: string; shorts?: string; hair?: string; shoes?: string }): void {
+export interface KidGeometry { headShape?: 'round' | 'bean' | 'soft-square'; headWidth?: number; headHeight?: number; headTilt?: number; torsoWidth?: number; torsoLength?: number; armLength?: number; armThickness?: number; bottomWidth?: number; bottomLength?: number; legLength?: number; legThickness?: number; shoeWidth?: number; shoeHeight?: number; eyeSpacing?: number; eyeSize?: number; eyeY?: number }
+export function drawKid(ctx: Ctx, facing: 'front' | 'side' | 'back', frame: number, palette?: { skin?: string; shirt?: string; shorts?: string; hair?: string; shoes?: string }, geometry?: KidGeometry): void {
   const skin = palette?.skin ?? DEFAULT_SKIN, shirt = palette?.shirt ?? DEFAULT_SHIRT, shorts = palette?.shorts ?? DEFAULT_SHORTS, hair = palette?.hair ?? INK, shoes = palette?.shoes ?? INK
+  const g = { headWidth: 1, headHeight: 1, headTilt: 0, torsoWidth: 1, torsoLength: 1, armLength: 1, armThickness: 1, bottomWidth: 1, bottomLength: 1, legLength: 1, legThickness: 1, shoeWidth: 1, shoeHeight: 1, eyeSpacing: 1, eyeSize: 1, eyeY: 1, ...geometry }
+  const transform = (x:number, y:number, sx:number, sy:number, rotation=0) => { ctx.translate(x,y); ctx.rotate(rotation); ctx.scale(sx,sy); ctx.translate(-x,-y) }
   ctx.lineWidth = 6.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = INK
   const legSwing = frame === 0 ? 14 : -14, armSwing = frame === 0 ? -12 : 12
+  const legEnd = 190 + 38 * g.legLength
+  ctx.lineWidth = 6.5 * g.legThickness
   if (facing === 'side') {
-    wobblyPath(ctx, [[128, 190], [128 + legSwing, 228]]); ctx.stroke(); wobblyPath(ctx, [[128, 190], [128 - legSwing, 228]]); ctx.stroke(); blob(ctx, 128 + legSwing + 6, 232, 13, 8, shoes, false); blob(ctx, 128 - legSwing + 6, 232, 13, 8, shoes, false)
+    wobblyPath(ctx, [[128, 190], [128 + legSwing, legEnd]]); ctx.stroke(); wobblyPath(ctx, [[128, 190], [128 - legSwing, legEnd]]); ctx.stroke(); blob(ctx, 128 + legSwing + 6, legEnd + 4, 13 * g.shoeWidth, 8 * g.shoeHeight, shoes, false); blob(ctx, 128 - legSwing + 6, legEnd + 4, 13 * g.shoeWidth, 8 * g.shoeHeight, shoes, false)
   } else {
-    wobblyPath(ctx, [[113, 190], [113 - legSwing * .3, 228]]); ctx.stroke(); wobblyPath(ctx, [[143, 190], [143 + legSwing * .3, 228]]); ctx.stroke(); blob(ctx, 113 - legSwing * .3, 233, 12, 8, shoes, false); blob(ctx, 143 + legSwing * .3, 233, 12, 8, shoes, false)
+    wobblyPath(ctx, [[113, 190], [113 - legSwing * .3, legEnd]]); ctx.stroke(); wobblyPath(ctx, [[143, 190], [143 + legSwing * .3, legEnd]]); ctx.stroke(); blob(ctx, 113 - legSwing * .3, legEnd + 5, 12 * g.shoeWidth, 8 * g.shoeHeight, shoes, false); blob(ctx, 143 + legSwing * .3, legEnd + 5, 12 * g.shoeWidth, 8 * g.shoeHeight, shoes, false)
   }
-  blob(ctx, 128, 182, 26, 16, shorts); blob(ctx, 128, 158, 30, 26, shirt)
-  if (facing === 'side') { wobblyPath(ctx, [[128, 145], [134 + armSwing, 180]]); ctx.stroke(); blob(ctx, 134 + armSwing, 184, 8, 8, skin) }
-  else { wobblyPath(ctx, [[100, 145], [92 + armSwing * .4, 182]]); ctx.stroke(); wobblyPath(ctx, [[156, 145], [164 - armSwing * .4, 182]]); ctx.stroke(); blob(ctx, 92 + armSwing * .4, 186, 8, 8, skin); blob(ctx, 164 - armSwing * .4, 186, 8, 8, skin) }
-  blob(ctx, 128, 92, 55, 50, skin)
+  ctx.save(); transform(128, 182, g.bottomWidth, g.bottomLength); blob(ctx, 128, 182, 26, 16, shorts); ctx.restore()
+  ctx.save(); transform(128, 158, g.torsoWidth, g.torsoLength); blob(ctx, 128, 158, 30, 26, shirt); ctx.restore()
+  ctx.lineWidth = 6.5 * g.armThickness
+  const armEnd = 145 + 35 * g.armLength
+  if (facing === 'side') { wobblyPath(ctx, [[128, 145], [134 + armSwing, armEnd]]); ctx.stroke(); blob(ctx, 134 + armSwing, armEnd + 4, 8, 8, skin) }
+  else { wobblyPath(ctx, [[100, 145], [92 + armSwing * .4, armEnd]]); ctx.stroke(); wobblyPath(ctx, [[156, 145], [164 - armSwing * .4, armEnd]]); ctx.stroke(); blob(ctx, 92 + armSwing * .4, armEnd + 4, 8, 8, skin); blob(ctx, 164 - armSwing * .4, armEnd + 4, 8, 8, skin) }
+  ctx.save(); transform(128, 92, g.headWidth, g.headHeight, g.headTilt)
+  if (g.headShape === 'soft-square') { ctx.beginPath(); ctx.roundRect(74, 43, 108, 98, 23); ctx.fillStyle = skin; ctx.fill(); ctx.stroke() }
+  else if (g.headShape === 'bean') { ctx.beginPath(); ctx.moveTo(75, 84); ctx.quadraticCurveTo(82, 39, 126, 42); ctx.quadraticCurveTo(180, 41, 183, 86); ctx.quadraticCurveTo(178, 136, 132, 142); ctx.quadraticCurveTo(80, 137, 75, 84); ctx.closePath(); ctx.fillStyle = skin; ctx.fill(); ctx.stroke() }
+  else blob(ctx, 128, 92, 55, 50, skin)
+  ctx.restore()
+  ctx.lineWidth = 6.5
   if (facing === 'front') {
     for (const dx of [-18, 0, 18]) { ctx.strokeStyle = hair; wobblyPath(ctx, [[128 + dx, 46], [128 + dx * 1.4, 26]]); ctx.stroke() }
-    ctx.fillStyle = INK; blob(ctx, 108, 92, 5.5, 6.5, INK, false); blob(ctx, 148, 92, 5.5, 6.5, INK, false); blob(ctx, 96, 110, 8, 5, 'rgba(217,93,57,.35)', false); blob(ctx, 160, 110, 8, 5, 'rgba(217,93,57,.35)', false); ctx.lineWidth = 5; ctx.strokeStyle = INK; wobblyPath(ctx, [[116, 114], [128, 121], [140, 114]]); ctx.stroke()
+    const eyeY = 92 + (g.eyeY - 1) * 28, eyeGap = 20 * g.eyeSpacing
+    ctx.fillStyle = INK; blob(ctx, 128 - eyeGap, eyeY, 5.5 * g.eyeSize, 6.5 * g.eyeSize, INK, false); blob(ctx, 128 + eyeGap, eyeY, 5.5 * g.eyeSize, 6.5 * g.eyeSize, INK, false); blob(ctx, 96, 110, 8, 5, 'rgba(217,93,57,.35)', false); blob(ctx, 160, 110, 8, 5, 'rgba(217,93,57,.35)', false); ctx.lineWidth = 5; ctx.strokeStyle = INK; wobblyPath(ctx, [[116, 114], [128, 121], [140, 114]]); ctx.stroke()
   } else if (facing === 'side') {
     for (const dx of [-14, 4]) { ctx.strokeStyle = hair; wobblyPath(ctx, [[122 + dx, 46], [116 + dx * 1.4, 27]]); ctx.stroke() }
     ctx.lineWidth = 5.5; ctx.strokeStyle = INK; wobblyPath(ctx, [[180, 95], [188, 101], [180, 107]]); ctx.stroke(); blob(ctx, 158, 92, 5.5, 6.5, INK, false); ctx.lineWidth = 5; wobblyPath(ctx, [[164, 116], [173, 113]]); ctx.stroke()

@@ -10,6 +10,7 @@ import { makeBlobShadow } from './toon'
 import { ConvertedItem } from './ConvertedItem'
 import { convertDrawing } from '../draw/conversion'
 import { canPlaceHere } from '../sim/placement'
+import { isStructural, PLAYER_PLOT } from '../sim/placement'
 
 // Placed drawn items = paper standees in the world (Route A billboards, ARCH §5).
 export function PlacedItems() {
@@ -80,6 +81,7 @@ export function PlaceGhost() {
   const rot = useGame((s) => s.placingRot)
   const ref = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.MeshBasicMaterial>(null)
+  const ringRef = useRef<THREE.Mesh>(null)
   const baked = useMemo(() => (placing ? itemTexture(placing) : null), [placing])
 
   useFrame(({ camera }) => {
@@ -103,6 +105,7 @@ export function PlaceGhost() {
     ref.current.position.set(x, y, z)
     ref.current.rotation.y = rot
     if (matRef.current) matRef.current.color.set(valid ? '#ffffff' : '#ff6b5e')
+    if (ringRef.current) { ringRef.current.visible = !inside && isStructural(placing); ringRef.current.position.set(PLAYER_PLOT.x - x, .045, PLAYER_PLOT.z - z) }
   })
 
   if (!placing || !baked) return null
@@ -111,6 +114,10 @@ export function PlaceGhost() {
   const h = size / Math.max(baked.aspect, 0.7)
   return (
     <group ref={ref}>
+      <mesh ref={ringRef} position={[0, .045, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <ringGeometry args={[7.9, 8.05, 48]} />
+        <meshBasicMaterial color="#e0a428" transparent opacity={.48} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <mesh position={[0, h / 2 + 0.02, 0]}>
         <planeGeometry args={[w, h]} />
         <meshBasicMaterial

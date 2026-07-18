@@ -117,6 +117,21 @@ function WelcomeShelf({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }
   </group>
 }
 
+// A bed is intentionally only a player-home utility. Starting value: it skips to
+// early morning; test whether players understand the night-to-morning change from
+// the immediate light/audio change, and add a stronger visual transition only if not.
+export function playerBedNearby(): boolean {
+  const p = refs.playerPos
+  const slot = interiorSlot(PLAYER_ROOM)
+  return isInside(p.x) && Math.hypot(p.x - (slot.x - 3.65), p.z - (slot.z - 3.65)) < 1.5
+}
+export function sleepAtHome(): boolean {
+  if (!playerBedNearby()) return false
+  refs.time = 0.12
+  useGame.getState().say('You wake up to a fresh island morning.')
+  return true
+}
+
 export function chestRoomNearby(): number | null {
   const p = refs.playerPos
   if (!isInside(p.x)) return null

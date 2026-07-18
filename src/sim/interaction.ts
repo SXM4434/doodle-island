@@ -4,7 +4,7 @@
 import { useGame, refs, equippedTool } from './store'
 import { TABLE } from './terrain'
 import { SHOP } from '../world/ShopStall'
-import { ROOM, isInside, interiorSlot, chestRoomNearby, PLAYER_HOME } from '../world/Interiors'
+import { ROOM, isInside, interiorSlot, chestRoomNearby, playerBedNearby, PLAYER_HOME } from '../world/Interiors'
 import { nearbyHomeBlueprint } from '../world/Homes'
 import { nearestCritter } from '../actors/Critters'
 import { nearestIslander } from '../actors/Islanders'
@@ -30,6 +30,7 @@ export function getInteractionTarget(): InteractionTarget | null {
   if (g.drawOpen || g.shopOpen || g.journalOpen) return null
   if (g.placing) return { id: 'place', label: 'Place creation', detail: 'E confirm · R rotate · Esc cancel', verb: 'place' }
   if (isInside(p.x)) {
+    if (playerBedNearby()) return { id: 'player-bed', label: 'Your bed', detail: 'E sleep until morning', verb: 'build' }
     const chest = chestRoomNearby()
     if (chest !== null) return { id: 'chest', label: 'Home Chest', detail: 'E store your things', verb: 'pick-up' }
     for (let i = 0; i < g.villagers.length; i++) {

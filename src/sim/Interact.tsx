@@ -10,7 +10,7 @@ import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
 import { islanderSay } from '../actors/Islanders'
-import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
+import { tryEnterHouse, tryExitHouse, chestRoomNearby, sleepAtHome } from '../world/Interiors'
 import { restAtCampfire } from '../world/Campfires'
 import { collectDailyBottle } from '../world/DailyBottle'
 import { nearbyHomeBlueprint } from '../world/Homes'
@@ -86,6 +86,8 @@ export function tryInteract(): void {
     }
   }
 
+  // A personal bed makes the cottage a night refuge, not just scenery.
+  if (sleepAtHome()) { sfx.warmth(); return }
   // a home is a utility space: chest before door / exterior interactions
   const chest = chestRoomNearby()
   if (chest !== null) { g.openChest(chest); sfx.chime(); return }

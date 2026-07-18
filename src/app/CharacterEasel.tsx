@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../sim/store'
-import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
-import { avatarFacingProblem, drawAvatarGuide, drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
+import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
+import { avatarFacingProblem, drawAvatarGuide, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { sfx } from '../audio/sfx'
 
 // The character easel is a construction tool, not a blank white test. Players can build
@@ -13,6 +13,7 @@ const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: stri
   { key: 'back', label: 'Back', hint: 'Build the back view, then add hair, cape, backpack, or shirt details.' },
 ]
 
+type Mode = 'draw' | 'build'
 type ConstructTool = 'pen' | 'head' | 'body' | 'arms' | 'legs' | 'hair' | 'cape'
 const CONSTRUCT: Array<{ key: ConstructTool; label: string; title: string }> = [
   { key: 'pen', label: '✎', title: 'Draw freehand' },
@@ -67,6 +68,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   const [strokes, setStrokes] = useState<Stroke[]>([])
   const [brush, setBrush] = useState(1)
   const [color, setColor] = useState('ink')
+  const [mode, setMode] = useState<Mode>('draw')
   const [tool, setTool] = useState<ConstructTool>('pen')
   const live = useRef<Stroke | null>(null)
   const say = useGame((s) => s.say)
@@ -78,7 +80,9 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     if (!ctx) return
     ctx.clearRect(0, 0, PX, PX)
     const all = live.current ? [...strokes, live.current] : strokes
-    drawCharacterStrokes(ctx, all, PX, 0, facing.key)
+    // Stable default canvas: never normalize/re-render the whole drawing while the
+    // pointer moves. That was making prior lines crawl under the cursor.
+    drawStrokes(ctx, all, PX, { backing: true })
     if (!strokes.length && !live.current) drawAvatarGuide(ctx, PX, facing.key)
   }, [strokes, facing.key])
   useEffect(repaint, [repaint])
@@ -89,7 +93,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   }
   const onDown = (e: React.PointerEvent) => {
     const point = toLocal(e)
-    if (tool !== 'pen') {
+    if (mode === 'build' && tool !== 'pen') {
       setStrokes((all) => [...all, ...stamp(tool, point[0], point[1], color)])
       sfx.knock('soft')
       return
@@ -112,6 +116,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
   }
   const buildStarter = () => {
     setStrokes(starterCharacter(facing.key))
+    setMode('build')
     setTool('pen')
     sfx.chime()
   }
@@ -120,7 +125,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     if (issue) { say(issue); return }
     const updated = { ...drawings, [facing.key]: strokes }
     setDrawings(updated); sfx.chime()
-    if (step < 2) { setStep((current) => current + 1); setStrokes([]); setTool('pen') }
+    if (step < 2) { setStep((current) => current + 1); setStrokes([]); setMode('draw'); setTool('pen') }
     else { saveCustomKid(updated); say('Your constructed drawing became your island character!'); onDone() }
   }
 
@@ -132,21 +137,25 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
           <h2>Build your character — {facing.label} <span className="step-dots">{['●', '●', '●'].map((dot, i) => <span key={i} className={i <= step ? 'dot on' : 'dot'}>{dot}</span>)}</span></h2>
           <button className="btn confirm" disabled={!!problem} onClick={next}>{step < 2 ? 'Next view →' : 'Make my character'}</button>
         </div>
-        <p className="hint-line">{facing.hint} Build with parts or use the starter, then draw details. Your construction becomes the final filled paper character.</p>
-        <div className="construct-bar" role="toolbar" aria-label="Character construction tools">
+        <p className="hint-line">{mode === 'draw' ? `${facing.hint} Draw freely—nothing shifts while you draw. The finished view is converted after you continue.` : 'Build mode is the older assisted option. Add parts, then return to free draw for personal details.'}</p>
+        <div className="character-mode-bar" role="group" aria-label="Character drawing mode">
+          <button className={`mode-choice ${mode === 'draw' ? 'selected' : ''}`} onClick={() => { setMode('draw'); setTool('pen') }}>Draw freely <small>recommended</small></button>
+          <button className={`mode-choice ${mode === 'build' ? 'selected' : ''}`} onClick={() => setMode('build')}>Build with parts <small>assisted</small></button>
+          <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((all) => all.slice(0, -1))}>undo</button>
+        </div>
+        {mode === 'build' && <div className="construct-bar" role="toolbar" aria-label="Character construction tools">
           {CONSTRUCT.map((entry) => <button key={entry.key} className={`construct-tool ${tool === entry.key ? 'selected' : ''}`} onClick={() => setTool(entry.key)} title={entry.title} aria-label={entry.title}>{entry.label}</button>)}
           <span className="construct-rule" />
           <button className="btn small build-starter" onClick={buildStarter}>Build starter</button>
-          <button className="btn ghost small" disabled={!strokes.length} onClick={() => setStrokes((all) => all.slice(0, -1))}>undo</button>
-        </div>
+        </div>}
         {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">
           <div className="tools">
-            {BRUSHES.map((_, i) => <button key={i} className={`tool-dot ${brush === i && tool === 'pen' ? 'on' : ''}`} onClick={() => { setBrush(i); setTool('pen') }} aria-label={`brush ${i + 1}`}><span style={{ width: 6 + i * 7, height: 6 + i * 7 }} /></button>)}
+            {BRUSHES.map((_, i) => <button key={i} className={`tool-dot ${brush === i && (mode === 'draw' || tool === 'pen') ? 'on' : ''}`} onClick={() => { setBrush(i); setMode('draw'); setTool('pen') }} aria-label={`brush ${i + 1}`}><span style={{ width: 6 + i * 7, height: 6 + i * 7 }} /></button>)}
             <div className="tool-sep" />
             {Object.entries(INKS).map(([key, hex]) => <button key={key} className={`ink ${color === key ? 'on' : ''}`} style={{ background: hex }} onClick={() => setColor(key)} aria-label={key} />)}
           </div>
-          <canvas ref={canvasRef} width={PX} height={PX} className={`paper ${tool !== 'pen' ? 'constructing' : ''}`} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
+          <canvas ref={canvasRef} width={PX} height={PX} className={`paper ${mode === 'build' && tool !== 'pen' ? 'constructing' : ''}`} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
         </div>
       </div>
     </div>

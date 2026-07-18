@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../sim/store'
-import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
-import { saveCustomKid, type CustomKid } from '../draw/customKid'
+import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
+import { drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { REGIONS, analyzeDrawing } from '../draw/rig'
 import { sfx } from '../audio/sfx'
 
@@ -59,11 +59,11 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       if (step > 0) {
         ctx.save()
         ctx.globalAlpha = 0.15
-        drawStrokes(ctx, drawings[FACINGS[step - 1].key] ?? [], PX)
+        drawCharacterStrokes(ctx, drawings[FACINGS[step - 1].key] ?? [], PX)
         ctx.restore()
       }
       const all = live.current ? [...strokes, live.current] : strokes
-      drawStrokes(ctx, all, PX)
+      drawCharacterStrokes(ctx, all, PX)
     },
     [strokes, step, drawings],
   )
@@ -105,7 +105,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       setStep(step + 1)
       setStrokes([])
     } else {
-      saveCustomKid({ ...updated, riggable: true })
+      saveCustomKid({ ...updated })
       say('That’s you now! Looking great.')
       onDone()
     }
@@ -126,7 +126,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint}
+          {facing.hint} Your marks are previewed with the same ink and paper edge they’ll have on the island.
           {step === 0 && analysis && <strong style={{ marginLeft: 8, color: 'var(--leaf)' }}>{analysis}</strong>}
         </p>
         <div className="easel-row">

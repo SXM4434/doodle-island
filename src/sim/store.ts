@@ -492,11 +492,11 @@ export const useGame = create<State>((set, get) => ({
           id: item.id, name, item,
           homeX: p.x + Math.cos(a) * 2.5,
           homeZ: p.z + Math.sin(a) * 2.5,
-          quest: null, questAt: 0, fed: 0, built: 0, homeWood: 0, homeNeed: 10,
+          quest: { res: 'wood', n: 2 }, questAt: performance.now(), fed: 0, built: 0, homeWood: 0, homeNeed: 10,
         },
       ],
     })
-    get().say(name + ' hopped off the page! They live here now.')
+    get().say(`${name} hopped off the page! They need 2 wood to mark out a home.`)
   },
 
   giveVillager: (id) => {

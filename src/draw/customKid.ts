@@ -1,7 +1,7 @@
 // Custom drawn character: player draws front / side / back at the table.
 // Same canonical rule as items — strokes are the truth, atlas re-bakes locally.
 import * as THREE from 'three'
-import { drawStrokes, strokeBounds, type Stroke } from './strokes'
+import { strokeOutline, outlineToPath, strokeBounds, type Stroke, INKS } from './strokes'
 
 export interface CustomKid {
   front: Stroke[]
@@ -32,23 +32,48 @@ export function clearCustomKid(): void {
   localStorage.removeItem(KEY)
 }
 
-function drawFacing(ctx: CanvasRenderingContext2D, strokes: Stroke[], ox: number): void {
+export function isCompleteCustomKid(kid: CustomKid | null): kid is CustomKid {
+  return !!kid && kid.front.length > 0 && kid.side.length > 0 && kid.back.length > 0
+}
+
+// The character restyle is intentionally stronger than an item restyle. Player strokes
+// retain their silhouette, then receive the same dark felt-tip contour + cream paper
+// separation that makes the standard kid readable against the 3D diorama.
+export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0): void {
   const b = strokeBounds(strokes)
   const w = b.maxX - b.minX
   const h = b.maxY - b.minY
-  const scale = 0.82 / Math.max(w, h, 0.01)
+  const scale = 0.76 / Math.max(w, h, 0.01)
   const remapped = strokes.map((s) => ({
     ...s,
-    size: s.size * scale,
+    size: Math.max(s.size * scale, 0.014),
     pts: s.pts.map((p) => [
       0.5 + (p[0] - (b.minX + w / 2)) * scale,
-      0.55 + (p[1] - (b.minY + h / 2)) * scale,
+      0.54 + (p[1] - (b.minY + h / 2)) * scale,
       p[2],
     ]),
   }))
   ctx.save()
   ctx.translate(ox, 0)
-  drawStrokes(ctx, remapped, CELL, { backing: true })
+  // cream cutout halo: a drawing stays a drawing, but never disappears into grass/roof.
+  for (const s of remapped) {
+    if (s.erase) continue
+    const halo = { ...s, size: s.size + 18 / px }
+    ctx.fillStyle = '#fff4d8'
+    ctx.fill(outlineToPath(strokeOutline(halo, px)))
+  }
+  // the default kid's confident near-black marker contour.
+  for (const s of remapped) {
+    if (s.erase) continue
+    const contour = { ...s, size: s.size + 8 / px }
+    ctx.fillStyle = '#33291f'
+    ctx.fill(outlineToPath(strokeOutline(contour, px)))
+  }
+  for (const s of remapped) {
+    const path = outlineToPath(strokeOutline(s, px))
+    if (s.erase) { ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(path); ctx.restore() }
+    else { ctx.fillStyle = INKS[s.color] ?? INKS.ink; ctx.fill(path) }
+  }
   ctx.restore()
 }
 
@@ -67,7 +92,7 @@ export function bakeCustomAtlas(kid: CustomKid): THREE.CanvasTexture {
   for (const [strokes, i, dy] of cells) {
     ctx.save()
     ctx.translate(0, dy * CELL)
-    drawFacing(ctx, strokes, i * CELL)
+    drawCharacterStrokes(ctx, strokes, CELL, i * CELL)
     ctx.restore()
   }
   const t = new THREE.CanvasTexture(c)

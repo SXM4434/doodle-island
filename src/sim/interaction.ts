@@ -33,7 +33,7 @@ export function getInteractionTarget(): InteractionTarget | null {
     if (playerBedNearby()) return { id: 'player-bed', label: 'Your bed', detail: 'E sleep until morning', verb: 'build' }
     const chest = chestRoomNearby()
     if (chest !== null) return { id: 'chest', label: 'Home Chest', detail: 'E store your things', verb: 'pick-up' }
-    for (let i = 0; i < g.villagers.length; i++) {
+    for (let i = 0; i < g.villagers.length + 1; i++) {
       const slot = interiorSlot(i)
       if (Math.hypot(p.x - slot.x, p.z - (slot.z + ROOM / 2 - 0.6)) < 1.3) {
         return { id: 'exit-home', label: 'Leave home', detail: 'E return outside', verb: 'leave' }

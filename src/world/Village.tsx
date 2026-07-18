@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { groundY, POND, TABLE } from '../sim/terrain'
 import { makeBlobShadow, toon } from './toon'
 import { PLAYER_HOME } from './Interiors'
+import { PLAYER_PLOT } from '../sim/placement'
 
 // Three fixed landmarks make the island read as an inhabited place before a
 // player has drawn their first friend. They deliberately use the same small
@@ -12,11 +13,26 @@ export function Village() {
   return (
     <group>
       <WorkshopPavilion />
+      <HomePlot />
       <ResidentCottage x={PLAYER_HOME.x} z={PLAYER_HOME.z} roof="#E9C55B" door="#704737" detail="cat" personal />
       <ResidentCottage x={POND.x + 11.5} z={POND.z - 7} roof="#D96557" door="#704737" detail="cat" />
       <ResidentCottage x={-10} z={-39.5} roof="#5B91B6" door="#465D6E" detail="shell" />
     </group>
   )
+}
+
+function HomePlot() {
+  const y = groundY(PLAYER_PLOT.x, PLAYER_PLOT.z)
+  const mat = useMemo(() => toon('#D9B66C'), [])
+  // A shallow, irregular pebble ring says "this is yours" without a signboard
+  // or an intrusive collision wall.
+  return <group position={[PLAYER_PLOT.x, y + .035, PLAYER_PLOT.z]}>
+    {Array.from({ length: 18 }, (_, i) => {
+      const a = i / 18 * Math.PI * 2
+      const r = PLAYER_PLOT.radius + Math.sin(i * 2.7) * .22
+      return <mesh key={i} position={[Math.cos(a) * r, .03, Math.sin(a) * r]} rotation={[0, a, .15]} material={mat}><dodecahedronGeometry args={[.17 + (i % 3) * .025, 0]} /></mesh>
+    })}
+  </group>
 }
 
 type CottageProps = { x: number; z: number; roof: string; door: string; detail: 'cat' | 'shell'; personal?: boolean }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useGame, refs, RES_LABEL, type ResKind } from '../sim/store'
 import { itemThumb } from '../draw/itemTexture'
 import { dropIconDataURL } from '../actors/kidSprite'
-import { sfx, setMuted, isMuted } from '../audio/sfx'
+import { sfx, setMuted, isMuted, initAudio } from '../audio/sfx'
 
 const HINTS = [
   'WASD to wander · drag to look',
@@ -98,7 +98,7 @@ export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
           className="btn confirm big"
           onClick={() => {
             start()
-            import('../audio/sfx').then((m) => m.initAudio())
+            initAudio()
             sfx.chime()
           }}
         >
@@ -108,7 +108,7 @@ export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
           className="btn"
           style={{ marginTop: 10 }}
           onClick={() => {
-            import('../audio/sfx').then((m) => m.initAudio())
+            initAudio()
             onDrawSelf?.()
           }}
         >

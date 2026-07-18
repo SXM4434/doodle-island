@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGame } from '../sim/store'
 import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
-import { REGIONS, analyzeDrawing } from '../draw/rig'
+import { REGIONS } from '../draw/rig'
 import { sfx } from '../audio/sfx'
 
 // "Draw yourself" — three facings, one easel each. Minecraft-skin energy,
 // Doodle-Island rules: your strokes, restyled, become YOU.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'add your shirt, hair, face, or stickers inside the kid guide' },
-  { key: 'side', label: 'Side', hint: 'your side-view details — the kid body stays consistent' },
-  { key: 'back', label: 'Back', hint: 'backpack, hair, cape, or a back-of-shirt drawing' },
+  { key: 'front', label: 'Front', hint: 'draw hair, face details, a shirt, or stickers directly on your paper doll' },
+  { key: 'side', label: 'Side', hint: 'draw the side details that should appear when your kid turns' },
+  { key: 'back', label: 'Back', hint: 'draw a backpack, cape, hair, or back-of-shirt design for the turn-around view' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -33,14 +33,16 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
       const ctx = canvasRef.current?.getContext('2d')
       if (!ctx) return
       ctx.clearRect(0, 0, PX, PX)
-      // Preview the actual authored kid body first. You are decorating its identity,
-      // not asked to recreate a whole animation rig from scratch.
+      // This is the exact paper-doll body and mark placement used by the world atlas.
+      // The faint prior-facing card is only a continuity reference, never a fake placeholder.
       const previous = step > 0 ? drawings[FACINGS[step - 1].key] ?? [] : []
-      if (step > 0) { ctx.save(); ctx.globalAlpha = 0.16; drawCharacterStrokes(ctx, previous, PX, 0, FACINGS[step - 1].key); ctx.restore() }
+      if (step > 0) { ctx.save(); ctx.globalAlpha = 0.13; drawCharacterStrokes(ctx, previous, PX, 0, FACINGS[step - 1].key); ctx.restore() }
       const all = live.current ? [...strokes, live.current] : strokes
       drawCharacterStrokes(ctx, all, PX, 0, facing.key)
-      ctx.save(); ctx.globalAlpha = 0.13; ctx.strokeStyle = '#4f8fb8'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
-      for (const r of Object.values(REGIONS)) ctx.strokeRect(r.x0 * PX, r.y0 * PX, (r.x1 - r.x0) * PX, (r.y1 - r.y0) * PX)
+      ctx.save(); ctx.globalAlpha = 0.18; ctx.strokeStyle = '#4f8fb8'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      // Regions are a quiet drawing boundary, not separate body-part placeholders.
+      const torso = REGIONS.torso
+      ctx.strokeRect(torso.x0 * PX, torso.y0 * PX, (torso.x1 - torso.x0) * PX, (torso.y1 - torso.y0) * PX)
       ctx.restore()
     },
     [strokes, step, drawings],
@@ -62,16 +64,11 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
     if (live.current.pts.length % 3 === 0) sfx.pencil()
     repaint()
   }
-  const [analysis, setAnalysis] = useState('')
   const onUp = () => {
     if (!live.current) return
     const s = { ...live.current, pts: simplifyStroke(live.current.pts) }
     live.current = null
-    setStrokes((prev) => {
-      const next = [...prev, s]
-      if (step === 0) setAnalysis(analyzeDrawing(next))
-      return next
-    })
+    setStrokes((prev) => [...prev, s])
   }
 
   const next = () => {
@@ -104,8 +101,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint} Your marks are previewed with the same ink and paper edge they’ll have on the island.
-          {step === 0 && analysis && <strong style={{ marginLeft: 8, color: 'var(--leaf)' }}>{analysis}</strong>}
+          {facing.hint} This is the exact body, position, and ink treatment your in-world character will use.
         </p>
         <div className="easel-row">
           <div className="tools">

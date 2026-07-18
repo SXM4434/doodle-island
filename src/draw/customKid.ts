@@ -26,23 +26,19 @@ export function isCompleteCustomKid(kid: CustomKid | null): kid is CustomKid {
   return !!kid && kid.front.length > 0 && kid.side.length > 0 && kid.back.length > 0
 }
 
-// Marks fit into the kid's torso/head space. We intentionally do not normalize them
-// to a giant silhouette: a tiny heart, hair scribble, or shirt design remains legible
-// without deleting the default kid's proportions and walk animation.
+// Identity marks keep their exact canvas position. The easel and the in-world atlas
+// share the same 256px coordinate system, so a hair tuft, shirt badge, cape, or backpack
+// lands where its author put it. Do not squeeze strokes into a generic oval: that made
+// the preview lie about the final player and destroyed side/back details.
 function drawIdentityMarks(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number): void {
   if (!strokes.length) return
   ctx.save()
-  ctx.beginPath(); ctx.ellipse(px * .5, px * .49, px * .28, px * .38, 0, 0, Math.PI * 2); ctx.clip()
-  for (const s of strokes) {
-    const mark: Stroke = {
-      ...s,
-      size: Math.max(0.008, Math.min(0.024, s.size * .52)),
-      pts: s.pts.map((p) => [.5 + (p[0] - .5) * .58, .51 + (p[1] - .5) * .58, p[2]]),
-    }
+  for (const mark of strokes) {
     const path = outlineToPath(strokeOutline(mark, px))
     if (mark.erase) { ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(path); ctx.restore() }
     else {
-      // A thin dark contour makes personal marks read as intentional felt-tip art.
+      // The same felt-tip contour used for crafted drawings makes additions read as
+      // intentional paper-doll details while retaining the player’s original geometry.
       const contour = { ...mark, size: mark.size + 3.5 / px }
       ctx.fillStyle = '#33291f'; ctx.fill(outlineToPath(strokeOutline(contour, px)))
       ctx.fillStyle = INKS[mark.color] ?? INKS.ink; ctx.fill(path)
@@ -51,9 +47,16 @@ function drawIdentityMarks(ctx: CanvasRenderingContext2D, strokes: Stroke[], px:
   ctx.restore()
 }
 
-// Preview helper: exactly the same composition the player gets in the world.
+// Preview helper: exactly the same 256px character composition the player gets in the
+// world. Canvas scale is applied before both base body and marks—never to just one layer.
 export function drawCharacterStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[], px: number, ox = 0, facing: 'front' | 'side' | 'back' = 'front', frame = 0): void {
-  ctx.save(); ctx.translate(ox, 0); drawKid(ctx, facing, frame); drawIdentityMarks(ctx, strokes, px); ctx.restore()
+  const scale = px / CELL
+  ctx.save()
+  ctx.translate(ox, 0)
+  ctx.scale(scale, scale)
+  drawKid(ctx, facing, frame)
+  drawIdentityMarks(ctx, strokes, CELL)
+  ctx.restore()
 }
 
 // Six cells match kidAtlas: front0/front1/side0/side1/back0/back1.

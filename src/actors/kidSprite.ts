@@ -10,6 +10,7 @@ export const DEFAULT_SHIRT = '#d95d39'
 export const DEFAULT_SHORTS = '#4f8fb8'
 
 let seed = 7
+export function resetKidInkSeed(value: number): void { seed = value }
 function rnd(): number { seed = (seed * 16807) % 2147483647; return (seed / 2147483647) * 2 - 1 }
 type Ctx = CanvasRenderingContext2D
 

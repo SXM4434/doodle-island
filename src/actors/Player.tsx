@@ -2,7 +2,8 @@ import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Ecctrl, { type CustomEcctrlRigidBody } from 'ecctrl'
-import { kidAtlas } from './kidSprite'
+import { loadCharacter } from '../draw/customKid'
+import { bakeCharacterAtlas } from '../draw/characterKit'
 import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
@@ -18,8 +19,8 @@ export function Player() {
 
   const kidVersion = useGame((s) => s.kidVersion)
   const { tex, mat } = useMemo(() => {
-    // The original master character sheet remains the in-world default.
-    const tex = kidAtlas()
+    // The Studio decorates the original master sheet; its atlas is the in-world atlas.
+    const tex = bakeCharacterAtlas(loadCharacter())
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       alphaTest: 0.5,

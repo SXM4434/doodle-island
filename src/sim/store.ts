@@ -18,6 +18,9 @@ export interface DrawnItem {
   // while its strokes stay visible as the maker-mark on that chair.
   form?: ObjectForm
   strokes: Stroke[]
+  // Physical crafts retain authored construction parts. These are never inferred:
+  // the explicit class/form tells the assembler what each player-drawn part means.
+  construction?: Record<string, Stroke[]>
 }
 export interface Slot {
   res?: ResKind
@@ -182,7 +185,7 @@ interface State {
   collectDrop: (id: number) => void
   equip: (i: number) => void
   openDraw: (open: boolean) => void
-  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm) => DrawnItem | null
+  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: Record<string, Stroke[]>) => DrawnItem | null
   beginPlace: (item: DrawnItem) => void
   rotatePlacing: () => void
   commitPlace: (x: number, z: number) => void
@@ -351,7 +354,7 @@ export const useGame = create<State>((set, get) => ({
 
   openDraw: (open) => set({ drawOpen: open }),
 
-  craft: (key, strokes, form) => {
+  craft: (key, strokes, form, construction) => {
     const g = get()
     if (!g.canAfford(key)) return null
     const cost = COSTS[key]
@@ -374,6 +377,7 @@ export const useGame = create<State>((set, get) => ({
       tool: isTool ? (key as ToolKind) : undefined,
       form: key === 'furniture' ? form ?? 'table' : undefined,
       strokes,
+      construction,
     }
     get().deed('craft-' + key)
     if (isTool) {

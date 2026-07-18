@@ -27,7 +27,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
     const wallK = Math.min(1, builtNow / .62)
     const roofK = Math.max(0, Math.min(1, (builtNow - .56) / .44))
     if (walls.current) { walls.current.visible = built > .02; walls.current.scale.y = Math.max(.02, wallK) }
-    if (roof.current) { roof.current.visible = roofK > 0; roof.current.position.y = 1.42 + (1 - roofK) * 1.25; roof.current.scale.setScalar(.76 + roofK * .24) }
+    if (roof.current) { roof.current.visible = roofK > 0; roof.current.position.y = 1.78 + (1 - roofK) * 1.25; roof.current.scale.setScalar(.76 + roofK * .24) }
   })
   return <group position={[x, y, z]} rotation={[0, lean, 0]}>
     <primitive object={shadow} position={[0, .03, .04]} />

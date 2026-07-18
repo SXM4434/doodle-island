@@ -3,7 +3,7 @@
 // mob states: wander → chase(aggro<8u) → windup(500ms telegraph) → strike → cooldown
 import * as THREE from 'three'
 import { create } from 'zustand'
-import { refs } from './store'
+import { refs, useGame } from './store'
 import { islandHeight, SPAWN, groundY } from './terrain'
 
 export interface Mob {
@@ -94,12 +94,9 @@ function placedFires(): FirePos[] {
   const now = performance.now()
   if (now - fireCacheAt > 2000) {
     fireCacheAt = now
-    // lazy require avoids a static import cycle (combat ↔ store)
-    import('../sim/store').then(({ useGame }) => {
-      fireCache = useGame.getState().placed
-        .filter((p) => p.item.cls === 'campfire')
-        .map((p) => ({ x: p.x, z: p.z }))
-    })
+    fireCache = useGame.getState().placed
+      .filter((p) => p.item.cls === 'campfire')
+      .map((p) => ({ x: p.x, z: p.z }))
   }
   return fireCache
 }
@@ -231,7 +228,7 @@ export function swingHitMobs(dmg: number): boolean {
       if (m.hp <= 0) {
         m.state = 'dying'; m.stateAt = now
         dropInk(m.x, m.z, m.kind === 'scribble' ? 2 : 1)
-        import('../sim/store').then(({ useGame }) => useGame.getState().deed('slay-' + m.kind))
+        useGame.getState().deed('slay-' + m.kind)
       }
     }
   }
@@ -240,22 +237,20 @@ export function swingHitMobs(dmg: number): boolean {
 }
 
 function dropInk(x: number, z: number, n: number): void {
-  import('../sim/store').then(({ useGame }) => {
-    const g = useGame.getState()
-    const drops = [...g.drops]
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2
-      drops.push({
-        id: Date.now() + Math.floor(Math.random() * 1000) + i,
-        res: 'ink' as const,
-        x: x + Math.cos(a) * 0.5,
-        y: 1,
-        z: z + Math.sin(a) * 0.5,
-        born: performance.now(),
-      })
-    }
-    useGame.setState({ drops })
-  })
+  const g = useGame.getState()
+  const drops = [...g.drops]
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2
+    drops.push({
+      id: Date.now() + Math.floor(Math.random() * 1000) + i,
+      res: 'ink' as const,
+      x: x + Math.cos(a) * 0.5,
+      y: 1,
+      z: z + Math.sin(a) * 0.5,
+      born: performance.now(),
+    })
+  }
+  useGame.setState({ drops })
 }
 
 export function tryDodge(): boolean {

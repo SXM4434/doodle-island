@@ -2,8 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Ecctrl, { type CustomEcctrlRigidBody } from 'ecctrl'
-import { loadCharacter } from '../draw/customKid'
-import { bakeCharacterAtlas } from '../draw/characterKit'
+import { kidAtlas } from './kidSprite'
 import { makeBlobShadow } from '../world/toon'
 import { refs, useGame } from '../sim/store'
 import { SPAWN, groundY } from '../sim/terrain'
@@ -19,9 +18,8 @@ export function Player() {
 
   const kidVersion = useGame((s) => s.kidVersion)
   const { tex, mat } = useMemo(() => {
-    // The configurable paper-doll is baked into the same 6-cell atlas used in-world.
-    // There is no separate preview renderer and no conversion surprise.
-    const tex = bakeCharacterAtlas(loadCharacter())
+    // The original master character sheet remains the in-world default.
+    const tex = kidAtlas()
     const mat = new THREE.MeshBasicMaterial({
       map: tex,
       alphaTest: 0.5,

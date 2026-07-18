@@ -5,6 +5,7 @@ import { useGame, refs, RES_LABEL, type Villager, type ResKind } from '../sim/st
 import { groundY } from '../sim/terrain'
 import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow } from '../world/toon'
+import { interiorSlot } from '../world/Interiors'
 import { isNight } from '../sim/combat'
 import { sfx } from '../audio/sfx'
 
@@ -20,6 +21,7 @@ interface Brain {
   z: number
   hopPhase: number
   nextThink: number
+  indoors: boolean
 }
 
 const brains = new Map<string, Brain>()
@@ -62,7 +64,7 @@ function VillagerSprite({ v }: { v: Villager }) {
     const now = performance.now()
     let b = brains.get(v.id)
     if (!b) {
-      b = { state: 'potter', tx: v.homeX, tz: v.homeZ, x: v.homeX, z: v.homeZ, hopPhase: 0, nextThink: 0 }
+      b = { state: 'potter', tx: v.homeX, tz: v.homeZ, x: v.homeX, z: v.homeZ, hopPhase: 0, nextThink: 0, indoors: false }
       brains.set(v.id, b)
     }
     const p = refs.playerPos
@@ -80,9 +82,19 @@ function VillagerSprite({ v }: { v: Villager }) {
       })
     }
 
-    // FSM
-    if (isNight()) b.state = 'sleep'
-    else if (b.state === 'sleep') b.state = 'potter'
+    // FSM. A completed home is a place, not a backdrop: the resident sleeps in
+    // its actual dollhouse room and appears outside again with the new day.
+    const villagerIndex = st.villagers.findIndex((x) => x.id === v.id)
+    if (isNight()) {
+      b.state = 'sleep'
+      if ((live?.built ?? 0) >= 1 && !b.indoors) {
+        const room = interiorSlot(villagerIndex)
+        b.x = room.x - 3.65; b.z = room.z - 3.65; b.tx = b.x; b.tz = b.z; b.indoors = true
+      }
+    } else {
+      if (b.indoors) { b.x = v.homeX - .7; b.z = v.homeZ + .8; b.tx = b.x; b.tz = b.z; b.indoors = false }
+      if (b.state === 'sleep') b.state = 'potter'
+    }
     const hasWork = !!live && live.fed >= 1 && live.built < 1 && (live.homeWood ?? 0) >= (live.homeNeed ?? 10)
     // A resident only builds after the player has funded the blueprint. This makes
     // the house a shared project instead of an unattended timer.
@@ -128,7 +140,7 @@ function VillagerSprite({ v }: { v: Villager }) {
       b.hopPhase += dt * 9
     }
 
-    const gy = groundY(b.x, b.z)
+    const gy = b.indoors ? interiorSlot(villagerIndex).y : groundY(b.x, b.z)
     // hop-based walk (ART-STYLE §5), squash on land
     const hop = speed > 0 ? Math.abs(Math.sin(b.hopPhase)) * 0.14 : 0
     g.position.set(b.x, gy + (b.state === 'sleep' ? -0.05 : hop), b.z)
@@ -212,6 +224,7 @@ const CHATTER = [
   'your drawings are getting good!',
 ]
 export function villagerChat(v: Villager): string {
+  if (isNight()) return `${v.name}: "Zzz… come back after sunrise."`
   return `${v.name}: "${CHATTER[(v.fed + v.name.length) % CHATTER.length]}"`
 }
 

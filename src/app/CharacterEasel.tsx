@@ -4,12 +4,12 @@ import { simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { avatarFacingProblem, drawAvatarGuide, drawCharacterStrokes, saveCustomKid, type CustomKid } from '../draw/customKid'
 import { sfx } from '../audio/sfx'
 
-// Optional character stylizer: the normal filled island kid remains playable. When a
-// player draws, their marks are converted into filled, inked features on that same body.
+// Optional draw-yourself flow. The player draws the figure; the style engine turns
+// closed line-art regions into the flat, filled paper-character language of the island.
 const FACINGS: Array<{ key: 'front' | 'side' | 'back'; label: string; hint: string }> = [
-  { key: 'front', label: 'Front', hint: 'Sketch hair, face, shirt, or stickers. We fill it into an island kid.' },
-  { key: 'side', label: 'Side', hint: 'Add side-view hair, outfit, or accessories for the turn.' },
-  { key: 'back', label: 'Back', hint: 'Add a backpack, cape, hair, or back-of-shirt detail.' },
+  { key: 'front', label: 'Front', hint: 'Draw a full little person. Close the head, shirt, and shorts shapes to fill them.' },
+  { key: 'side', label: 'Side', hint: 'Draw the same character from the side, facing right. Closed loops become clean flat color.' },
+  { key: 'back', label: 'Back', hint: 'Draw the back view: hair, backpack, cape, and outfit shapes can all be filled.' },
 ]
 
 const BRUSHES = [0.012, 0.022, 0.042]
@@ -90,7 +90,7 @@ export function CharacterEasel({ onDone }: { onDone: () => void }) {
           </button>
         </div>
         <p className="hint-line">
-          {facing.hint} Your marks stay visible; the game adds the complete filled paper-character body.
+          {facing.hint} The preview is the final conversion: your exact lines, cleaned into Doodle Island’s filled paper style.
         </p>
         {problem && strokes.length > 0 && <p className="avatar-warning" role="status">{problem}</p>}
         <div className="easel-row">

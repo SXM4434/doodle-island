@@ -19,8 +19,8 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
   const built = useGame((s) => s.villagers.find((v) => v.id === id)?.built ?? 0)
   const y = groundY(x, z)
   const lean = useMemo(() => Math.sin(x * 7 + z * 13) * .045, [x, z])
-  const shadow = useMemo(() => makeBlobShadow(1.65), [])
-  const mats = useMemo(() => ({ cream: toon('#F0D8B0'), timber: toon('#955C3B'), roof: toon('#D96557'), roofDark: toon('#B94F4B'), door: toon('#6F4132'), window: toon('#82B9C6'), brass: toon('#E8B94F') }), [])
+  const shadow = useMemo(() => makeBlobShadow(2.1), [])
+  const mats = useMemo(() => ({ cream: toon('#F1D8AA'), creamShade: toon('#DDBB83'), timber: toon('#855039'), timberDark: toon('#5E3A32'), stone: toon('#9A8B78'), roof: toon('#D96557'), roofDark: toon('#A94E54'), door: toon('#6F4132'), window: toon('#82B9C6'), brass: toon('#E8B94F'), leaf: toon('#6FAE4E'), flower: toon('#E9785E') }), [])
   useFrame(() => {
     const builtNow = useGame.getState().villagers.find((v) => v.id === id)?.built ?? 0
     const wallK = Math.min(1, builtNow / .62)
@@ -30,26 +30,49 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
   })
   return <group position={[x, y, z]} rotation={[0, lean, 0]}>
     <primitive object={shadow} position={[0, .03, .04]} />
-    {/* irregularly layered foundation; reads even before construction begins */}
-    <mesh position={[0, .1, 0]} material={mats.timber} rotation={[0, .12, 0]}><cylinderGeometry args={[1.55, 1.72, .2, 7]} /></mesh>
+    <StoneFooting mats={mats} />
     <BlueprintMarker id={id} mats={mats} />
-    <group ref={walls} position={[0, .2, 0]}>
+    <group ref={walls} position={[0, .12, 0]}>
       {built > .08 && <CottageShellCollider />}
-      <mesh position={[0, .62, 0]} material={mats.cream}><boxGeometry args={[2.35, 1.24, 1.9]} /></mesh>
-      {/* exposed timber is a silhouette device, not surface noise */}
-      {[[0, 1.19, .98, 2.55, .11, .12], [-1.1, .72, .99, .13, 1.2, .13], [1.1, .72, .99, .13, 1.2, .13], [0, .2, .99, 2.55, .12, .13]].map((v, i) => <mesh key={i} position={[v[0], v[1], v[2]]} material={mats.timber}><boxGeometry args={[v[3], v[4], v[5]]} /></mesh>)}
-      <mesh position={[0, .49, 1.005]} material={mats.door}><boxGeometry args={[.62, .94, .12]} /></mesh>
-      <mesh position={[0, .78, 1.075]} material={mats.brass}><sphereGeometry args={[.065, 6, 4]} /></mesh>
-      <mesh position={[.72, .74, 1.01]} material={mats.window} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.27, .27, .13, 7]} /></mesh>
-      <mesh position={[.72, .74, 1.09]} material={mats.timber} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.28, .045, 4, 7]} /></mesh>
+      <mesh position={[0, .82, -.04]} material={mats.cream}><cylinderGeometry args={[1.36, 1.52, 1.48, 7]} /></mesh>
+      <mesh position={[-.12, .8, -.03]} material={mats.creamShade}><cylinderGeometry args={[1.04, 1.15, 1.52, 7, 1, false, .15, 1.48]} /></mesh>
+      {[-1.0, 1.0].map((px) => <mesh key={px} position={[px, .86, .85]} material={mats.timber}><boxGeometry args={[.15, 1.34, .12]} /></mesh>)}
+      <mesh position={[0, 1.48, .86]} material={mats.timber}><boxGeometry args={[2.2, .13, .13]} /></mesh>
+      <mesh position={[0, .25, .86]} material={mats.timberDark}><boxGeometry args={[2.18, .12, .13]} /></mesh>
+      <mesh position={[-.52, .88, .88]} material={mats.timberDark} rotation={[0, 0, -.62]}><boxGeometry args={[.12, 1.15, .1]} /></mesh>
+      <CottagePorch mats={mats} />
+      <CottageWindowBox mats={mats} />
     </group>
-    <group ref={roof} position={[0, 1.42, 0]} visible={false} rotation={[0, .14, 0]}>
-      {/* two wedges, not a generic cone: a hand-built doughy roof silhouette */}
-      <mesh position={[-.57, .22, 0]} material={mats.roof} rotation={[0, 0, -.54]}><boxGeometry args={[1.62, .42, 2.45]} /></mesh>
-      <mesh position={[.57, .22, 0]} material={mats.roofDark} rotation={[0, 0, .54]}><boxGeometry args={[1.62, .42, 2.45]} /></mesh>
-      <mesh position={[.62, .7, -.45]} material={mats.timber} rotation={[0, .08, 0]}><boxGeometry args={[.3, .85, .3]} /></mesh>
-      <mesh position={[.62, 1.17, -.45]} material={mats.roofDark}><boxGeometry args={[.42, .14, .4]} /></mesh>
+    <group ref={roof} position={[0, 1.78, -.04]} visible={false} rotation={[0, .14, 0]}>
+      <mesh position={[0, .06, 0]} material={mats.roofDark}><cylinderGeometry args={[1.7, 1.85, .22, 7]} /></mesh>
+      <mesh position={[0, .68, 0]} material={mats.roof}><coneGeometry args={[1.78, 1.32, 7]} /></mesh>
+      <mesh position={[0, 1.37, 0]} material={mats.roofDark}><coneGeometry args={[.3, .32, 7]} /></mesh>
+      {Array.from({ length: 7 }, (_, i) => { const a = i / 7 * Math.PI * 2; return <mesh key={i} position={[Math.cos(a) * 1.52, .2, Math.sin(a) * 1.52]} rotation={[0, -a, 0]} material={mats.roof}><boxGeometry args={[.46, .12, .3]} /></mesh> })}
+      <group position={[.72, 1.08, -.42]} rotation={[0, -.12, -.1]}><mesh material={mats.timberDark}><boxGeometry args={[.3, .85, .3]} /></mesh><mesh position={[0, .47, 0]} material={mats.roofDark}><boxGeometry args={[.44, .14, .44]} /></mesh></group>
     </group>
+  </group>
+}
+
+function StoneFooting({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group>{Array.from({ length: 9 }, (_, i) => { const a = i / 9 * Math.PI * 2; return <mesh key={i} position={[Math.cos(a) * 1.32, .12, Math.sin(a) * 1.16]} rotation={[.08, a, .1]} material={mats.stone}><dodecahedronGeometry args={[.3 + (i % 2) * .04, 0]} /></mesh> })}</group>
+}
+
+function CottagePorch({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[0, 0, 1.25]}>
+    <mesh position={[0, .14, .12]} material={mats.stone}><boxGeometry args={[1.45, .2, .62]} /></mesh>
+    <mesh position={[0, .78, -.02]} material={mats.door}><boxGeometry args={[.62, 1.04, .13]} /></mesh>
+    <mesh position={[.21, .74, .05]} material={mats.brass}><sphereGeometry args={[.06, 6, 4]} /></mesh>
+    <mesh position={[0, 1.42, .2]} material={mats.roofDark} rotation={[.12, 0, 0]}><boxGeometry args={[1.4, .14, .62]} /></mesh>
+    {[-.57, .57].map((px) => <mesh key={px} position={[px, .78, .36]} material={mats.timber}><cylinderGeometry args={[.075, .1, 1.24, 6]} /></mesh>)}
+  </group>
+}
+
+function CottageWindowBox({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[-.86, .95, 1.08]}>
+    <mesh material={mats.window} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.3, .3, .1, 7]} /></mesh>
+    <mesh position={[0, 0, .07]} material={mats.timberDark} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.32, .048, 4, 7]} /></mesh>
+    <mesh position={[0, -.32, .12]} material={mats.timber}><boxGeometry args={[.7, .18, .25]} /></mesh>
+    {[-.2, 0, .2].map((px) => <mesh key={px} position={[px, -.2, .23]} material={mats.flower}><icosahedronGeometry args={[.08, 0]} /></mesh>)}
   </group>
 }
 

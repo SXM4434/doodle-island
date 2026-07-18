@@ -6,27 +6,23 @@ import { makeBlobShadow, toon } from './toon'
 import { PLAYER_HOME } from './Interiors'
 import { PLAYER_PLOT } from '../sim/placement'
 
-// Three fixed landmarks make the island read as an inhabited place before a
-// player has drawn their first friend. They deliberately use the same small
-// cottage kit as player-funded homes: one chunky roof, timber, cream plaster,
-// a round window, and a blob shadow — not a second generic building language.
+// The permanent settlement deliberately uses one authored storybook kit rather
+// than generic downloaded houses: seven-sided plaster drums, heavy faceted cap
+// roofs, deep porches, and wonky chimneys. Three residents then personalize the
+// same village language with one quiet object each.
 export function Village() {
-  return (
-    <group>
-      <WorkshopPavilion />
-      <HomePlot />
-      <ResidentCottage x={PLAYER_HOME.x} z={PLAYER_HOME.z} roof="#E9C55B" door="#704737" detail="cat" personal />
-      <ResidentCottage x={POND.x + 11.5} z={POND.z - 7} roof="#D96557" door="#704737" detail="cat" />
-      <ResidentCottage x={-10} z={-39.5} roof="#5B91B6" door="#465D6E" detail="shell" />
-    </group>
-  )
+  return <group>
+    <WorkshopPavilion />
+    <HomePlot />
+    <ResidentCottage x={PLAYER_HOME.x} z={PLAYER_HOME.z} roof="#E7B94E" roofShade="#B87636" door="#704737" detail="bench" />
+    <ResidentCottage x={POND.x + 11.5} z={POND.z - 7} roof="#D86F67" roofShade="#A94E54" door="#704737" detail="cat" />
+    <ResidentCottage x={-10} z={-39.5} roof="#5B91B6" roofShade="#3E668D" door="#465D6E" detail="shell" />
+  </group>
 }
 
 function HomePlot() {
   const y = groundY(PLAYER_PLOT.x, PLAYER_PLOT.z)
   const mat = useMemo(() => toon('#D9B66C'), [])
-  // A shallow, irregular pebble ring says "this is yours" without a signboard
-  // or an intrusive collision wall.
   return <group position={[PLAYER_PLOT.x, y + .035, PLAYER_PLOT.z]}>
     {Array.from({ length: 18 }, (_, i) => {
       const a = i / 18 * Math.PI * 2
@@ -36,70 +32,124 @@ function HomePlot() {
   </group>
 }
 
-type CottageProps = { x: number; z: number; roof: string; door: string; detail: 'cat' | 'shell'; personal?: boolean }
+type CottageProps = { x: number; z: number; roof: string; roofShade: string; door: string; detail: 'bench' | 'cat' | 'shell' }
 
-function ResidentCottage({ x, z, roof, door, detail, personal = false }: CottageProps) {
+function ResidentCottage({ x, z, roof, roofShade, door, detail }: CottageProps) {
   const y = groundY(x, z)
   const mats = useMemo(() => ({
-    plaster: toon('#F0D8B0'), timber: toon('#955C3B'), roof: toon(roof), roofShade: toon('#9E4B43'),
-    door: toon(door), window: toon('#8EC5D3'), brass: toon('#E8B94F'), detail: toon(detail === 'cat' ? '#F4C27D' : '#F5A8B8'),
-  }), [roof, door, detail])
-  const shadow = useMemo(() => makeBlobShadow(1.82), [])
-  return (
-    <group position={[x, y, z]} rotation={[0, detail === 'cat' ? -0.22 : 0.18, 0]}>
-      <primitive object={shadow} position={[0, 0.025, 0.1]} />
-      <mesh position={[0, 0.1, 0]} material={mats.timber} rotation={[0, 0.16, 0]}><cylinderGeometry args={[1.7, 1.86, 0.2, 7]} /></mesh>
-      <CottageCollider />
-      <mesh position={[0, 0.82, 0]} material={mats.plaster}><boxGeometry args={[2.65, 1.46, 2.15]} /></mesh>
-      {/* timber pieces explain the silhouette rather than covering it in noise */}
-      <mesh position={[0, 1.48, 1.11]} material={mats.timber}><boxGeometry args={[2.82, 0.12, 0.13]} /></mesh>
-      {[-1.24, 1.24].map((px) => <mesh key={px} position={[px, 0.82, 1.12]} material={mats.timber}><boxGeometry args={[0.13, 1.45, 0.14]} /></mesh>)}
-      <mesh position={[0, 0.62, 1.13]} material={mats.door}><boxGeometry args={[0.7, 1.04, 0.13]} /></mesh>
-      <mesh position={[-0.78, 0.96, 1.14]} material={mats.window} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.29, 0.29, 0.14, 7]} /></mesh>
-      <mesh position={[-0.78, 0.96, 1.22]} material={mats.timber} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.3, 0.05, 4, 7]} /></mesh>
-      <mesh position={[0.82, 0.65, 1.22]} material={mats.brass}><sphereGeometry args={[0.07, 6, 4]} /></mesh>
-      <group position={[0, 1.78, 0]} rotation={[0, 0.1, 0]}>
-        <mesh position={[-0.64, 0.26, 0]} material={mats.roof} rotation={[0, 0, -0.54]}><boxGeometry args={[1.78, 0.48, 2.7]} /></mesh>
-        <mesh position={[0.64, 0.26, 0]} material={mats.roofShade} rotation={[0, 0, 0.54]}><boxGeometry args={[1.78, 0.48, 2.7]} /></mesh>
-      </group>
-      <mesh position={[0.9, 2.36, -0.55]} material={mats.timber}><boxGeometry args={[0.35, 0.85, 0.35]} /></mesh>
-      <mesh position={[0.9, 2.84, -0.55]} material={mats.roofShade}><boxGeometry args={[0.47, 0.14, 0.45]} /></mesh>
-      {/* Each home gets one quiet, physical calling-card by its own door. */}
-      {personal ? <WelcomeBench mats={mats} /> : detail === 'cat' ? <CatPlanter mat={mats.detail} /> : <ShellPot mat={mats.detail} />}
-    </group>
-  )
+    plaster: toon('#F1D8AA'), plasterShade: toon('#DDBB83'), timber: toon('#855039'), timberDark: toon('#5E3A32'),
+    stone: toon('#9A8B78'), roof: toon(roof), roofShade: toon(roofShade), door: toon(door),
+    window: toon('#83C3CA'), brass: toon('#E7BD53'), leaf: toon('#6FAE4E'), flower: toon(detail === 'shell' ? '#F6A6B8' : '#E9785E'),
+  }), [roof, roofShade, door, detail])
+  const shadow = useMemo(() => makeBlobShadow(2.25), [])
+  const facing = detail === 'shell' ? .16 : -.18
+  return <group position={[x, y, z]} rotation={[0, facing, 0]}>
+    <primitive object={shadow} position={[0, .028, .04]} />
+    <CottageCollider />
+    <StoneFooting mat={mats.stone} />
+    {/* Main body: an uneven plaster drum, not a rectangular game-engine box. */}
+    <mesh position={[0, .9, -.04]} material={mats.plaster}><cylinderGeometry args={[1.46, 1.62, 1.62, 7]} /></mesh>
+    <mesh position={[-.14, .87, -.03]} material={mats.plasterShade}><cylinderGeometry args={[1.12, 1.22, 1.66, 7, 1, false, .15, 1.48]} /></mesh>
+    <TimberFrame mats={mats} />
+    <FacetedRoof mats={mats} />
+    <Porch mats={mats} />
+    <WindowBox mats={mats} />
+    <CrookedChimney mats={mats} />
+    {detail === 'bench' ? <WelcomeBench mats={mats} /> : detail === 'cat' ? <CatPlanter mats={mats} /> : <ShellPot mats={mats} />}
+  </group>
+}
+
+function StoneFooting({ mat }: { mat: THREE.MeshToonMaterial }) {
+  return <group>{Array.from({ length: 9 }, (_, i) => {
+    const a = i / 9 * Math.PI * 2
+    return <mesh key={i} position={[Math.cos(a) * 1.42, .12, Math.sin(a) * 1.25]} rotation={[.08, a, .1]} material={mat}><dodecahedronGeometry args={[.34 + (i % 2) * .04, 0]} /></mesh>
+  })}</group>
+}
+
+function TimberFrame({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group>
+    {[-1.04, 1.04].map((px) => <mesh key={px} position={[px, .93, .9]} rotation={[0, px * -.08, px * .03]} material={mats.timber}><boxGeometry args={[.16, 1.42, .13]} /></mesh>)}
+    <mesh position={[0, 1.55, .91]} material={mats.timber}><boxGeometry args={[2.32, .14, .14]} /></mesh>
+    <mesh position={[0, .29, .91]} material={mats.timberDark}><boxGeometry args={[2.28, .13, .14]} /></mesh>
+    <mesh position={[-.54, .95, .93]} rotation={[0, 0, -.62]} material={mats.timberDark}><boxGeometry args={[.12, 1.28, .1]} /></mesh>
+  </group>
+}
+
+function FacetedRoof({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[0, 1.8, -.04]} rotation={[0, .18, 0]}>
+    {/* Low-sided cone retains readable facets; the broad skirt and cap make it feel
+        like a layered, hand-built roof instead of a default cone. */}
+    <mesh position={[0, .08, 0]} material={mats.roofShade}><cylinderGeometry args={[1.82, 1.97, .24, 7]} /></mesh>
+    <mesh position={[0, .72, 0]} material={mats.roof}><coneGeometry args={[1.9, 1.42, 7]} /></mesh>
+    <mesh position={[0, 1.45, 0]} material={mats.roofShade}><coneGeometry args={[.34, .36, 7]} /></mesh>
+    {Array.from({ length: 7 }, (_, i) => {
+      const a = i / 7 * Math.PI * 2
+      return <mesh key={i} position={[Math.cos(a) * 1.62, .22, Math.sin(a) * 1.62]} rotation={[0, -a, 0]} material={mats.roof}><boxGeometry args={[.5, .13, .33]} /></mesh>
+    })}
+  </group>
+}
+
+function Porch({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[0, 0, 1.36]}>
+    <mesh position={[0, .14, .12]} material={mats.stone}><boxGeometry args={[1.58, .22, .72]} /></mesh>
+    <mesh position={[0, .83, -.05]} material={mats.door}><boxGeometry args={[.68, 1.16, .13]} /></mesh>
+    <mesh position={[.23, .77, .035]} material={mats.brass}><sphereGeometry args={[.07, 6, 4]} /></mesh>
+    <mesh position={[0, 1.52, .24]} material={mats.roofShade} rotation={[.12, 0, 0]}><boxGeometry args={[1.5, .16, .72]} /></mesh>
+    {[-.61, .61].map((px) => <mesh key={px} position={[px, .84, .39]} material={mats.timber}><cylinderGeometry args={[.08, .11, 1.34, 6]} /></mesh>)}
+    <mesh position={[0, .18, .54]} material={mats.timberDark}><boxGeometry args={[1.22, .08, .1]} /></mesh>
+  </group>
+}
+
+function WindowBox({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[-.92, 1.01, 1.17]}>
+    <mesh material={mats.window} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.34, .34, .11, 7]} /></mesh>
+    <mesh position={[0, 0, .08]} material={mats.timberDark} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.36, .052, 4, 7]} /></mesh>
+    <mesh position={[0, -.36, .13]} material={mats.timber}><boxGeometry args={[.78, .2, .28]} /></mesh>
+    {[-.22, 0, .22].map((px) => <mesh key={px} position={[px, -.22, .25]} material={mats.flower}><icosahedronGeometry args={[.09, 0]} /></mesh>)}
+  </group>
+}
+
+function CrookedChimney({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[.78, 2.82, -.45]} rotation={[0, -.12, -.1]}>
+    <mesh material={mats.timberDark}><boxGeometry args={[.34, .98, .34]} /></mesh>
+    <mesh position={[0, .53, 0]} material={mats.roofShade}><boxGeometry args={[.5, .16, .5]} /></mesh>
+  </group>
 }
 
 function CottageCollider() {
-  // Three forgiving volumes keep the façade solid while leaving a centered door
-  // gap. The roof stays non-blocking so the camera can look over it cleanly.
+  // Light, forgiving wall volumes preserve a door gap in the ornate façade.
   return <RigidBody type="fixed" colliders={false}>
-    <CuboidCollider args={[.18, .82, 1.08]} position={[-1.14, .84, 0]} />
-    <CuboidCollider args={[.18, .82, 1.08]} position={[1.14, .84, 0]} />
-    <CuboidCollider args={[.8, .82, .18]} position={[0, .84, -.9]} />
-    <CuboidCollider args={[.42, .82, .18]} position={[-.92, .84, .9]} />
-    <CuboidCollider args={[.42, .82, .18]} position={[.92, .84, .9]} />
+    <CuboidCollider args={[.2, .86, 1.08]} position={[-1.12, .88, 0]} />
+    <CuboidCollider args={[.2, .86, 1.08]} position={[1.12, .88, 0]} />
+    <CuboidCollider args={[.82, .86, .2]} position={[0, .88, -.9]} />
+    <CuboidCollider args={[.38, .86, .18]} position={[-.86, .88, .9]} />
+    <CuboidCollider args={[.38, .86, .18]} position={[.86, .88, .9]} />
   </RigidBody>
 }
 
-function CatPlanter({ mat }: { mat: THREE.MeshToonMaterial }) {
-  return <group position={[1.15, 0.31, 1.05]} rotation={[0, -0.5, 0]}>
-    <mesh material={mat}><cylinderGeometry args={[0.25, 0.32, 0.28, 6]} /></mesh>
-    <mesh position={[0, 0.28, 0]} material={toon('#6FAE4E')}><icosahedronGeometry args={[0.26, 0]} /></mesh>
+function CatPlanter({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[1.43, .3, 1.15]} rotation={[0, -.5, 0]}>
+    <mesh material={mats.flower}><cylinderGeometry args={[.25, .34, .3, 6]} /></mesh>
+    <mesh position={[-.12, .26, .02]} material={mats.flower} rotation={[0, 0, -.35]}><coneGeometry args={[.12, .27, 3]} /></mesh>
+    <mesh position={[.12, .26, .02]} material={mats.flower} rotation={[0, 0, .35]}><coneGeometry args={[.12, .27, 3]} /></mesh>
+    <mesh position={[0, .42, .16]} material={mats.timberDark}><sphereGeometry args={[.035, 5, 4]} /></mesh>
+    <mesh position={[0, .27, 0]} material={mats.leaf}><icosahedronGeometry args={[.26, 0]} /></mesh>
   </group>
 }
 
-function ShellPot({ mat }: { mat: THREE.MeshToonMaterial }) {
-  return <group position={[1.1, 0.26, 1.1]} rotation={[0.1, -0.6, 0]}>
-    <mesh material={mat}><sphereGeometry args={[0.34, 7, 4]} /></mesh>
-    <mesh position={[0, 0.08, -0.22]} material={toon('#FFF4D8')}><sphereGeometry args={[0.17, 6, 4]} /></mesh>
+function ShellPot({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
+  return <group position={[1.38, .27, 1.2]} rotation={[.1, -.6, 0]}>
+    <mesh material={mats.flower}><sphereGeometry args={[.35, 7, 4]} /></mesh>
+    <mesh position={[0, .08, -.25]} material={mats.plaster}><sphereGeometry args={[.17, 6, 4]} /></mesh>
+    {[0, .45, -.45].map((rz) => <mesh key={rz} position={[0, .12, .06]} rotation={[0, rz, 0]} material={mats.plasterShade}><boxGeometry args={[.05, .1, .48]} /></mesh>)}
   </group>
 }
+
 function WelcomeBench({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
-  return <group position={[-1.18, 0, 1.05]} rotation={[0, 0.22, 0]}>
-    <mesh position={[0, .42, 0]} material={mats.timber}><boxGeometry args={[.98, .13, .36]} /></mesh>
-    {[-.37, .37].map((x) => <mesh key={x} position={[x, .2, 0]} material={mats.timber}><boxGeometry args={[.1, .4, .12]} /></mesh>)}
-    <mesh position={[0, .62, -.1]} material={mats.roof}><boxGeometry args={[.82, .35, .1]} /></mesh>
+  return <group position={[-1.42, 0, 1.05]} rotation={[0, .28, 0]}>
+    <mesh position={[0, .45, 0]} material={mats.timber}><boxGeometry args={[1.1, .14, .4]} /></mesh>
+    <mesh position={[0, .69, -.12]} material={mats.roof}><boxGeometry args={[.95, .38, .12]} /></mesh>
+    {[-.4, .4].map((px) => <mesh key={px} position={[px, .22, 0]} material={mats.timberDark}><boxGeometry args={[.12, .44, .14]} /></mesh>)}
   </group>
 }
 
@@ -109,11 +159,10 @@ function WorkshopPavilion() {
   const shadow = useMemo(() => makeBlobShadow(2.85), [])
   return <group position={[TABLE.x, y, TABLE.z]}>
     <primitive object={shadow} position={[0, 0.025, 0]} />
-    {/* An open pavilion frames the existing usable draw table without hiding it. */}
-    {[-2.05, 2.05].flatMap((x) => [-1.65, 1.65].map((z) => <mesh key={`${x}:${z}`} position={[x, 1.45, z]} material={mats.beam}><cylinderGeometry args={[0.11, 0.14, 2.9, 6]} /></mesh>))}
+    {[-2.05, 2.05].flatMap((px) => [-1.65, 1.65].map((pz) => <mesh key={`${px}:${pz}`} position={[px, 1.45, pz]} material={mats.beam}><cylinderGeometry args={[.11, .14, 2.9, 6]} /></mesh>))}
     <mesh position={[0, 2.92, 0]} material={mats.awning} rotation={[0, 0, -0.025]}><boxGeometry args={[4.75, 0.18, 4.05]} /></mesh>
-    {[-1.55, -0.52, 0.52, 1.55].map((x, i) => <mesh key={x} position={[x, 2.82, 1.98]} material={i % 2 ? mats.awning : mats.stripe}><boxGeometry args={[0.72, 0.45, 0.12]} /></mesh>)}
-    <mesh position={[-1.48, 0.34, -1.5]} material={mats.wood} rotation={[0, 0.32, 0]}><boxGeometry args={[0.7, 0.6, 0.55]} /></mesh>
-    <mesh position={[-1.5, 0.72, -1.5]} material={mats.paper} rotation={[-Math.PI / 2, 0.32, 0]}><boxGeometry args={[0.48, 0.34, 0.03]} /></mesh>
+    {[-1.55, -.52, .52, 1.55].map((px, i) => <mesh key={px} position={[px, 2.82, 1.98]} material={i % 2 ? mats.awning : mats.stripe}><boxGeometry args={[.72, .45, .12]} /></mesh>)}
+    <mesh position={[-1.48, .34, -1.5]} material={mats.wood} rotation={[0, .32, 0]}><boxGeometry args={[.7, .6, .55]} /></mesh>
+    <mesh position={[-1.5, .72, -1.5]} material={mats.paper} rotation={[-Math.PI / 2, .32, 0]}><boxGeometry args={[.48, .34, .03]} /></mesh>
   </group>
 }

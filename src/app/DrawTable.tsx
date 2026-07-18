@@ -153,6 +153,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
       openDraw(false)
       useGame.getState().addVillager(item)
     } else {
+      net.setDrawing(false)
       beginPlace(item)
       say('Walk somewhere and press E to place — R rotates.')
     }

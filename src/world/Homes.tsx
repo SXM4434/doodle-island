@@ -5,6 +5,7 @@ import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { useGame, refs, type Villager } from '../sim/store'
 import { groundY, islandHeight } from '../sim/terrain'
 import { toon, makeBlobShadow } from './toon'
+import { isNight } from '../sim/combat'
 
 // A tiny reusable cottage kit: plinth, crooked timber frame, and one oversized
 // faceted roof. Deliberately fewer materials/forms than the old generic house.
@@ -34,6 +35,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
     <BlueprintMarker id={id} mats={mats} />
     <group ref={walls} position={[0, .12, 0]}>
       {built > .08 && <CottageShellCollider />}
+      <CottageGlow />
       <mesh position={[0, .82, -.04]} material={mats.cream}><cylinderGeometry args={[1.36, 1.52, 1.48, 7]} /></mesh>
       <mesh position={[-.12, .8, -.03]} material={mats.creamShade}><cylinderGeometry args={[1.04, 1.15, 1.52, 7, 1, false, .15, 1.48]} /></mesh>
       {[-1.0, 1.0].map((px) => <mesh key={px} position={[px, .86, .85]} material={mats.timber}><boxGeometry args={[.15, 1.34, .12]} /></mesh>)}
@@ -74,6 +76,12 @@ function CottageWindowBox({ mats }: { mats: Record<string, THREE.MeshToonMateria
     <mesh position={[0, -.32, .12]} material={mats.timber}><boxGeometry args={[.7, .18, .25]} /></mesh>
     {[-.2, 0, .2].map((px) => <mesh key={px} position={[px, -.2, .23]} material={mats.flower}><icosahedronGeometry args={[.08, 0]} /></mesh>)}
   </group>
+}
+
+function CottageGlow() {
+  const light = useRef<THREE.PointLight>(null)
+  useFrame(() => { if (light.current) light.current.intensity = isNight() ? 1.35 : 0 })
+  return <pointLight ref={light} position={[-.86, 1.0, 1.32]} color="#FFD37A" intensity={0} distance={4} decay={1.8} />
 }
 
 function CottageShellCollider() {

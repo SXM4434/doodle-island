@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import { groundY, POND, TABLE } from '../sim/terrain'
 import { makeBlobShadow, toon } from './toon'
 import { PLAYER_HOME } from './Interiors'
 import { PLAYER_PLOT } from '../sim/placement'
+import { refs } from '../sim/store'
 
 // The permanent settlement deliberately uses one authored storybook kit rather
 // than generic downloaded houses: seven-sided plaster drums, heavy faceted cap
@@ -54,6 +56,7 @@ function ResidentCottage({ x, z, roof, roofShade, door, detail }: CottageProps) 
     <FacetedRoof mats={mats} />
     <Porch mats={mats} />
     <WindowBox mats={mats} />
+    <CottageGlow />
     <CrookedChimney mats={mats} />
     {detail === 'bench' ? <WelcomeBench mats={mats} /> : detail === 'cat' ? <CatPlanter mats={mats} /> : <ShellPot mats={mats} />}
   </group>
@@ -107,6 +110,16 @@ function WindowBox({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {
     <mesh position={[0, -.36, .13]} material={mats.timber}><boxGeometry args={[.78, .2, .28]} /></mesh>
     {[-.22, 0, .22].map((px) => <mesh key={px} position={[px, -.22, .25]} material={mats.flower}><icosahedronGeometry args={[.09, 0]} /></mesh>)}
   </group>
+}
+
+function CottageGlow() {
+  const light = useRef<THREE.PointLight>(null)
+  useFrame(() => {
+    if (!light.current) return
+    const night = refs.time > .72 || refs.time < .04
+    light.current.intensity = night ? 1.55 : 0
+  })
+  return <pointLight ref={light} position={[-.92, 1.1, 1.46]} color="#FFD37A" intensity={0} distance={4.3} decay={1.8} />
 }
 
 function CrookedChimney({ mats }: { mats: Record<string, THREE.MeshToonMaterial> }) {

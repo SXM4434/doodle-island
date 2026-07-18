@@ -16,14 +16,15 @@ export function Homes() {
 function House({ id, x, z }: { id: string; x: number; z: number }) {
   const walls = useRef<THREE.Group>(null)
   const roof = useRef<THREE.Group>(null)
+  const built = useGame((s) => s.villagers.find((v) => v.id === id)?.built ?? 0)
   const y = groundY(x, z)
   const lean = useMemo(() => Math.sin(x * 7 + z * 13) * .045, [x, z])
   const shadow = useMemo(() => makeBlobShadow(1.65), [])
   const mats = useMemo(() => ({ cream: toon('#F0D8B0'), timber: toon('#955C3B'), roof: toon('#D96557'), roofDark: toon('#B94F4B'), door: toon('#6F4132'), window: toon('#82B9C6'), brass: toon('#E8B94F') }), [])
   useFrame(() => {
-    const built = useGame.getState().villagers.find((v) => v.id === id)?.built ?? 0
-    const wallK = Math.min(1, built / .62)
-    const roofK = Math.max(0, Math.min(1, (built - .56) / .44))
+    const builtNow = useGame.getState().villagers.find((v) => v.id === id)?.built ?? 0
+    const wallK = Math.min(1, builtNow / .62)
+    const roofK = Math.max(0, Math.min(1, (builtNow - .56) / .44))
     if (walls.current) { walls.current.visible = built > .02; walls.current.scale.y = Math.max(.02, wallK) }
     if (roof.current) { roof.current.visible = roofK > 0; roof.current.position.y = 1.42 + (1 - roofK) * 1.25; roof.current.scale.setScalar(.76 + roofK * .24) }
   })
@@ -33,7 +34,7 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
     <mesh position={[0, .1, 0]} material={mats.timber} rotation={[0, .12, 0]}><cylinderGeometry args={[1.55, 1.72, .2, 7]} /></mesh>
     <BlueprintMarker id={id} mats={mats} />
     <group ref={walls} position={[0, .2, 0]}>
-      <CottageShellCollider />
+      {built > .08 && <CottageShellCollider />}
       <mesh position={[0, .62, 0]} material={mats.cream}><boxGeometry args={[2.35, 1.24, 1.9]} /></mesh>
       {/* exposed timber is a silhouette device, not surface noise */}
       {[[0, 1.19, .98, 2.55, .11, .12], [-1.1, .72, .99, .13, 1.2, .13], [1.1, .72, .99, .13, 1.2, .13], [0, .2, .99, 2.55, .12, .13]].map((v, i) => <mesh key={i} position={[v[0], v[1], v[2]]} material={mats.timber}><boxGeometry args={[v[3], v[4], v[5]]} /></mesh>)}

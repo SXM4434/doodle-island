@@ -55,7 +55,7 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
 
       {/* contextual hint */}
       {hint < 4 && !placing && <div className="hint-bubble">{HINTS[hint]}</div>}
-      {placing && <div className="hint-bubble">E place · R rotate · Esc cancel</div>}
+      {placing && <div className="hint-bubble">E place · R rotate · Esc cancel{['furniture', 'fence', 'campfire'].includes(placing.cls) ? ' · pebble ring = build plot' : ''}</div>}
 
       {/* toast */}
       <div className={`toast ${toastVisible ? 'show' : ''}`}>{toast}</div>

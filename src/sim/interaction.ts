@@ -15,6 +15,7 @@ import { fishing } from './fishing'
 import { nearestCampfire } from '../world/Campfires'
 import { useCombat, MAX_HP } from './combat'
 import { dailyBottleNearby } from '../world/DailyBottle'
+import { isStructural } from './placement'
 
 export interface InteractionTarget {
   id: string
@@ -28,7 +29,12 @@ export function getInteractionTarget(): InteractionTarget | null {
   const g = useGame.getState()
   const p = refs.playerPos
   if (g.drawOpen || g.shopOpen || g.journalOpen) return null
-  if (g.placing) return { id: 'place', label: 'Place creation', detail: 'E confirm · R rotate · Esc cancel', verb: 'place' }
+  if (g.placing) return {
+    id: 'place',
+    label: 'Place creation',
+    detail: isStructural(g.placing) && !isInside(p.x) ? 'Build inside the pebble ring · E confirm · R rotate' : 'E confirm · R rotate · Esc cancel',
+    verb: 'place',
+  }
   if (isInside(p.x)) {
     if (playerBedNearby()) return { id: 'player-bed', label: 'Your bed', detail: 'E sleep until morning', verb: 'build' }
     const chest = chestRoomNearby()

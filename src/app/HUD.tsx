@@ -3,6 +3,7 @@ import { useGame, refs, RES_LABEL, type ResKind } from '../sim/store'
 import { itemThumb } from '../draw/itemTexture'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { sfx, setMuted, isMuted } from '../audio/sfx'
+import { tryInteract } from '../sim/Interact'
 
 const HINTS = [
   'WASD to wander · drag to look',
@@ -51,6 +52,8 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
 
       <button className="chip-mute" onClick={() => { setMuted(!muted); setM(!muted) }} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}>{muted ? 'sound off' : 'sound on'}</button>
       <button className="chip-settings" onClick={onOpenSettings} aria-label="Open settings">settings</button>
+
+      <button className="mobile-interact" onClick={() => tryInteract()} aria-label="Interact with nearby object">E<span>use</span></button>
 
       {/* contextual hint */}
       {hint < 4 && !placing && <div className="hint-bubble">{HINTS[hint]}</div>}

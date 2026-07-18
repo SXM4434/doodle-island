@@ -148,7 +148,7 @@ export function Props() {
     <group>
       {/* Only substantial nodes collide. Fiber and shells remain easy-to-reach pickups.
           Fixed spheres are cheaper and more forgiving than per-prop mesh colliders. */}
-      {nodes.filter((n) => n.type === 'tree' || n.type === 'rock').map((n) => <NodeCollider key={`collider-${n.id}`} id={n.id} type={n.type as 'tree' | 'rock'} x={n.x} z={n.z} scale={n.scale} />)}
+      {nodes.filter((n) => n.type === 'tree' || n.type === 'rock').map((n) => <NodeCollider key={`collider-${n.id}`} node={{ ...n, type: n.type as 'tree' | 'rock' }} />)}
       {pieces.map((pc, i) => (
         <instancedMesh
           key={i}
@@ -167,11 +167,10 @@ export function Props() {
   )
 }
 
-function NodeCollider({ id, type, x, z, scale }: { id: number; type: 'tree' | 'rock'; x: number; z: number; scale: number }) {
-  const node = useGame((s) => s.nodes.find((n) => n.id === id))
-  if (node?.respawnAt) return null
-  const radius = (type === 'tree' ? .68 : .54) * scale
-  return <RigidBody type="fixed" colliders={false} position={[x, groundY(x, z) + radius, z]}>
+function NodeCollider({ node }: { node: { type: 'tree' | 'rock'; x: number; z: number; scale: number; respawnAt: number } }) {
+  if (node.respawnAt) return null
+  const radius = (node.type === 'tree' ? .68 : .54) * node.scale
+  return <RigidBody type="fixed" colliders={false} position={[node.x, groundY(node.x, node.z) + radius, node.z]}>
     <BallCollider args={[radius]} />
   </RigidBody>
 }

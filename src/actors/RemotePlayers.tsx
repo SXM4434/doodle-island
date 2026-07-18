@@ -102,8 +102,17 @@ export function NetSync() {
     })
   }, [])
   const lastPull = useRef(0)
+  const wasHost = useRef(false)
   useFrame(() => {
     const now = performance.now()
+    const host = net.ownsWorld()
+    // If host authority moves to this client, publish the current snapshot at
+    // once. This keeps the room's latest island alive even before the next edit.
+    if (host && !wasHost.current) {
+      const s = useGame.getState()
+      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+    }
+    wasHost.current = host
     if (now - lastPull.current > 1000) {
       lastPull.current = now
       const world = net.pullWorld()

@@ -101,6 +101,11 @@ class NetAdapter {
     return [...this.remotesMap.values()]
   }
 
+  ownsWorld(): boolean {
+    this.host = this.isHostNow?.() ?? this.host
+    return this.status === 'on' && this.host
+  }
+
   // Host-owned world snapshot: decorative creations, gardening, dock, and residents
   // are shared; private pockets and custom player drawings never leave the client.
   pushWorld(world: WorldSnapshot): void {

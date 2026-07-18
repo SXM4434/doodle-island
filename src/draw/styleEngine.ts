@@ -25,8 +25,9 @@ function normalized(strokes: Stroke[], inset = .1): Stroke[] {
 }
 
 function fillFor(kind: StyleFill, relY: number): [number, number, number, number] {
-  // Authored four-color paper-character kit, not an inferred semantic identity.
-  if (kind === 'object') return relY < .5 ? [224, 181, 133, 255] : [169, 105, 62, 255]
+  // Objects have no hidden semantic color. Closed loops receive a quiet paper fill;
+  // the maker's own selected inks remain the visible color language.
+  if (kind === 'object') return [255, 248, 234, 255]
   if (relY < .43) return [249, 227, 192, 255] // face / hands
   if (relY < .7) return [217, 93, 57, 255] // shirt
   if (relY < .86) return [79, 143, 184, 255] // shorts

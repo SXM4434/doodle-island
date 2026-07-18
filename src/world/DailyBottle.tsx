@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useGame, refs } from '../sim/store'
 import { groundY } from '../sim/terrain'
 import { toon } from './toon'
@@ -56,12 +56,12 @@ export function collectDailyBottle(): boolean {
 }
 
 export function DailyBottle() {
-  const [claimedDay, setClaimedDay] = useState(() => claimedMemory || localStorage.getItem('doodle-island-bottle') || '')
+  // Subscribe to the successful-interaction toast so this prop removes immediately
+  // after claiming, without a render-time state update or polling.
+  useGame((s) => s.toastAt)
   const spot = useMemo(todaySpot, [])
   const mats = useMemo(() => ({ glass: toon('#8ed0dd'), cork: toon('#a8703d') }), [])
-  const claimed = claimedDay === todayKey()
-  // Interactions update the shared claim marker; sync local visual state without an auto-pickup.
-  if (!claimed && claimedMemory === todayKey()) setClaimedDay(claimedMemory)
+  const claimed = (claimedMemory || localStorage.getItem('doodle-island-bottle') || '') === todayKey()
 
   if (claimed) return null
   const y = groundY(spot.x, spot.z)

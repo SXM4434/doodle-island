@@ -8,7 +8,13 @@ import { Ripples } from '../world/Ripples'
 import { Campfires } from '../world/Campfires'
 import { Garden } from '../world/Garden'
 import { Homes, Dock, DockSign } from '../world/Homes'
+import { Interiors } from '../world/Interiors'
 import { DailyBottle } from '../world/DailyBottle'
+import { Fishing } from '../world/Fishing'
+import { ShopStall } from '../world/ShopStall'
+import { Shop } from './Shop'
+import { InteractionPrompt } from './InteractionPrompt'
+import { HomeStorage } from './HomeStorage'
 import { Critters } from '../actors/Critters'
 import { Journal } from './Journal'
 import { Villagers } from '../actors/Villagers'
@@ -84,6 +90,8 @@ export default function App() {
           <DayNight />
           <Physics timeStep={1 / 60} paused={!started}>
             <Island />
+            <PlacedItems />
+            <Interiors />
             {started && (
               <KeyboardControls map={keyMap}>
                 <Player />
@@ -100,6 +108,8 @@ export default function App() {
           {started && <Villagers />}
           {started && <Critters />}
           {started && <DailyBottle />}
+          {started && <Fishing />}
+          {started && <ShopStall />}
           {started && <HeldItem />}
           {started && <Mobs />}
           {started && <RemotePlayers />}
@@ -112,9 +122,12 @@ export default function App() {
       </Canvas>
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD />}
+      {started && <InteractionPrompt />}
       {started && <Hearts />}
       <DrawTable />
       <Journal />
+      <Shop />
+      <HomeStorage />
       {drawingSelf && (
         <CharacterEasel
           onDone={() => {

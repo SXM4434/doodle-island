@@ -191,7 +191,7 @@ export function nearestQuestVillager(): Villager | null {
   const g = useGame.getState()
   const p = refs.playerPos
   let best: Villager | null = null
-  let bestD = 2
+  let bestD = 1.2 // tight: don't eat E-presses meant for doors/nodes
   for (const v of g.villagers) {
     const b = brains.get(v.id)
     const x = b?.x ?? v.homeX

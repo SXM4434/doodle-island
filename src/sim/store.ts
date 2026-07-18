@@ -3,9 +3,9 @@ import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
 
-export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink'
+export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink' | 'fish'
 export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
-export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'stonesword'
+export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'stonesword' | 'rod'
 
 export interface DrawnItem {
   id: string
@@ -42,6 +42,10 @@ export interface Placed {
   x: number
   z: number
   rot: number // radians, 90° steps
+  // A location is part of the object, not a rendering accident. Interior placement
+  // persists in its specific villager room; outdoor objects remain on island terrain.
+  area?: 'island' | 'interior'
+  room?: number
 }
 export interface Villager {
   id: string
@@ -82,6 +86,8 @@ export const refs = {
   moved: 0, // distance walked (hint logic)
   placePos: new THREE.Vector3(),
   placeValid: false,
+  teleportTo: null as { x: number; y: number; z: number } | null,
+  returnPos: new THREE.Vector3(0, 3, -38),
 }
 
 export const DEED_LABEL: Record<string, string> = {
@@ -96,6 +102,9 @@ export const DEED_LABEL: Record<string, string> = {
   'feed-friend': 'Good Neighbor', 'slay-scribble': 'Scribble Slayer', 'slay-wasp': 'Wasp Whacker',
   'dock-done': 'Dock Founder', 'daily-gift': 'Early Bird', 'plant-berry': 'Green Thumb',
   'survive-night': 'Night Owl',
+  'craft-rod': 'Rod Wobbler', 'catch-doodlefish': 'Pond Doodler', 'catch-squiggle': 'Sea Squiggler',
+  'catch-inkkoi': 'Ink Koi Legend', 'first-sale': 'Merchant', 'golden-ink': 'Gold Standard',
+  'rain-day': 'Puddle Stomper', 'enter-house': 'House Guest', 'meet-miso': 'Met Miso', 'meet-waddles': 'Met Waddles', 'meet-sluggo': 'Met Sluggo',
 }
 
 // Starting values (game-design Numbers Policy) — tune in playtest, never silently.
@@ -103,8 +112,8 @@ export const NODE_HITS: Record<NodeType, number> = { tree: 3, rock: 4, fiber: 1,
 export const NODE_RES: Record<NodeType, ResKind> = { tree: 'wood', rock: 'stone', fiber: 'fiber', shell: 'shine' }
 export const NODE_YIELD: Record<NodeType, number> = { tree: 3, rock: 3, fiber: 1, shell: 1 }
 export const TOOL_FOR: Record<NodeType, ToolKind | null> = { tree: 'axe', rock: 'pick', fiber: null, shell: null }
-export const TOOL_TIER: Record<ToolKind, number> = { axe: 1, pick: 1, sword: 1, stoneaxe: 2, stonepick: 2, stonesword: 2 }
-export const TOOL_BASE: Record<ToolKind, ToolKind> = { axe: 'axe', pick: 'pick', sword: 'sword', stoneaxe: 'axe', stonepick: 'pick', stonesword: 'sword' }
+export const TOOL_TIER: Record<ToolKind, number> = { axe: 1, pick: 1, sword: 1, stoneaxe: 2, stonepick: 2, stonesword: 2, rod: 1 }
+export const TOOL_BASE: Record<ToolKind, ToolKind> = { axe: 'axe', pick: 'pick', sword: 'sword', stoneaxe: 'axe', stonepick: 'pick', stonesword: 'sword', rod: 'rod' }
 export const RESPAWN_MS: [number, number] = [120_000, 240_000] // 2–4 min (PRD §3)
 export const STACK_MAX = 50
 // Starting value: bush matures in ~8 min real time (2 stages x 4 min) — tune in playtest
@@ -118,6 +127,7 @@ export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   stoneaxe: { wood: 2, stone: 3, ink: 1 }, // tier 2: night ink unlocks power
   stonepick: { wood: 2, stone: 4, ink: 1 },
   stonesword: { wood: 1, stone: 3, ink: 2 },
+  rod: { wood: 2, fiber: 2 }, // the fishing rod — water becomes a place
   furniture: { wood: 4 },
   decoration: { fiber: 2 },
   campfire: { wood: 8, stone: 2 }, // the first "goal" craft — warms the night
@@ -126,7 +136,7 @@ export const COSTS: Record<CraftKey, Partial<Record<ResKind, number>>> = {
   fence: { wood: 1 }, // cheap, solid, snaps — build pens and yards
 }
 
-export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry', ink: 'ink' }
+export const RES_LABEL: Record<ResKind, string> = { wood: 'wood', stone: 'stone', fiber: 'fiber', shine: 'shine', berry: 'berry', ink: 'ink', fish: 'fish' }
 
 interface State {
   started: boolean
@@ -140,6 +150,11 @@ interface State {
   project: Project
   journal: Journal
   journalOpen: boolean
+  goldenInk: boolean // bought from the shop — unlocks gold in the palette
+  shopOpen: boolean
+  chestOpen: number | null
+  homeStorage: Slot[][]
+  weather: 'sun' | 'rain'
   drawOpen: boolean
   placing: DrawnItem | null
   placingRot: number
@@ -171,6 +186,11 @@ interface State {
   buildTick: (id: string, amt: number) => void
   deed: (key: string) => void
   openJournal: (open: boolean) => void
+  openShop: (open: boolean) => void
+  openChest: (room: number | null) => void
+  moveChestSlot: (room: number, fromChest: boolean, index: number) => void
+  buyGoldenInk: () => void
+  sellRes: (res: ResKind, n: number, price: number) => void
   giveVillager: (id: string) => boolean
   plantBerry: (x: number, z: number) => boolean
   harvestPlant: (id: string) => void
@@ -179,7 +199,7 @@ interface State {
 let dropId = 1
 const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal } | null {
+function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][] } | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
     return raw ? JSON.parse(raw) : null
@@ -202,6 +222,11 @@ export const useGame = create<State>((set, get) => ({
   project: saved?.project ?? { key: 'dock', need: 20, given: 0, doneAt: 0 },
   journal: saved?.journal ?? { deeds: {} },
   journalOpen: false,
+  goldenInk: saved?.goldenInk ?? false,
+  shopOpen: false,
+  chestOpen: null,
+  homeStorage: saved?.homeStorage ?? [],
+  weather: 'sun',
   drawOpen: false,
   placing: null,
   placingRot: 0,
@@ -314,7 +339,7 @@ export const useGame = create<State>((set, get) => ({
         }
       }
     }
-    const isTool = key === 'axe' || key === 'pick' || key === 'sword'
+    const isTool = ['axe', 'pick', 'sword', 'stoneaxe', 'stonepick', 'stonesword', 'rod'].includes(key)
     const item: DrawnItem = {
       id: itemId(),
       cls: isTool ? 'tool' : (key as ItemClass),
@@ -344,7 +369,11 @@ export const useGame = create<State>((set, get) => ({
     const g = get()
     if (!g.placing) return
     set({
-      placed: [...g.placed, { id: g.placing.id, item: g.placing, x, z, rot: g.placingRot }],
+      placed: [...g.placed, {
+        id: g.placing.id, item: g.placing, x, z, rot: g.placingRot,
+        area: refs.playerPos.x > 200 ? 'interior' : 'island',
+        room: refs.playerPos.x > 200 ? Math.round((refs.playerPos.x - 400) / 40) : undefined,
+      }],
       placing: null,
     })
     g.deed('place-' + g.placing.item.cls)
@@ -380,6 +409,64 @@ export const useGame = create<State>((set, get) => ({
     }
   },
   openJournal: (open) => set({ journalOpen: open }),
+  openShop: (open) => set({ shopOpen: open }),
+  openChest: (room) => set({ chestOpen: room }),
+  moveChestSlot: (room, fromChest, index) => {
+    const g = get()
+    const player = g.slots.map((x) => ({ ...x }))
+    const boxes = g.homeStorage.map((box) => box.map((x) => ({ ...x })))
+    while (boxes.length <= room) boxes.push(Array.from({ length: 12 }, () => ({})))
+    const chest = boxes[room]
+    while (chest.length < 12) chest.push({})
+    const source = fromChest ? chest : player
+    const dest = fromChest ? player : chest
+    const item = source[index]
+    if (!item?.res && !item?.item) return
+    // One full slot per transfer: no invisible splitting, no accidental loss.
+    const empty = dest.findIndex((x) => !x.res && !x.item)
+    if (empty < 0) { g.say(fromChest ? 'Pockets are full!' : 'Chest is full!'); return }
+    dest[empty] = { ...item }
+    source[index] = {}
+    set({ slots: player, homeStorage: boxes })
+  },
+
+  buyGoldenInk: () => {
+    const g = get()
+    if (g.goldenInk) return
+    if (g.countRes('shine') < 10) { g.say('Golden Ink costs 10 shine — keep beachcombing!'); return }
+    const slots = g.slots.map((s) => ({ ...s }))
+    let need = 10
+    for (const s of slots) {
+      if (s.res === 'shine' && need > 0) {
+        const take = Math.min(need, s.count ?? 0)
+        s.count = (s.count ?? 0) - take
+        need -= take
+        if (!s.count) { delete s.res; delete s.count }
+      }
+    }
+    set({ slots, goldenInk: true })
+    g.deed('golden-ink')
+    g.say('✨ GOLDEN INK unlocked! It\u2019s in your draw palette now.')
+  },
+
+  sellRes: (res, n, price) => {
+    const g = get()
+    if (g.countRes(res) < n) { g.say('Not enough ' + RES_LABEL[res] + '!'); return }
+    const slots = g.slots.map((s) => ({ ...s }))
+    let need = n
+    for (const s of slots) {
+      if (s.res === res && need > 0) {
+        const take = Math.min(need, s.count ?? 0)
+        s.count = (s.count ?? 0) - take
+        need -= take
+        if (!s.count) { delete s.res; delete s.count }
+      }
+    }
+    set({ slots })
+    g.addRes('shine', price)
+    g.deed('first-sale')
+    g.say('Sold! +' + price + ' shine')
+  },
 
   say: (msg) => set({ toast: msg, toastAt: performance.now() }),
   setHint: (h) => set({ hint: h }),
@@ -514,7 +601,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)

@@ -66,6 +66,11 @@ function House({ id, x, z }: { id: string; x: number; z: number }) {
         <mesh position={[0, 0.35, 0.76]} material={mats.door}>
           <boxGeometry args={[0.5, 0.7, 0.06]} />
         </mesh>
+        {/* doorGlow: warm sliver saying "enterable" */}
+        <mesh position={[0, 0.06, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.6, 0.25]} />
+          <meshBasicMaterial color="#ffd9a0" transparent opacity={0.5} toneMapped={false} />
+        </mesh>
         {/* round window */}
         <mesh position={[0.5, 0.65, 0.76]} rotation={[Math.PI / 2, 0, 0]} material={mats.wood}>
           <cylinderGeometry args={[0.16, 0.16, 0.06, 10]} />

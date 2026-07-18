@@ -55,8 +55,24 @@ export function Player() {
     const body = rb.current?.group
     if (!body || !sprite.current) return
     const t = body.translation()
+    // teleport requests (house enter/exit)
+    if (refs.teleportTo) {
+      const tp = refs.teleportTo
+      refs.teleportTo = null
+      body.setTranslation({ x: tp.x, y: tp.y, z: tp.z }, true)
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      return
+    }
+    // interior fall-catch: fell out of a diorama → pop back onto its floor
+    if (t.x > 200 && t.y < 1.2) {
+      const slotIdx = Math.round((t.x - 400) / 40)
+      body.setTranslation({ x: 400 + slotIdx * 40, y: 4.2, z: 1.5 }, true)
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      return
+    }
     // deep-water / fall catch: drift too far out to sea → wash back ashore
-    if (t.y < -0.8) {
+    // (never inside a house diorama — those float at their own height)
+    if (t.y < -0.8 && t.x < 200) {
       body.setTranslation({ x: SPAWN.x, y: groundY(SPAWN.x, SPAWN.z) + 3, z: SPAWN.z }, true)
       body.setLinvel({ x: 0, y: 0, z: 0 }, true)
       return

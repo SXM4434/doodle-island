@@ -8,6 +8,7 @@ const CLASSES: Array<{ key: CraftKey; label: string; blurb: string }> = [
   { key: 'axe', label: 'Axe', blurb: 'chops trees' },
   { key: 'pick', label: 'Pick', blurb: 'cracks rocks' },
   { key: 'sword', label: 'Sword', blurb: 'for the night' },
+  { key: 'rod', label: 'Fishing Rod', blurb: 'cast at pond or shore' },
   { key: 'stoneaxe', label: 'Stone Axe', blurb: 'chops 2x — needs ink' },
   { key: 'stonepick', label: 'Stone Pick', blurb: 'cracks 2x — needs ink' },
   { key: 'stonesword', label: 'Ink Blade', blurb: 'hits 2x — night steel' },
@@ -88,6 +89,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const beginPlace = useGame((s) => s.beginPlace)
   const openDraw = useGame((s) => s.openDraw)
   const say = useGame((s) => s.say)
+  const goldenInk = useGame((s) => s.goldenInk)
 
   const PX = 640
 
@@ -184,7 +186,7 @@ function Easel({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
             ⌫
           </button>
           <div className="tool-sep" />
-          {Object.entries(INKS).map(([k, hex]) => (
+          {Object.entries(goldenInk ? { ...INKS, gold: '#e0a428' } : INKS).map(([k, hex]) => (
             <button
               key={k}
               className={`ink ${color === k && !eraser ? 'on' : ''}`}

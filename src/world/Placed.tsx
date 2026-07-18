@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { RigidBody } from '@react-three/rapier'
 import { useGame, refs, itemWorldSize, type Placed as PlacedT } from '../sim/store'
 import { groundY, TABLE } from '../sim/terrain'
+import { isInside, interiorSlot } from './Interiors'
 import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow } from './toon'
 
@@ -44,7 +45,7 @@ function Standee({ p }: { p: PlacedT }) {
     return m
   }, [tex])
   const shadow = useMemo(() => makeBlobShadow(w * 0.45), [w])
-  const y = groundY(p.x, p.z)
+  const y = p.area === 'interior' ? interiorSlot(p.room ?? 0).y : groundY(p.x, p.z)
   return (
     <group position={[p.x, y, p.z]} rotation={[0, p.rot, 0]}>
       <group ref={inner}>
@@ -82,8 +83,13 @@ export function PlaceGhost() {
     const fl = Math.hypot(fx, fz) || 1
     const x = Math.round((refs.playerPos.x + (fx / fl) * 2) * 2) / 2
     const z = Math.round((refs.playerPos.z + (fz / fl) * 2) * 2) / 2
-    const y = groundY(x, z)
-    const valid = y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2
+    const inside = isInside(refs.playerPos.x)
+    const y = inside ? interiorSlot(Math.round((refs.playerPos.x - 400) / 40)).y : groundY(x, z)
+    // indoors: all floor space is valid; outdoors: grass, away from the Draw Table
+    const slot = interiorSlot(Math.round((refs.playerPos.x - 400) / 40))
+    const valid = inside
+      ? Math.abs(x - slot.x) < 5.4 && Math.abs(z - slot.z) < 5.3
+      : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2
     refs.placePos.set(x, y, z)
     refs.placeValid = valid
     ref.current.position.set(x, y, z)

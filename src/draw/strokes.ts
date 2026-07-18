@@ -16,6 +16,7 @@ export const INKS: Record<string, string> = {
   leaf: '#5c9645',
   sky: '#4f8fb8',
   sun: '#e0a428',
+  gold: '#e0a428',
 }
 
 export function strokeOutline(s: Stroke, px: number): number[][] {

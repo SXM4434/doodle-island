@@ -2,11 +2,14 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGame, refs, equippedTool, TOOL_FOR, TOOL_TIER, TOOL_BASE, type NodeState } from './store'
 import { TABLE } from './terrain'
+import { fishInteract } from './fishing'
+import { SHOP } from '../world/ShopStall'
 import { sfx } from '../audio/sfx'
 import { swingHitMobs, tryDodge, useCombat, SWORD_DMG, OTHER_DMG } from './combat'
 import { nearestQuestVillager, villagerChat } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
+import { tryEnterHouse, tryExitHouse, chestRoomNearby } from '../world/Interiors'
 
 // One interact verb (E / tap button): whack nearest node, or open the table,
 // or pick up a placed item. Swing cooldown 0.5s (PRD §6 starting value).
@@ -46,8 +49,14 @@ export function tryInteract(): void {
     return
   }
 
-  // near the draw table?
   const p = refs.playerPos
+  // Waddles' shop is a real stall with a real trade screen
+  if (Math.hypot(p.x - SHOP.x, p.z - SHOP.z) < 2.4) {
+    g.openShop(true)
+    sfx.chime()
+    return
+  }
+  // near the draw table?
   if (Math.hypot(p.x - TABLE.x, p.z - TABLE.z) < 2.6) {
     g.openDraw(true)
     sfx.chime()
@@ -65,6 +74,14 @@ export function tryInteract(): void {
       return
     }
   }
+
+  // a home is a utility space: chest before door / exterior interactions
+  const chest = chestRoomNearby()
+  if (chest !== null) { g.openChest(chest); sfx.chime(); return }
+
+  // inside a house? doormat exits. outside? door enters.
+  if (tryExitHouse()) { sfx.chime(); return }
+  if (tryEnterHouse()) { sfx.chime(); return }
 
   // wild critter nearby? they have opinions
   if (critterSay()) { sfx.knock('soft'); return }
@@ -100,6 +117,9 @@ export function tryInteract(): void {
       return
     }
   }
+
+  // rod gets a dedicated water interaction (cast/wait/bite/reel)
+  if (equippedTool() === 'rod' && fishInteract()) return
 
   // whack: mobs first (combat), then nearest node
   if (now - refs.swingAt < SWING_MS) return

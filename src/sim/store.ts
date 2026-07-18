@@ -209,13 +209,22 @@ interface State {
 let dropId = 1
 const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-function loadSave(): { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][] } | null {
+interface SaveData { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][]; personalHomeAdded?: boolean }
+function loadSave(): SaveData | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+    const save = raw ? JSON.parse(raw) as SaveData : null
+    if (!save) return null
+    // The personal cottage claims interior room 0. Older saves used room 0 for
+    // the first villager, so move their furniture/chests once instead of quietly
+    // putting a resident's possessions into the player house.
+    if (!save.personalHomeAdded) {
+      save.placed = (save.placed ?? []).map((p) => p.area === 'interior' ? { ...p, room: (p.room ?? 0) + 1 } : p)
+      save.homeStorage = [Array.from({ length: 12 }, () => ({} as Slot)), ...(save.homeStorage ?? [])].map((box) => Array.isArray(box) ? box : Array.from({ length: 12 }, () => ({} as Slot)))
+      save.personalHomeAdded = true
+    }
+    return save
+  } catch { return null }
 }
 
 const saved = loadSave()
@@ -659,7 +668,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage, personalHomeAdded: true }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)

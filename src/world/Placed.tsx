@@ -9,6 +9,7 @@ import { itemTexture } from '../draw/itemTexture'
 import { makeBlobShadow } from './toon'
 import { ConvertedItem } from './ConvertedItem'
 import { convertDrawing } from '../draw/conversion'
+import { canPlaceHere } from '../sim/placement'
 
 // Placed drawn items = paper standees in the world (Route A billboards, ARCH §5).
 export function PlacedItems() {
@@ -93,9 +94,10 @@ export function PlaceGhost() {
     const y = inside ? interiorSlot(Math.round((refs.playerPos.x - 400) / 34)).y : groundY(x, z)
     // indoors: all floor space is valid; outdoors: grass, away from the Draw Table
     const slot = interiorSlot(Math.round((refs.playerPos.x - 400) / 34))
+    const inRoom = Math.abs(x - slot.x) < 5.4 && Math.abs(z - slot.z) < 5.3
     const valid = inside
-      ? Math.abs(x - slot.x) < 5.4 && Math.abs(z - slot.z) < 5.3
-      : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2
+      ? inRoom
+      : y > 0.45 && Math.hypot(x - TABLE.x, z - TABLE.z) > 2.2 && canPlaceHere(placing, x, z, false)
     refs.placePos.set(x, y, z)
     refs.placeValid = valid
     ref.current.position.set(x, y, z)

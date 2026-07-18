@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
 import { scatterNodes, type NodeType } from './terrain'
+import { canPlaceHere } from './placement'
 
 export type ResKind = 'wood' | 'stone' | 'fiber' | 'shine' | 'berry' | 'ink' | 'fish'
 export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wallhang' | 'friend' | 'fence'
@@ -395,11 +396,13 @@ export const useGame = create<State>((set, get) => ({
   commitPlace: (x, z) => {
     const g = get()
     if (!g.placing) return
+    const inside = refs.playerPos.x > 200
+    if (!canPlaceHere(g.placing, x, z, inside)) { g.say('Big builds belong on your cottage plot.'); return }
     set({
       placed: [...g.placed, {
         id: g.placing.id, item: g.placing, x, z, rot: g.placingRot,
-        area: refs.playerPos.x > 200 ? 'interior' : 'island',
-        room: refs.playerPos.x > 200 ? Math.round((refs.playerPos.x - 400) / 34) : undefined,
+        area: inside ? 'interior' : 'island',
+        room: inside ? Math.round((refs.playerPos.x - 400) / 34) : undefined,
       }],
       placing: null,
     })

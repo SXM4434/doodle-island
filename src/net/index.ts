@@ -1,9 +1,9 @@
 // The net seam (ARCHITECTURE §7): NOTHING outside net/ touches playroomkit.
 // Tier 1 = Playroom Kit (positions unreliable @12Hz, world edits reliable).
 // If join fails (offline / blocked), the game silently stays solo (Tier 0).
-import type { Placed, Plant, Project, Villager } from '../sim/store'
+import type { NodeState, Placed, Plant, Project, Villager } from '../sim/store'
 
-export interface WorldSnapshot { placed: Placed[]; plants: Plant[]; project: Project; villagers: Villager[] }
+export interface WorldSnapshot { placed: Placed[]; plants: Plant[]; project: Project; villagers: Villager[]; nodes?: NodeState[] }
 
 export interface RemoteSample {
   t: number

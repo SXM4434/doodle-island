@@ -656,8 +656,8 @@ export const useGame = create<State>((set, get) => ({
 // ---- multiplayer world-edit sync (via net seam) ----
 useGame.subscribe((s, prev) => {
   if (s.placed !== prev.placed) net.pushPlaced(s.placed)
-  if (s.placed !== prev.placed || s.plants !== prev.plants || s.project !== prev.project || s.villagers !== prev.villagers) {
-    net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+  if (s.placed !== prev.placed || s.plants !== prev.plants || s.project !== prev.project || s.villagers !== prev.villagers || s.nodes !== prev.nodes) {
+    net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers, nodes: s.nodes })
   }
 })
 

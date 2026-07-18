@@ -98,7 +98,7 @@ export function NetSync() {
       // A late joiner needs a complete island immediately, not only after the
       // host's next edit. Private inventory remains deliberately excluded.
       const s = useGame.getState()
-      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers, nodes: s.nodes })
     })
   }, [])
   const lastPull = useRef(0)
@@ -110,13 +110,17 @@ export function NetSync() {
     // once. This keeps the room's latest island alive even before the next edit.
     if (host && !wasHost.current) {
       const s = useGame.getState()
-      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers })
+      net.pushWorld({ placed: s.placed, plants: s.plants, project: s.project, villagers: s.villagers, nodes: s.nodes })
     }
     wasHost.current = host
     if (now - lastPull.current > 1000) {
       lastPull.current = now
       const world = net.pullWorld()
-      if (world) useGame.setState(world)
+      if (world) {
+        // Nodes joined the snapshot after the first public build. Keep the
+        // optional guard so an older room payload remains compatible.
+        useGame.setState(world.nodes ? world : { ...world, nodes: useGame.getState().nodes })
+      }
       else {
         const incoming = net.pullPlaced()
         if (incoming) useGame.setState({ placed: incoming })

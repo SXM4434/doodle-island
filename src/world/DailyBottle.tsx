@@ -25,11 +25,11 @@ function todaySpot(): { x: number; z: number } {
   return { x: 0, z: 44 }
 }
 
-const GIFTS: Array<{ res: 'shine' | 'berry' | 'ink' | 'stone'; n: number; note: string }> = [
-  { res: 'shine', n: 3, note: 'three sparkles inside!' },
-  { res: 'berry', n: 4, note: 'someone sent berries!' },
-  { res: 'ink', n: 2, note: 'bottled ink — spooky!' },
-  { res: 'stone', n: 5, note: 'heavy! full of stones.' },
+const GIFTS: Array<{ res: 'shine' | 'berry' | 'ink' | 'stone'; n: number; note: string; condition: string }> = [
+  { res: 'shine', n: 3, note: 'three sparkles inside!', condition: 'The beach is glittering today — look for bright shells.' },
+  { res: 'berry', n: 4, note: 'someone sent berries!', condition: 'Berry day: neighbors are hungry for something sweet.' },
+  { res: 'ink', n: 2, note: 'bottled ink — spooky!', condition: 'Ink tide: night scribbles may leave more ink behind.' },
+  { res: 'stone', n: 5, note: 'heavy! full of stones.', condition: 'Stone day: the shore has washed up useful building pieces.' },
 ]
 
 let claimedMemory = ''
@@ -50,7 +50,7 @@ export function collectDailyBottle(): boolean {
   if (!dailyBottleNearby()) return false
   const day = todayKey(); const gift = currentGift(); const g = useGame.getState()
   g.addRes(gift.res, gift.n); g.deed('daily-gift')
-  g.say(`A bottle washed ashore — ${gift.note}`); sfx.chime()
+  g.say(`A bottle washed ashore — ${gift.note} ${gift.condition}`); sfx.chime()
   claimedMemory = day; localStorage.setItem('doodle-island-bottle', day)
   return true
 }

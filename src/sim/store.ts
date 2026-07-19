@@ -610,7 +610,7 @@ export const useGame = create<State>((set, get) => ({
       slots,
       project: { ...g.project, given, doneAt: done ? Date.now() : 0 },
     })
-    g.say(done ? 'THE DOCK IS DONE!! The whole island came to see.' : `+${give} wood — dock is ${Math.round((given / g.project.need) * 100)}% built`)
+    g.say(done ? 'The dock is ready! Visitors now arrive at your island gate.' : `+${give} wood — dock is ${Math.round((given / g.project.need) * 100)}% built`)
   },
 
   contributeHome: (id, n) => {

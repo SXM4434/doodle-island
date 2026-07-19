@@ -142,10 +142,8 @@ export function NetSync() {
         // optional guard so an older room payload remains compatible.
         useGame.setState(world.nodes ? world : { ...world, nodes: useGame.getState().nodes })
       }
-      else {
-        const incoming = net.pullPlaced()
-        if (incoming) useGame.setState({ placed: incoming })
-      }
+      // There is no separate guest-writable placement channel: all shared state
+      // arrives through the host snapshot above.
     }
   })
   return null

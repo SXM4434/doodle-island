@@ -69,6 +69,7 @@ export interface Villager {
   quest: { res: ResKind; n: number } | null
   questAt: number // when current quest was asked (0 = none yet)
   fed: number // total quests completed (friendship)
+  displayRequest?: { cls: 'decoration' | 'wallhang' | 'fence' | 'furniture'; done: boolean } // one meaningful post-home authored contribution
   built: number // 0..1 house progress — grows only after the player funds the blueprint
   homeWood?: number // contributed timber; old saves migrate to a complete funded home when built
   homeNeed?: number // starting value: 10 wood; test whether a new resident feels reachable in one outing
@@ -248,6 +249,7 @@ export const useGame = create<State>((set, get) => ({
   placed: saved?.placed ?? [],
   villagers: (saved?.villagers ?? []).map((v) => ({
     ...v,
+    displayRequest: v.displayRequest ?? (v.built >= 1 ? { cls: (['decoration','wallhang','fence','furniture'] as const)[v.name.length % 4], done: false } : undefined),
     // Preserve finished legacy homes; unfinished legacy homes now need funding.
     homeNeed: v.homeNeed ?? 10,
     homeWood: v.homeWood ?? (v.built >= 1 ? (v.homeNeed ?? 10) : 0),
@@ -418,6 +420,11 @@ export const useGame = create<State>((set, get) => ({
       }],
       placing: null,
     })
+    const finishedResident = g.villagers.find(v => v.built >= 1 && v.displayRequest && !v.displayRequest.done && v.displayRequest.cls === g.placing!.cls)
+    if (finishedResident) {
+      set({ villagers: get().villagers.map(v => v.id === finishedResident.id ? { ...v, displayRequest: { ...v.displayRequest!, done: true } } : v) })
+      g.say(`${finishedResident.name} loves your ${g.placing.cls} — it now has a place by their home!`)
+    }
     g.deed('place-' + g.placing.cls)
     if (g.hint === 3) set({ hint: 4 })
   },
@@ -643,7 +650,7 @@ export const useGame = create<State>((set, get) => ({
     if (!resident || resident.built >= 1 || (resident.homeWood ?? 0) < (resident.homeNeed ?? 10)) return
     const finished = resident.built + amt >= 1
     set({
-      villagers: g.villagers.map((v) => v.id === id ? { ...v, built: Math.min(1, v.built + amt) } : v),
+      villagers: g.villagers.map((v) => v.id === id ? { ...v, built: Math.min(1, v.built + amt), displayRequest: finished ? { cls: (['decoration','wallhang','fence','furniture'] as const)[v.name.length % 4], done: false } : v.displayRequest } : v),
     })
     if (finished) {
       g.deed('home-finished')

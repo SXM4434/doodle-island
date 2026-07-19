@@ -162,10 +162,12 @@ function VillagerSprite({ v }: { v: Villager }) {
 
 // floating "!" / request chip above a villager with an open favor
 function QuestBubble({ v }: { v: Villager }) {
-  const quest = useGame((s) => s.villagers.find((x) => x.id === v.id)?.quest)
+  const resident = useGame((s) => s.villagers.find((x) => x.id === v.id))
+  const quest = resident?.quest
+  const request = resident?.displayRequest
   const spr = useRef<THREE.Sprite>(null)
   const tex = useMemo(() => {
-    if (!quest) return null
+    if (!quest && !request) return null
     const c = document.createElement('canvas')
     c.width = 128
     c.height = 64
@@ -181,7 +183,7 @@ function QuestBubble({ v }: { v: Villager }) {
     g.fillStyle = '#33291f'
     g.font = 'bold 22px sans-serif'
     g.textAlign = 'center'
-    g.fillText(`${quest.n} ${RES_LABEL[quest.res]}?`, 64, 36)
+    g.fillText(quest ? `${quest.n} ${RES_LABEL[quest.res]}?` : request?.done ? 'thank you!' : `draw ${request?.cls}`, 64, 36)
     const t = new THREE.CanvasTexture(c)
     t.colorSpace = THREE.SRGBColorSpace
     return t
@@ -191,7 +193,7 @@ function QuestBubble({ v }: { v: Villager }) {
     if (spr.current) spr.current.position.y = 1.35 + Math.sin(clock.elapsedTime * 2.2) * 0.05
   })
 
-  if (!quest || !tex) return null
+  if ((!quest && !request) || !tex) return null
   return (
     <sprite ref={spr} position={[0, 1.35, 0]} scale={[1.0, 0.5, 1]}>
       <spriteMaterial map={tex} depthWrite={false} toneMapped={false} />

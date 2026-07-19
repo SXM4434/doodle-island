@@ -18,7 +18,25 @@ export function Village() {
     <HomePlot />
     <ResidentCottage x={PLAYER_HOME.x} z={PLAYER_HOME.z} roof="#E7B94E" roofShade="#B87636" door="#704737" detail="bench" />
     <ResidentCottage x={POND.x + 11.5} z={POND.z - 7} roof="#D86F67" roofShade="#A94E54" door="#704737" detail="cat" />
+    <PondKeeperDisplay />
     <ResidentCottage x={-10} z={-39.5} roof="#5B91B6" roofShade="#3E668D" door="#465D6E" detail="shell" />
+  </group>
+}
+
+// Miso's pond-side display anchors her role in the physical island, so the
+// resident still reads as the pond keeper when she is out pottering elsewhere.
+function PondKeeperDisplay() {
+  const x = POND.x + 5.4, z = POND.z - .7, y = groundY(x, z)
+  const mats = useMemo(() => ({ wood: toon('#8a6c3f'), teal: toon('#5b91b6'), paper: toon('#fff4d8'), reed: toon('#7ca54a') }), [])
+  const shadow = useMemo(() => makeBlobShadow(.95), [])
+  return <group position={[x, y, z]} rotation={[0, -.42, 0]}>
+    <primitive object={shadow} position={[0, .025, 0]} />
+    <mesh position={[0, .31, 0]} material={mats.wood}><boxGeometry args={[1.18, .58, .72]} /></mesh>
+    <mesh position={[0, .66, .04]} material={mats.paper} rotation={[-.14, 0, 0]}><boxGeometry args={[.88, .12, .52]} /></mesh>
+    {/* net drying ring + two reeds: an authored pond-work station, not signage */}
+    <mesh position={[.28, 1.02, .02]} rotation={[Math.PI / 2, 0, 0]} material={mats.teal}><torusGeometry args={[.25, .045, 5, 8]} /></mesh>
+    <mesh position={[.03, .98, 0]} rotation={[0, 0, -.3]} material={mats.wood}><cylinderGeometry args={[.035, .05, .72, 5]} /></mesh>
+    {[-.35, -.18].map((px) => <group key={px} position={[px, .78, -.04]} rotation={[0, 0, px * -.22]}><mesh material={mats.reed}><cylinderGeometry args={[.028, .04, .68, 5]} /></mesh><mesh position={[0, .37, 0]} material={mats.paper}><icosahedronGeometry args={[.07, 0]} /></mesh></group>)}
   </group>
 }
 

@@ -68,7 +68,7 @@ export function getInteractionTarget(): InteractionTarget | null {
   if (Math.hypot(p.x - SHOP.x, p.z - SHOP.z) < 2.4) return { id: 'shop', label: "Waddles' Swap Stand", detail: 'E trade supplies', verb: 'trade' }
   if (Math.hypot(p.x - TABLE.x, p.z - TABLE.z) < 2.6) return { id: 'table', label: 'Draw Table', detail: 'E create something useful', verb: 'draw' }
   const v = nearestQuestVillager()
-  if (v) return { id: `villager-${v.id}`, label: v.name, detail: v.quest ? `E deliver ${v.quest.n} ${v.quest.res}` : 'E chat', verb: 'talk' }
+  if (v) return { id: `villager-${v.id}`, label: v.name, detail: v.quest ? `E deliver ${v.quest.n} ${v.quest.res}` : v.displayRequest && !v.displayRequest.done ? `E hear their ${v.displayRequest.cls} idea` : 'E chat', verb: 'talk' }
   const islander = nearestIslander()
   if (islander) return { id: `islander-${islander.id}`, label: islander.id, detail: 'E say hello', verb: 'talk' }
   const c = nearestCritter()

@@ -17,7 +17,7 @@ function ArtFace({ strokes, view, size, offset }: { strokes: Stroke[]; view: Con
   if (!strokes.some(s=>!s.erase)) return null
   const [w,h]=size
   if(view==='front') return <mesh position={[0,0,offset]}><planeGeometry args={[w,h]} /><meshBasicMaterial map={texture} transparent depthWrite={false} /></mesh>
-  if(view==='side') return <mesh position={[offset,0,0]} rotation={[0,Math.PI/2,0]}><planeGeometry args={[h,w]} /><meshBasicMaterial map={texture} transparent depthWrite={false} /></mesh>
+  if(view==='side') return <mesh position={[offset,0,0]} rotation={[0,Math.PI/2,0]}><planeGeometry args={[w,h]} /><meshBasicMaterial map={texture} transparent depthWrite={false} /></mesh>
   return <mesh position={[0,offset,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[w,h]} /><meshBasicMaterial map={texture} transparent depthWrite={false} /></mesh>
 }
 

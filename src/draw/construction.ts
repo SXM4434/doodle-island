@@ -1,15 +1,17 @@
-import type { CraftKey, ObjectForm, ConstructionView } from '../sim/store'
+import type { ConstructionMaterial, CraftKey, ObjectForm, ConstructionView } from '../sim/store'
 
 export type ItemRoute = 'paper' | 'constructed'
 export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
-export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string }
+export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial }
+export const MATERIAL_LABEL: Record<ConstructionMaterial, string> = { wood:'wood', 'painted-wood':'painted wood', stone:'stone', clay:'clay', leaf:'leaf', ember:'ember' }
+export const MATERIALS_FOR_PART = (key: string): ConstructionMaterial[] => key === 'stone' ? ['stone', 'clay'] : key === 'flame' ? ['ember', 'painted-wood'] : key === 'leaf' ? ['leaf', 'painted-wood'] : key === 'pot' || key === 'rim' ? ['clay', 'stone', 'painted-wood'] : ['wood', 'painted-wood', 'stone']
 export interface ConstructionPart { key: string; label: string; prompt: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
 // Player words describe the job; storage keeps precise orthographic view names.
 export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Face', side:'Edge', top:'Top' }
 export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'Add the mark people will notice first.', side:'Add the mark along its edge.', top:'Add the mark across its top.' }
-const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945' }
-const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b' }
-const fire: PartKit = { shape:'tapered', width:1, height:1, depth:1, color:'#d95d39' }
+const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945', material:'wood' }
+const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b', material:'stone' }
+const fire: PartKit = { shape:'tapered', width:1, height:1, depth:1, color:'#d95d39', material:'ember' }
 const kit = (base:PartKit, extra:Partial<PartKit>={}) => ({...base,...extra})
 export function itemRoute(key: CraftKey): ItemRoute { return ['furniture', 'fence', 'campfire'].includes(key) ? 'constructed' : 'paper' }
 export function constructionParts(key: CraftKey, form?: ObjectForm): ConstructionPart[] {

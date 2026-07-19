@@ -30,7 +30,8 @@ export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] 
   // A surface mark must never disappear inside the physical volume.
   const outer=kit.shape==='square' ? 1 : kit.shape==='soft' ? 1.18 : 1.16
   const faces=<>{views.front&&<ArtFace strokes={views.front} view="front" size={[w,h]} offset={d/2*outer+.006} />}{views.side&&<ArtFace strokes={views.side} view="side" size={[d,h]} offset={w/2*outer+.006} />}{views.top&&<ArtFace strokes={views.top} view="top" size={[w,d]} offset={h/2*outer+.006} />}</>
-  const material=toon(kit.color)
+  const materialColor = kit.material === 'stone' ? '#71747b' : kit.material === 'clay' ? '#c86f4d' : kit.material === 'leaf' ? '#5c9645' : kit.material === 'ember' ? '#e06d3c' : kit.color
+  const material=toon(materialColor)
   // New creations use the authored profile as the volume itself. Do not reattach a
   // rectangular art panel here—the silhouette is the player’s visible contribution.
   if (profile) return <group position={position} rotation={rotation}><mesh geometry={profile} material={material} /></group>

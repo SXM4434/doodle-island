@@ -12,7 +12,8 @@ export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'st
 export type ObjectForm = 'chair' | 'table' | 'planter'
 export type ConstructionView = 'front' | 'side' | 'top'
 export type ConstructionViews = Record<string, Partial<Record<ConstructionView, Stroke[]>>>
-export interface ConstructionPartState { shape: 'square'|'round'|'tapered'|'picket'|'soft'; width: number; height: number; depth: number; color: string }
+export type ConstructionMaterial = 'wood' | 'painted-wood' | 'stone' | 'clay' | 'leaf' | 'ember'
+export interface ConstructionPartState { shape: 'square'|'round'|'tapered'|'picket'|'soft'; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial }
 export interface DrawnItem {
   id: string
   cls: ItemClass

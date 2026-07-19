@@ -82,10 +82,9 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
     const g = paper.current?.getContext('2d'); if (!g) return
     g.clearRect(0, 0, 600, 600)
     const all = live.current ? [...active, live.current] : active
-    if (!all.length) {
-      if (route === 'paper') drawCraftGuide(g, cls, 600)
-      else if (currentKit) drawConstructionGuide(g, view, currentKit, 600)
-    }
+    if (route === 'paper') { if (!all.length) drawCraftGuide(g, cls, 600) }
+    else if (currentKit) drawConstructionGuide(g, view, currentKit, 600)
+    // The guide remains visible under every mark; it is never persisted or baked.
     drawStrokes(g, all, 600, { backing: true })
   }, [active, cls, current?.prompt, route])
   const finalPaint = useMemo(() => () => {

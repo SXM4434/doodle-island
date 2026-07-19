@@ -128,13 +128,13 @@ export function nearbyHomeBlueprint(): Villager | null {
 
 export function DockSign() {
   const project = useGame((s) => s.project)
-  const mats = useMemo(() => ({ post: toon('#8A5A3B'), board: toon('#E8D5B0'), mark: toon('#D96557') }), [])
-  const ticks = Math.ceil((project.given / project.need) * 4)
+  const mats = useMemo(() => ({ post: toon('#8A5A3B'), board: toon('#E8D5B0'), mark: toon('#D96557'), leaf: toon('#5c9645'), sun: toon('#e0a428') }), [])
+  const ticks = Math.ceil((project.given / project.need) * 4), complete = !!project.doneAt
   const y = groundY(0, -46)
   return <group position={[0, y, -46]} rotation={[0, -.12, 0]}>
-    <mesh position={[0, .62, 0]} material={mats.post}><cylinderGeometry args={[.08, .1, 1.24, 6]} /></mesh>
-    <mesh position={[0, 1.3, 0]} material={mats.board}><boxGeometry args={[1.58, .8, .12]} /></mesh>
-    {[0, 1, 2, 3].map((i) => <mesh key={i} position={[-.4 + i * .27, 1.3, .075]} material={i < ticks ? mats.mark : mats.post}><circleGeometry args={[.08, 6]} /></mesh>)}
+    <mesh position={[0,.62,0]} material={mats.post}><cylinderGeometry args={[.08,.1,1.24,6]}/></mesh>
+    <mesh position={[0,1.3,0]} material={mats.board}><boxGeometry args={[1.58,.8,.12]}/></mesh>
+    {complete ? <><mesh position={[-.34,1.3,.075]} material={mats.leaf}><circleGeometry args={[.15,6]}/></mesh><mesh position={[.12,1.3,.075]} material={mats.sun}><circleGeometry args={[.15,6]}/></mesh><mesh position={[.5,1.3,.075]} material={mats.leaf}><circleGeometry args={[.15,6]}/></mesh></> : [0,1,2,3].map(i=><mesh key={i} position={[-.4+i*.27,1.3,.075]} material={i<ticks?mats.mark:mats.post}><circleGeometry args={[.08,6]}/></mesh>)}
   </group>
 }
 

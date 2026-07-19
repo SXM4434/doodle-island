@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -52,6 +52,7 @@ const keyMap = [
 // (ARCH §3.4). A priority useFrame disables r3f auto-render; we render instead.
 function Outlined() {
   const gl = useThree((s) => s.gl)
+  const frames = useRef(0), last = useRef(performance.now()), fps = useRef(0)
   const effect = useMemo(
     () =>
       new OutlineEffect(gl, {
@@ -63,10 +64,10 @@ function Outlined() {
   useFrame(({ scene, camera }) => {
     effect.render(scene, camera)
     // dev perf probe (ARCH §8 budget check)
+    frames.current++
+    const now=performance.now(); if(now-last.current>=1000){fps.current=frames.current*1000/(now-last.current);frames.current=0;last.current=now}
     ;(window as unknown as { __perf?: unknown }).__perf = {
-      calls: gl.info.render.calls,
-      triangles: gl.info.render.triangles,
-      textures: gl.info.memory.textures,
+      fps: Math.round(fps.current), calls: gl.info.render.calls, triangles: gl.info.render.triangles, textures: gl.info.memory.textures,
     }
   }, 1)
   return null

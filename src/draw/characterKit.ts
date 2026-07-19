@@ -28,20 +28,31 @@ export function characterPartRect(part: CharacterMarkPart, facing: Facing): Part
   return (facing==='front'?front:facing==='side'?side:back)[part]
 }
 
+// Signatures are real paper components, intentionally much larger than a surface detail.
+// A custom hair drawing may own the head silhouette; a shirt graphic must read in-world.
+export function characterSignatureRect(part: CharacterSignature, facing: Facing): PartRect {
+  const front: Record<CharacterSignature,PartRect> = { hair:{x:72,y:25,w:112,h:95}, top:{x:91,y:132,w:74,h:64}, shoes:{x:88,y:210,w:80,h:42}, accessory:{x:142,y:116,w:66,h:86} }
+  const side: Record<CharacterSignature,PartRect> = { hair:{x:93,y:26,w:101,h:94}, top:{x:99,y:132,w:69,h:65}, shoes:{x:101,y:210,w:70,h:42}, accessory:{x:136,y:117,w:67,h:86} }
+  const back: Record<CharacterSignature,PartRect> = { hair:{x:72,y:25,w:112,h:95}, top:{x:91,y:132,w:74,h:64}, shoes:{x:88,y:210,w:80,h:42}, accessory:{x:58,y:117,w:67,h:86} }
+  return (facing==='front'?front:facing==='side'?side:back)[part]
+}
+
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
-function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:number) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
-  drawStrokes(g,strokes,128);ctx.save();ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.clip();ctx.drawImage(c,x,y,w,h);ctx.restore() }
-// Marks are authored independently for every facing. The kit still controls the kid's
-// proportions and animation; the player supplies the hand-drawn residue on that view.
+function localMark(ctx:Ctx, strokes:Stroke[], rect:PartRect, signature=false) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
+  drawStrokes(g,strokes,128,{backing:signature});ctx.save();if(!signature){ctx.beginPath();ctx.ellipse(rect.x+rect.w/2,rect.y+rect.h/2,rect.w/2,rect.h/2,0,0,Math.PI*2);ctx.clip()}ctx.drawImage(c,rect.x,rect.y,rect.w,rect.h);ctx.restore() }
+// Marks are authored independently for every facing. A chosen signature is a larger
+// paper layer, deliberately allowed to extend beyond a tiny detail patch.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
   const m=c.marks, signature=c.signature
-  // A chosen signature is drawn once by the player, then follows that paper part to
-  // every available facing. Existing per-facing marks still win when supplied.
-  const get=(part:CharacterMarkPart)=>m[part]?.[facing] ?? (signature===part ? (m[part]?.front ?? []) : facing==='front' ? (part==='top' ? c.patch : []) : [])
-  if(facing==='front') { localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('face'),99,76,58,43); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),151,132,40,55); return }
-  if(facing==='side') { localMark(ctx,get('hair'),121,48,55,43); localMark(ctx,get('face'),134,77,35,37); localMark(ctx,get('top'),119,147,32,31); localMark(ctx,get('bottoms'),120,174,30,21); localMark(ctx,get('shoes'),115,220,42,22); localMark(ctx,get('accessory'),145,134,37,55); return }
-  localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),84,132,40,55)
+  const parts:CharacterMarkPart[]=['hair','face','top','bottoms','shoes','accessory']
+  for(const part of parts){
+    if(facing==='back' && part==='face') continue
+    const signatureMarks=signature===part ? (m[part]?.front ?? []) : undefined
+    const marks=m[part]?.[facing] ?? signatureMarks ?? (facing==='front'&&part==='top'?c.patch:[])
+    const rect=signature===part ? characterSignatureRect(part,facing) : characterPartRect(part,facing)
+    localMark(ctx,marks,rect,signature===part)
+  }
 }
 function overlayHair(ctx:Ctx,c:CharacterConfig,_f:Facing) { const color=c.hairColor, v=c.hairVolume
   if(c.hair==='sprigs') return

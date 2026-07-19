@@ -38,20 +38,34 @@ That is not “basic extrusion.” It is **drawing-guided visual-hull constructi
 
 The profile drawings are therefore the geometry input. They are not textures mounted onto a generic cube.
 
-## Physical customisation is a second authored layer
+## Item Studio is Character Studio for physical objects
 
-Drawing controls the part’s visible form. The player also controls how that form becomes a Doodle Island physical object. These controls stay, but are made **part-specific and honest**: every option must alter generated geometry, material treatment, or assembly.
+Drawing controls the part’s visible form. The player also controls how that form becomes a Doodle Island physical object. **The Item Studio gets the same direct-part customisation model as Character Studio, not a reduced construction-only menu.**
 
-| Player choice | Actual 3D result |
+For every visible named item part, the player can:
+
+1. select it directly from the assembled preview;
+2. choose its form/style;
+3. choose material, paint/pattern, and palette;
+4. adjust width, height, depth/thickness, and local placement/rotation where that part permits it;
+5. choose how it connects or stands in the object;
+6. draw its front profile and, when useful, side/top profile;
+7. immediately see the same generated physical part in the assembled preview.
+
+Every control must alter generated geometry, material treatment, or assembly—not metadata or a texture badge.
+
+| Item-part control | Actual 3D result |
 |---|---|
-| **Material family** | Wood, painted wood, stone, clay, or ember changes the part’s toon palette, facet recipe, and edge treatment. |
-| **Paint / grain / speckle** | Changes the generated part surface treatment; it is never a stock texture pasted over the whole object. |
-| **Thickness** | Changes the valid depth range used by the profile hull: thin rail, thick post, deep seat, shallow flame. |
-| **Carve style** | Square-cut, rounded-cut, tapered, or picketed changes simplification/chamfer geometry. |
-| **Support stance** | Four feet/rockers, trestle/square legs, paired posts/pickets, or round/rough stone ring changes the secondary physical assembly. |
-| **Scale inside its class envelope** | Changes real width/height/depth while preserving a readable chair, table, fence, planter, or fire scale beside the kid/cottage. |
+| **Form** | Part-specific forms such as square/round/tapered/picket post; slatted/solid/arched backrest; round/boxy pot; pointed/soft flame. It changes the generated profile-hull simplification and visible silhouette. |
+| **Material family** | Wood, painted wood, stone, clay, leaf, or ember changes the part’s toon palette, facet recipe, and edge treatment. |
+| **Paint / grain / speckle / stripe** | Changes the generated part surface treatment; it is never a stock texture pasted over the whole object. |
+| **Width / height / depth** | Changes the physical part envelope and profile-hull dimensions: thin rail, thick post, wide chair seat, deep planter, squat table leg. |
+| **Position / tilt / rotation** | Changes the part at its named rig anchor inside safe limits: a leaned chair back, offset pot rim, angled flame, or fence rail height. |
+| **Carve / edge style** | Square-cut, rounded-cut, tapered, or picketed changes actual chamfer/facet geometry. |
+| **Connection / support stance** | Four feet/rockers, trestle/square legs, paired posts/pickets, or round/rough stone ring changes the physical assembly. |
+| **Player-drawn profiles** | Front/side/top drawings define the real visible physical hull of the selected part. |
 
-These are not a generic wall of primitive toggles. A clay pot gets pot-specific choices; a fence post gets post-specific choices. The player should be able to explain every choice by looking at the resulting object.
+These are not a generic wall of primitive toggles. A clay pot gets pot-specific controls; a fence post gets post-specific controls. But the *interaction grammar* is shared with Character Studio: select visible part → adjust real visual controls → draw an authored layer/form → inspect the whole assembled result.
 
 ## Why this keeps the art style correct
 
@@ -82,9 +96,11 @@ Player picks: fence, chair, table, planter, or campfire.
 
 This is semantic truth. It selects the structure rig and world behavior. It never classifies a drawing behind the player’s back.
 
-### Step 2 — Draw the parts people will see
+### Step 2 — Select and customise the parts people will see
 
-The object shows an assembled pale guide with the current selected part highlighted. The player sees a focused large board and a human prompt:
+Like Character Studio, the object shows one assembled pale guide/preview with the current selected visible part highlighted. A direct part rail mirrors the Character Studio rail: **backrest, seat, legs** for a chair; **post, rail, picket** for a fence; and so on. Selecting a part opens its own visual options, dimensions, placement/tilt controls, material/pattern choices, and drawing board.
+
+The player then sees a focused large board and a human prompt:
 
 | Object | Player-authored parts | Rig-owned support |
 |---|---|---|
@@ -252,7 +268,7 @@ Put five customised kids in a line at normal gameplay distance. A viewer must id
 4. Compare three intentionally different real drawings and material/support choices side by side in the world.
 5. Add seat/leg profiles and assemble the first drawing-guided chair rig.
 6. Validate live WebGL scale and camera readability before applying to table/planter/campfire.
-7. Rebuild Item Studio around the construction sheet.
+7. Rebuild Item Studio as a direct-part workbench with the same interaction grammar and level of real controls as Character Studio: visible part rail, part-specific form/material/dimension/placement controls, a large profile drawing board, and an assembled preview.
 8. Rebuild Character Studio’s default path around large visual choices and one authored paper part, retaining its existing real geometry/layer controls under optional fine tuning.
 9. Run save/reopen, item placement, and human visual acceptance tests.
 

@@ -34,6 +34,7 @@ import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { HUD, TitleCard } from './HUD'
 import { canUseWebGL } from './webgl'
+import { StudioBoundary } from './StudioBoundary'
 const DrawTable = lazy(() => import('./DrawTable').then((module) => ({ default: module.DrawTable })))
 const CharacterStudio = lazy(() => import('./CharacterStudio').then((module) => ({ default: module.CharacterStudio })))
 import { useGame } from '../sim/store'
@@ -76,6 +77,7 @@ function Outlined() {
 
 export default function App() {
   const started = useGame((s) => s.started)
+  const drawOpen = useGame((s) => s.drawOpen)
   const webgl = useMemo(canUseWebGL, [])
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -136,13 +138,13 @@ export default function App() {
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}
-      <Suspense fallback={null}><DrawTable /></Suspense>
+      <StudioBoundary title="Item Studio" resetKey={drawOpen} onClose={() => useGame.getState().openDraw(false)}><Suspense fallback={<div className="studio-loading">Opening Item Studio…</div>}><DrawTable /></Suspense></StudioBoundary>
       <Journal />
       <Shop />
       <HomeStorage />
       <Bag />
       <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      {drawingSelf && <Suspense fallback={null}><CharacterStudio onDone={() => { setDrawingSelf(false); useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 })) }} /></Suspense>}
+      {drawingSelf && <StudioBoundary title="Character Studio" resetKey={drawingSelf} onClose={() => setDrawingSelf(false)}><Suspense fallback={<div className="studio-loading">Opening Character Studio…</div>}><CharacterStudio onDone={() => { setDrawingSelf(false); useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 })) }} /></Suspense></StudioBoundary>}
     </div>
   )
 }

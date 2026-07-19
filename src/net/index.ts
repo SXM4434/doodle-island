@@ -50,7 +50,7 @@ class NetAdapter {
     this.status = 'joining'
     try {
       const pk = await import('playroomkit')
-      await pk.insertCoin({ gameId: 'doodle-island', skipLobby: true, maxPlayersPerRoom: 8 })
+      await pk.insertCoin({ gameId: 'doodle-island', skipLobby: true, maxPlayersPerRoom: 8, persistentMode: true })
       this.setGlobal = pk.setState
       this.host = pk.isHost()
       this.isHostNow = pk.isHost

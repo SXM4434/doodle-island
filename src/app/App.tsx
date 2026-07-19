@@ -33,6 +33,7 @@ import { RemotePlayers, NetSync } from '../actors/RemotePlayers'
 import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { HUD, TitleCard } from './HUD'
+import { canUseWebGL } from './webgl'
 const DrawTable = lazy(() => import('./DrawTable').then((module) => ({ default: module.DrawTable })))
 const CharacterStudio = lazy(() => import('./CharacterStudio').then((module) => ({ default: module.CharacterStudio })))
 import { useGame } from '../sim/store'
@@ -75,6 +76,7 @@ function Outlined() {
 
 export default function App() {
   const started = useGame((s) => s.started)
+  const webgl = useMemo(canUseWebGL, [])
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Canvas
+      {webgl ? <Canvas
         dpr={[1, 2]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
@@ -129,7 +131,7 @@ export default function App() {
           {started && <InteractDriver />}
           <Outlined />
         </Suspense>
-      </Canvas>
+      </Canvas> : <div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}

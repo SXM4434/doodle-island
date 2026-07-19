@@ -89,7 +89,7 @@ function RemoteKid({ id }: { id: string }) {
   const shadow = useMemo(() => makeBlobShadow(0.5), [])
 
   useFrame(() => {
-    const r = net.remotes().find((x) => x.id === id)
+    const r = net.remote(id)
     const g = group.current
     if (!r || !g || !sprite.current) return
     const s = sample(r, Date.now() - LAG_MS)

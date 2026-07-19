@@ -44,6 +44,8 @@ class NetAdapter {
   private lastPushedPlaced = ''
   private lastPushedWorld = ''
   private host = false
+  private remoteCache: Remote[] = []
+  private remoteCacheDirty = true
 
   async join(): Promise<void> {
     if (this.status !== 'off') return
@@ -63,6 +65,7 @@ class NetAdapter {
         if (player.id === this.me?.id || this.remotesMap.has(player.id)) return
         const r: Remote = { id: player.id, name: player.getProfile()?.name ?? null, drawing: false, buf: [] }
         this.remotesMap.set(player.id, r)
+        this.remoteCacheDirty = true
         const iv = setInterval(() => {
           r.drawing = player.getState('drawing') === true
           const s = player.getState('p') as number[] | undefined
@@ -78,6 +81,7 @@ class NetAdapter {
         player.onQuit(() => {
           clearInterval(iv)
           this.remotesMap.delete(player.id)
+          this.remoteCacheDirty = true
         })
       }
       for (const player of Object.values(pk.getParticipants() as Record<string, unknown>)) attachRemote(player)
@@ -100,7 +104,15 @@ class NetAdapter {
   }
 
   remotes(): Remote[] {
-    return [...this.remotesMap.values()]
+    if (this.remoteCacheDirty) {
+      this.remoteCache = [...this.remotesMap.values()]
+      this.remoteCacheDirty = false
+    }
+    return this.remoteCache
+  }
+
+  remote(id: string): Remote | undefined {
+    return this.remotesMap.get(id)
   }
 
   setDrawing(drawing: boolean): void {

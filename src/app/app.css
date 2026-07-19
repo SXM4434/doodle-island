@@ -76,8 +76,9 @@ button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
   font-size: 0.95rem;
   transform: rotate(1.5deg);
 }
+.daily-condition { position:absolute; top:58px; right:14px; max-width:230px; padding:5px 10px; border:2px solid var(--ink); border-radius:10px; background:var(--paper); box-shadow:var(--sticker-shadow); font-size:.68rem; line-height:1.25; transform:rotate(1deg); }
 .chip-mute {
-  position: absolute; top: 64px; right: 14px;
+  position: absolute; top: 112px; right: 14px;
   background: var(--paper); border: 2px solid var(--ink);
   border-radius: 999px; padding: 3px 12px;
   font-size: 0.75rem; opacity: 0.8;

@@ -38,6 +38,9 @@ function currentGift(): (typeof GIFTS)[number] {
   const d = new Date()
   return GIFTS[(d.getDate() + d.getMonth()) % GIFTS.length]
 }
+// Small daily direction, not a chore list. The same condition is visible before
+// the bottle is found, then explained fully when it is opened.
+export function dailyIslandCondition(): string { return currentGift().condition }
 
 export function dailyBottleNearby(): boolean {
   const claimed = claimedMemory || localStorage.getItem('doodle-island-bottle') || ''

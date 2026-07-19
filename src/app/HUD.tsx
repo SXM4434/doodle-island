@@ -3,6 +3,7 @@ import { useGame, refs, RES_LABEL, type ResKind } from '../sim/store'
 import { itemThumb } from '../draw/itemTexture'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { sfx, setMuted, isMuted, initAudio } from '../audio/sfx'
+import { dailyIslandCondition } from '../world/DailyBottle'
 
 const HINTS = [
   'WASD to wander · drag to look',
@@ -45,9 +46,10 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
     <div className="hud">
       {/* day clock chip */}
-      <div className="chip-clock" aria-label="island time">
+      <div className="chip-clock" aria-label="island time" title={dailyIslandCondition()}>
         {refs.time > 0.72 || refs.time < 0.04 ? '☾' : '☀'} {clock}
       </div>
+      <div className="daily-condition">Today: {dailyIslandCondition()}</div>
 
       <button className="chip-mute" onClick={() => { setMuted(!muted); setM(!muted) }} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}>{muted ? 'sound off' : 'sound on'}</button>
       <button className="chip-settings" onClick={onOpenSettings} aria-label="Open settings">settings</button>

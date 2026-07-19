@@ -6,9 +6,9 @@ import { convertDrawing } from '../draw/conversion'
 import { ConstructionPart } from './ConstructionPart'
 
 const defaultKit: ConstructionPartState={shape:'square',width:1,height:1,depth:1,color:'#b87945'}
-export function ConvertedItem({ placed, y, physics = true }: { placed: Placed; y: number; physics?: boolean }) {
+export function ConvertedItem({ placed, y, physics = true, selectedPart, onSelectPart }: { placed: Placed; y: number; physics?: boolean; selectedPart?: string; onSelectPart?: (part: string) => void }) {
   const conversion=convertDrawing(placed.item), views=placed.item.construction??{}, kits=placed.item.constructionKit??{}
-  const part=(name:string,size:[number,number,number],position:[number,number,number],rotation?:[number,number,number])=><ConstructionPart kit={kits[name]??defaultKit} views={views[name]??{front:placed.item.strokes}} size={size} position={position} rotation={rotation}/>
+  const part=(name:string,size:[number,number,number],position:[number,number,number],rotation?:[number,number,number])=><ConstructionPart kit={kits[name]??defaultKit} views={views[name]??{front:placed.item.strokes}} size={size} position={position} rotation={rotation} selected={selectedPart===name} onSelect={onSelectPart ? () => onSelectPart(name) : undefined}/>
   const shadow=useMemo(()=>makeBlobShadow(.82),[])
   const root=(children:ReactNode,collider?:[number,number,number,number,number,number])=><group position={[placed.x,y,placed.z]} rotation={[0,placed.rot,0]}>{children}{physics && collider && <RigidBody type="fixed" colliders={false}><CuboidCollider args={[collider[0],collider[1],collider[2]]} position={[collider[3],collider[4],collider[5]]}/></RigidBody>}<primitive object={shadow} position={[0,.03,0]}/></group>
   if(conversion.archetype==='fence') return root(<>{part('post',[.22,1.2,.22],[-.76,.6,0])}{part('post',[.22,1.2,.22],[.76,.6,0])}{part('rail',[1.5,.14,.14],[0,.82,.03])}{part('rail',[1.5,.14,.14],[0,.4,.03])}{part('board',[1.22,.78,.1],[0,.62,-.08])}{views.cap&&part('cap',[1.52,.16,.16],[0,1.28,0])}</>,[.84,.65,.18,0,.65,0])

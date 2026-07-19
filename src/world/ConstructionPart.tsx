@@ -22,7 +22,7 @@ function ArtFace({ strokes, view, size, offset }: { strokes: Stroke[]; view: Con
   return <mesh position={[0,offset,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[w,h]} /><meshBasicMaterial map={texture} transparent depthWrite={false} /></mesh>
 }
 
-export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] }: { kit: ConstructionPartState; views: Partial<Record<ConstructionView,Stroke[]>>; size:[number,number,number]; position:[number,number,number]; rotation?:[number,number,number] }) {
+export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0], selected=false, onSelect }: { kit: ConstructionPartState; views: Partial<Record<ConstructionView,Stroke[]>>; size:[number,number,number]; position:[number,number,number]; rotation?:[number,number,number]; selected?: boolean; onSelect?: () => void }) {
   const [baseW,baseH,baseD]=size, w=baseW*kit.width,h=baseH*kit.height,d=baseD*kit.depth
   const shifted: [number,number,number] = [position[0] + (kit.offsetX ?? 0), position[1] + (kit.offsetY ?? 0), position[2]]
   const posed: [number,number,number] = [rotation[0], rotation[1], rotation[2] + (kit.tilt ?? 0)]
@@ -34,11 +34,13 @@ export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] 
   const faces=<>{views.front&&<ArtFace strokes={views.front} view="front" size={[w,h]} offset={d/2*outer+.006} />}{views.side&&<ArtFace strokes={views.side} view="side" size={[d,h]} offset={w/2*outer+.006} />}{views.top&&<ArtFace strokes={views.top} view="top" size={[w,d]} offset={h/2*outer+.006} />}</>
   const materialColor = kit.material === 'stone' ? '#71747b' : kit.material === 'clay' ? '#c86f4d' : kit.material === 'leaf' ? '#5c9645' : kit.material === 'ember' ? '#e06d3c' : kit.color
   const material=toon(materialColor)
+  const select = onSelect ? (event: { stopPropagation: () => void }) => { event.stopPropagation(); onSelect() } : undefined
+  const outline = selected ? <mesh scale={[1.055,1.055,1.055]} raycast={() => null}><boxGeometry args={[w,h,d]} /><meshBasicMaterial color="#f7d35e" wireframe transparent opacity={.62} depthWrite={false} /></mesh> : null
   // New creations use the authored profile as the volume itself. Do not reattach a
   // rectangular art panel here—the silhouette is the player’s visible contribution.
-  if (profile) return <group position={shifted} rotation={posed}><mesh geometry={profile} material={material} /></group>
-  if(kit.shape==='round') return <group position={shifted} rotation={posed}><mesh material={material}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}</group>
-  if(kit.shape==='tapered'||kit.shape==='picket') return <group position={shifted} rotation={posed}><mesh material={material}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}</group>
-  if(kit.shape==='soft') return <group position={shifted} rotation={posed}><mesh material={material}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}</group>
-  return <group position={shifted} rotation={posed}><mesh material={material}><boxGeometry args={[w,h,d]} /></mesh>{faces}</group>
+  if (profile) return <group position={shifted} rotation={posed}><mesh geometry={profile} material={material} onClick={select} />{outline}</group>
+  if(kit.shape==='round') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}{outline}</group>
+  if(kit.shape==='tapered'||kit.shape==='picket') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}{outline}</group>
+  if(kit.shape==='soft') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}{outline}</group>
+  return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><boxGeometry args={[w,h,d]} /></mesh>{faces}{outline}</group>
 }

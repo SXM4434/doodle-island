@@ -1,26 +1,46 @@
-# Drawing Conversion Engine
+# Doodle Island — Drawing Conversion Contract
 
-## The contract
+Updated: 2026-07-19
 
-A player’s strokes are canonical and always survive. The selected crafting purpose is canonical semantic intent. The renderer never claims to infer an object category from an ambiguous doodle.
+## Player promise
 
-| Player chooses | Result | Why |
+A drawing is never silently classified, replaced, or reduced to a tiny badge.
+The player chooses the intended craft. That choice says what the thing *does*;
+the player’s drawing says what it *looks like*.
+
+## Two honest craft routes
+
+| Player chooses | Authoring method | World result |
 |---|---|---|
-| Axe, pick, sword, rod | **Paper tool** using the exact doodle silhouette | A tool’s behavior is determined by class and the drawing remains visible while held. |
-| Decoration, wall-hang | **Paper object** using the exact doodle silhouette | The drawing is the object. |
-| Friend | **Paper character** | It must belong with the player and residents. |
-| Chair, table, planter | **Chunky physical form** with the doodle as a painted maker-mark | The selected form provides honest collision/readability; the drawing preserves authorship. |
-| Fence, campfire | **Chunky physical form** with doodle emblem | These require a reliable world silhouette and clear affordance. |
+| Tool, decoration, trophy, friend | One complete drawing | A flat paper cutout in the 3D world. The silhouette is the drawing. |
+| Fence, campfire, chair, table, planter | Named physical parts | A chunky low-poly physical assembly with player-authored ink on the selected physical surfaces. |
 
-## Why not an opaque ML classifier?
+## Construction route
 
-A local classifier cannot reliably decide whether a child’s drawing is a chair, sword, flower, or abstract mark. More importantly, guessing would overwrite player intent. The craft menu supplies explicit ground truth; deterministic rules turn that intent into a stable gameplay and art-language decision.
+A constructed item is not a freehand-to-mesh illusion and not a stock prop with a decal.
 
-A future assistive model may offer optional *suggestions* (“this could be a chair”), but it must never silently change the selected class or discard strokes.
+1. The player selects a named part, such as a post, rail, seat, leg, pot, log, or flame.
+2. The part begins as an intentionally readable Doodle Island construction kit part.
+3. The player chooses a constrained physical form, proportion, depth, height, and paint color.
+4. The player draws on the meaningful surfaces of that part: **Face**, **Edge**, and/or **Top**.
+5. The same part kit and surface drawings are assembled in the editor preview and in the placed item.
+
+The selected craft/form controls assembly and collision only: repeat four legs, use two fence posts, arrange crossed logs. It does not hide or overwrite player artwork.
+
+## Character route
+
+The original island kid remains a paper-doll master sheet. Form controls preserve the friendly proportions, ink, animation, and facing continuity. The player can add a personal drawing detail to a selected part on a selected facing using a focused, zoomed board. The exact same stored local layer is baked into the world atlas.
+
+## Non-negotiable preview parity
+
+- Paper preview and world cutout use the same strokes.
+- Character board and world atlas use the same local mark layers.
+- Construction preview and placed item use the same kit settings plus named surface layers.
+- No resource spend occurs before the construction preview exists.
 
 ## Acceptance checks
 
-1. A custom player with three completed facings has the default kid’s body, walk cycle, and proportions, plus their own marks in every facing.
-2. A drawn axe is visibly the user’s axe while still chopping trees.
-3. A furniture draw requires a chair/table/planter choice and produces that chunky low-poly object with the user’s drawing visibly applied.
-4. A decoration remains a flat hand-inked cutout.
+1. Draw visibly different Face/Edge marks on two fence posts. Their placed fence posts remain visibly different.
+2. Change a part from square to tapered, change its depth, and change its color. The final mesh changes, not merely its metadata.
+3. Draw a shoe detail, save, reopen Character Studio, and confirm the same mark returns in the same place.
+4. Place a requested construction near a finished resident home and confirm that resident acknowledges and displays the contribution.

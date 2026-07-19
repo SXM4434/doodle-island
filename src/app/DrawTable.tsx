@@ -63,6 +63,9 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const partsSpec = constructionParts(cls, form), guide = guideFor(cls)
   useEffect(() => { if (route === 'constructed' && !partsSpec.some(p => p.key === selected)) setSelected(partsSpec[0]?.key ?? '') }, [route, selected, partsSpec])
   const current = partsSpec.find(p => p.key === selected)
+  // A construction kit always begins as a readable island-world piece; the player can
+  // then change it deliberately instead of being handed an unformed generic mesh.
+  useEffect(() => { if (route !== 'constructed') return; setKits(all => { const next={...all}; let changed=false; for(const part of partsSpec) if(!next[part.key]) { next[part.key]={...part.kit}; changed=true } return changed?next:all }) }, [route, partsSpec])
   const currentKit = current ? (kits[current.key] ?? current.kit) : undefined
   const setKit = (next: Partial<PartKit>) => current && setKits(all => ({ ...all, [current.key]: { ...(all[current.key] ?? current.kit), ...next } }))
   useEffect(() => { if (route === 'constructed' && current && !current.views.includes(view)) setView(current.views[0]) }, [route, current, view])

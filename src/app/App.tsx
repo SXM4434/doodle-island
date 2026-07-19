@@ -88,6 +88,7 @@ export default function App() {
     <div className="app">
       <Canvas
         dpr={[1, 2]}
+        fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         camera={{ fov: 45, near: 0.1, far: 400 }}
         shadows={false}

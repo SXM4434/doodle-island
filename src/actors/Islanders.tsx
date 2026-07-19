@@ -23,7 +23,7 @@ function Islander({ n }: { n: typeof ISLANDERS[number] }) {
   const camera = useThree((s) => s.camera)
   const group = useRef<THREE.Group>(null)
   const mesh = useRef<THREE.Mesh>(null)
-  const tex = useMemo(() => islanderTexture(n), [n])
+  const tex = useMemo(() => islanderAtlas(n), [n])
   const mat = useMemo(() => { const m = new THREE.MeshBasicMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, toneMapped: false }); m.userData.outlineParameters = { visible: false }; return m }, [tex])
   const shadow = useMemo(() => makeBlobShadow(.43), [])
   useFrame((_, dt) => {
@@ -44,30 +44,44 @@ function Islander({ n }: { n: typeof ISLANDERS[number] }) {
       b.x += dx / d * .55 * dt; b.z += dz / d * .55 * dt; b.phase += dt * 4
     }
     if (!group.current || !mesh.current) return
-    group.current.position.set(b.x, groundY(b.x, b.z) + (near ? 0 : Math.abs(Math.sin(b.phase)) * .055), b.z)
+    const walking = !near
+    group.current.position.set(b.x, groundY(b.x, b.z) + (walking ? Math.abs(Math.sin(b.phase)) * .075 : 0), b.z)
     mesh.current.rotation.y = Math.atan2(camera.position.x - b.x, camera.position.z - b.z)
     mesh.current.rotation.z = near ? Math.sin(now * .003) * .025 : 0
+    // Two hand-drawn poses: a planted idle and a light walk. The paper flip is
+    // intentionally discrete; no smeared skeletal tweening in the 2D layer.
+    tex.offset.x = walking && Math.sin(b.phase) > 0 ? .5 : 0
   })
   return <group ref={group}><mesh ref={mesh} material={mat} position={[0, .5, 0]}><planeGeometry args={[1, 1]} /></mesh><primitive object={shadow} position={[0, .025, 0]} /></group>
 }
 
-function islanderTexture(n: typeof ISLANDERS[number]): THREE.CanvasTexture {
-  const c = document.createElement('canvas'); c.width = c.height = 256
-  const g = c.getContext('2d')!; const [skin, clothes, paper] = n.palette
-  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#33291f'; g.lineWidth = 8
-  const blob = (x: number, y: number, rx: number, ry: number, fill: string) => { g.beginPath(); for (let i = 0; i <= 10; i++) { const a = i / 10 * Math.PI * 2; const px = x + Math.cos(a) * rx * (1 + Math.sin(i * 5 + (n.kind === 'cat' ? 1 : 3)) * .035); const py = y + Math.sin(a) * ry; if (!i) g.moveTo(px, py); else g.lineTo(px, py) } g.closePath(); g.fillStyle = fill; g.fill(); g.stroke() }
-  // cream cutout edge keeps the character distinct against every world color.
-  blob(128, 167, 58, 62, paper); blob(128, 98, 53, 48, paper)
-  blob(128, 166, 49, 54, clothes); blob(128, 98, 44, 40, skin)
-  if (n.kind === 'cat') {
-    g.fillStyle = skin; g.beginPath(); g.moveTo(91, 73); g.lineTo(99, 38); g.lineTo(116, 65); g.moveTo(140, 65); g.lineTo(157, 38); g.lineTo(165, 74); g.fill(); g.stroke()
-    g.fillStyle = '#33291f'; g.beginPath(); g.arc(110, 96, 5, 0, Math.PI * 2); g.arc(146, 96, 5, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(121, 116); g.lineTo(128, 120); g.lineTo(135, 116); g.stroke()
+function islanderAtlas(n: typeof ISLANDERS[number]): THREE.CanvasTexture {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256
+  for (let frame = 0; frame < 2; frame++) drawIslander(c.getContext('2d')!, n, frame)
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.repeat.set(.5, 1); return t
+}
+
+function drawIslander(g: CanvasRenderingContext2D, n: typeof ISLANDERS[number], frame: number) {
+  const ox = frame * 256, bob = frame ? -4 : 0, step = frame ? 8 : 0
+  const [skin, clothes, paper] = n.palette
+  g.save(); g.translate(ox, 0); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#33291f'; g.lineWidth = 7
+  const blob = (x: number, y: number, rx: number, ry: number, fill: string, stroke=true) => { g.beginPath(); for (let i = 0; i <= 10; i++) { const a=i/10*Math.PI*2, wobble=1+Math.sin(i*5+(n.kind==='cat'?1:3))*.035, px=x+Math.cos(a)*rx*wobble, py=y+Math.sin(a)*ry; if(!i)g.moveTo(px,py);else g.lineTo(px,py) } g.closePath(); g.fillStyle=fill; g.fill(); if(stroke)g.stroke() }
+  // Shared paper-doll language: oversized head, compact body, explicit job prop.
+  blob(128, 165 + bob, 52, 50, paper); blob(128, 89 + bob, 58, 52, paper)
+  blob(128, 166 + bob, 44, 43, clothes); blob(128, 91 + bob, 50, 44, skin)
+  if(n.kind==='cat') {
+    // Miso: teal rain hood and a reed net make the pond job readable before dialogue.
+    g.fillStyle='#5b91b6'; g.beginPath(); g.arc(128,81+bob,58,Math.PI,0); g.lineTo(179,91+bob); g.lineTo(77,91+bob); g.closePath(); g.fill(); g.stroke()
+    g.fillStyle=skin; g.beginPath(); g.moveTo(88,72+bob);g.lineTo(100,43+bob);g.lineTo(116,69+bob);g.moveTo(140,69+bob);g.lineTo(156,43+bob);g.lineTo(168,72+bob);g.fill();g.stroke()
+    g.strokeStyle='#8a6c3f';g.lineWidth=5;g.beginPath();g.moveTo(169,151+bob);g.lineTo(192,205+bob);g.stroke();g.strokeStyle='#5b91b6';g.beginPath();g.arc(196,211+bob,18,0,Math.PI*2);g.stroke()
   } else {
-    g.fillStyle = '#33291f'; g.beginPath(); g.arc(110, 96, 5, 0, Math.PI * 2); g.arc(146, 96, 5, 0, Math.PI * 2); g.fill(); g.lineWidth = 5; g.beginPath(); g.moveTo(112, 116); g.quadraticCurveTo(128, 126, 144, 116); g.stroke()
-    g.strokeStyle = skin; g.lineWidth = 10; g.beginPath(); g.moveTo(166, 181); g.quadraticCurveTo(210, 183, 196, 212); g.stroke(); g.strokeStyle = '#33291f'; g.lineWidth = 5; g.beginPath(); g.moveTo(166, 181); g.quadraticCurveTo(210, 183, 196, 212); g.stroke()
+    // Sluggo: parasol and basket are his garden silhouette, not a UI identity badge.
+    g.fillStyle='#5c9645';g.beginPath();g.arc(151,57+bob,35,Math.PI,0);g.lineTo(186,59+bob);g.closePath();g.fill();g.stroke();g.strokeStyle='#8a6c3f';g.lineWidth=5;g.beginPath();g.moveTo(151,58+bob);g.lineTo(160,177+bob);g.stroke()
+    blob(100,163+bob,20,16,'#d98d5c'); g.strokeStyle='#33291f';g.lineWidth=5;g.beginPath();g.moveTo(83,158+bob);g.quadraticCurveTo(101,140+bob,117,158+bob);g.stroke()
+    blob(166,170+bob,35+step*.25,17,'#9dce70'); blob(180,144+bob,31,30,'#f5a8b8'); g.beginPath();g.arc(180,144+bob,16,.3,Math.PI*1.7);g.stroke()
   }
-  g.fillStyle = paper; g.font = 'bold 20px sans-serif'; g.textAlign = 'center'; g.fillText(n.id === 'Miso' ? 'M' : 'S', 128, 174)
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; return t
+  g.fillStyle='#33291f'; blob(109,94+bob,5,6,'#33291f',false); blob(147,94+bob,5,6,'#33291f',false);g.lineWidth=4;g.beginPath();g.moveTo(118,114+bob);g.quadraticCurveTo(128,122+bob,139,114+bob);g.stroke()
+  g.restore()
 }
 
 export function nearestIslander(): { id: IslanderId; line: string } | null {

@@ -21,7 +21,14 @@ type Ctx=CanvasRenderingContext2D
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
 function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:number) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!,b=strokeBounds(strokes),scale=92/Math.max(.08,b.maxX-b.minX,b.maxY-b.minY);g.save();g.translate(64,64);g.scale(scale,scale);g.translate(-(b.minX+b.maxX)/2,-(b.minY+b.maxY)/2);drawStrokes(g,strokes,1);g.restore();ctx.save();ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.clip();ctx.drawImage(c,x,y,w,h);ctx.restore() }
-function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) { if(facing!=='front')return; const m=c.marks; localMark(ctx,m.hair??[],93,48,70,42); localMark(ctx,m.face??[],99,76,58,43); localMark(ctx,m.top??c.patch,113,147,30,27); localMark(ctx,m.bottoms??[],111,173,34,21); localMark(ctx,m.shoes??[],101,220,54,22); localMark(ctx,m.accessory??[],151,132,40,55) }
+// Marks are authored independently for every facing. The kit still controls the kid's
+// proportions and animation; the player supplies the hand-drawn residue on that view.
+function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
+  const m=c.marks, get=(part:string)=>m[`${part}:${facing}`] ?? (facing==='front' ? (m[part] ?? (part==='top' ? c.patch : [])) : [])
+  if(facing==='front') { localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('face'),99,76,58,43); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),151,132,40,55); return }
+  if(facing==='side') { localMark(ctx,get('hair'),121,48,55,43); localMark(ctx,get('face'),134,77,35,37); localMark(ctx,get('top'),119,147,32,31); localMark(ctx,get('bottoms'),120,174,30,21); localMark(ctx,get('shoes'),115,220,42,22); localMark(ctx,get('accessory'),145,134,37,55); return }
+  localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),84,132,40,55)
+}
 function overlayHair(ctx:Ctx,c:CharacterConfig,_f:Facing) { const color=c.hairColor, v=c.hairVolume
   if(c.hair==='sprigs') return
   ctx.save(); ctx.translate(c.hairOffsetX, c.hairOffsetY); ctx.translate(128,82); ctx.scale(c.hairWidth,c.hairHeight); ctx.translate(-128,-82)

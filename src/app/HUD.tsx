@@ -49,7 +49,7 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
       <div className="chip-clock" aria-label="island time" title={dailyIslandCondition()}>
         {refs.time > 0.72 || refs.time < 0.04 ? '☾' : '☀'} {clock}
       </div>
-      <div className="daily-condition">Today: {dailyIslandCondition()}</div>
+      <div className="daily-condition">Today · {dailyIslandCondition()}</div>
 
       <button className="chip-mute" onClick={() => { setMuted(!muted); setM(!muted) }} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}>{muted ? 'sound off' : 'sound on'}</button>
       <button className="chip-settings" onClick={onOpenSettings} aria-label="Open settings">settings</button>

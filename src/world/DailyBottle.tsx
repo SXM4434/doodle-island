@@ -26,10 +26,10 @@ function todaySpot(): { x: number; z: number } {
 }
 
 const GIFTS: Array<{ res: 'shine' | 'berry' | 'ink' | 'stone'; n: number; note: string; condition: string }> = [
-  { res: 'shine', n: 3, note: 'three sparkles inside!', condition: 'The beach is glittering today — look for bright shells.' },
-  { res: 'berry', n: 4, note: 'someone sent berries!', condition: 'Berry day: neighbors are hungry for something sweet.' },
-  { res: 'ink', n: 2, note: 'bottled ink — spooky!', condition: 'Ink tide: night scribbles may leave more ink behind.' },
-  { res: 'stone', n: 5, note: 'heavy! full of stones.', condition: 'Stone day: the shore has washed up useful building pieces.' },
+  { res: 'shine', n: 3, note: 'three sparkles inside!', condition: 'Glittering beach' },
+  { res: 'berry', n: 4, note: 'someone sent berries!', condition: 'Berry day' },
+  { res: 'ink', n: 2, note: 'bottled ink — spooky!', condition: 'Ink tide' },
+  { res: 'stone', n: 5, note: 'heavy! full of stones.', condition: 'Stone day' },
 ]
 
 let claimedMemory = ''

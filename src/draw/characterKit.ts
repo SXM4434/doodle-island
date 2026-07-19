@@ -2,7 +2,7 @@
 // deliberate layers or palette changes on that sheet, so the charm/proportions never drift.
 import * as THREE from 'three'
 import { blob, drawKid, resetKidInkSeed, wobblyPath } from '../actors/kidSprite'
-import { drawStrokes, strokeBounds, type Stroke } from './strokes'
+import { drawStrokes, type Stroke } from './strokes'
 
 export type Facing = 'front' | 'side' | 'back'
 export type HeadShape = 'round' | 'bean' | 'soft-square'
@@ -29,7 +29,8 @@ export function characterPartRect(part: CharacterMarkPart, facing: Facing): Part
 
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
-function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:number) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!,b=strokeBounds(strokes),scale=92/Math.max(.08,b.maxX-b.minX,b.maxY-b.minY);g.save();g.translate(64,64);g.scale(scale,scale);g.translate(-(b.minX+b.maxX)/2,-(b.minY+b.maxY)/2);drawStrokes(g,strokes,1);g.restore();ctx.save();ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.clip();ctx.drawImage(c,x,y,w,h);ctx.restore() }
+function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:number) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
+  drawStrokes(g,strokes,128);ctx.save();ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.clip();ctx.drawImage(c,x,y,w,h);ctx.restore() }
 // Marks are authored independently for every facing. The kit still controls the kid's
 // proportions and animation; the player supplies the hand-drawn residue on that view.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {

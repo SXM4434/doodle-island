@@ -227,6 +227,8 @@ const CHATTER = [
 ]
 export function villagerChat(v: Villager): string {
   if (isNight()) return `${v.name}: "Zzz… come back after sunrise."`
+  if (v.displayRequest && !v.displayRequest.done) return `${v.name}: "Could you place a drawn ${v.displayRequest.cls} beside my home? I want people to see it."`
+  if (v.displayRequest?.done) return `${v.name}: "My little display makes this place feel like home."`
   return `${v.name}: "${CHATTER[(v.fed + v.name.length) % CHATTER.length]}"`
 }
 

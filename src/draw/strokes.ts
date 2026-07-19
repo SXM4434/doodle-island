@@ -78,6 +78,20 @@ export function drawStrokes(
   }
 }
 
+export function hasClosedProfile(strokes: Stroke[]): boolean {
+  // Physical construction needs at least one deliberate enclosed gesture. Paper items
+  // remain freehand and never call this check. The threshold is intentionally generous:
+  // it recognises a hand-drawn loop rather than demanding geometric perfection.
+  for (const stroke of strokes) {
+    if (stroke.erase || stroke.pts.length < 4) continue
+    const first = stroke.pts[0]
+    const last = stroke.pts[stroke.pts.length - 1]
+    const span = stroke.pts.reduce((max, point) => Math.max(max, Math.hypot(point[0] - first[0], point[1] - first[1])), 0)
+    if (span > 0.06 && Math.hypot(last[0] - first[0], last[1] - first[1]) <= Math.max(0.05, span * 0.22)) return true
+  }
+  return false
+}
+
 export interface StrokeBounds { minX: number; minY: number; maxX: number; maxY: number }
 
 export function strokeBounds(strokes: Stroke[]): StrokeBounds {

@@ -38,6 +38,21 @@ That is not “basic extrusion.” It is **drawing-guided visual-hull constructi
 
 The profile drawings are therefore the geometry input. They are not textures mounted onto a generic cube.
 
+## Physical customisation is a second authored layer
+
+Drawing controls the part’s visible form. The player also controls how that form becomes a Doodle Island physical object. These controls stay, but are made **part-specific and honest**: every option must alter generated geometry, material treatment, or assembly.
+
+| Player choice | Actual 3D result |
+|---|---|
+| **Material family** | Wood, painted wood, stone, clay, or ember changes the part’s toon palette, facet recipe, and edge treatment. |
+| **Paint / grain / speckle** | Changes the generated part surface treatment; it is never a stock texture pasted over the whole object. |
+| **Thickness** | Changes the valid depth range used by the profile hull: thin rail, thick post, deep seat, shallow flame. |
+| **Carve style** | Square-cut, rounded-cut, tapered, or picketed changes simplification/chamfer geometry. |
+| **Support stance** | Four feet/rockers, trestle/square legs, paired posts/pickets, or round/rough stone ring changes the secondary physical assembly. |
+| **Scale inside its class envelope** | Changes real width/height/depth while preserving a readable chair, table, fence, planter, or fire scale beside the kid/cottage. |
+
+These are not a generic wall of primitive toggles. A clay pot gets pot-specific choices; a fence post gets post-specific choices. The player should be able to explain every choice by looking at the resulting object.
+
 ## Why this keeps the art style correct
 
 The conversion is constrained by an authored Doodle Island part kit:
@@ -163,7 +178,9 @@ This prevents the screenshot failure where repeated furniture became huge generi
 
 # 4. Character Studio: make the drawing matter
 
-The current modular character renderer is the right foundation. The weak part is the authoring experience: a player’s drawing is currently a small optional local mark among too many technical controls.
+The current modular character renderer is the right foundation. **Existing head, hair, face, top, arms, bottoms, legs, shoes, accessory, color, scale, and placement controls remain part of the character system.** The weak part is the authoring experience: a player’s drawing is currently a small optional local mark among too many technical controls.
+
+The rebuild keeps meaningful existing toggles and controls, but changes their presentation: major visual choices remain directly available; fine width/height/offset controls move behind an optional “fine tune” disclosure. Nothing that changes real character geometry or layers is thrown away.
 
 ## Character Studio should use the same authored-kit principle
 
@@ -174,7 +191,7 @@ The island kid provides:
 - visual consistency, line weight, and palette;
 - a default character ready in one click.
 
-The player should author **one large, semantically meaningful paper part**, not merely a tiny patch.
+The player should author **one large, semantically meaningful paper part**, not merely a tiny patch. This complements existing kit controls; it does not replace hair forms, head shapes, outfits, palettes, accessories, or optional fine tuning.
 
 ### Default journey
 
@@ -230,13 +247,14 @@ Put five customised kids in a line at normal gameplay distance. A viewer must id
 # 6. Work sequence
 
 1. Preserve old items in a legacy renderer; do not destroy player saves.
-2. Prototype one part type: **chair backrest** with front + side profile visual-hull generation.
-3. Compare three intentionally different real drawings side by side in the world.
-4. Add seat/leg profiles and assemble the first drawing-guided chair rig.
-5. Validate live WebGL scale and camera readability before applying to table/planter/campfire.
-6. Rebuild Item Studio around the construction sheet.
-7. Rebuild Character Studio’s default path around large visual choices and one authored paper part.
-8. Run save/reopen, item placement, and human visual acceptance tests.
+2. Map every existing construction control to either a retained honest 3D control (material, depth, carve, support, bounded scale) or remove it only if it has no visible physical effect.
+3. Prototype one part type: **chair backrest** with front + side profile visual-hull generation.
+4. Compare three intentionally different real drawings and material/support choices side by side in the world.
+5. Add seat/leg profiles and assemble the first drawing-guided chair rig.
+6. Validate live WebGL scale and camera readability before applying to table/planter/campfire.
+7. Rebuild Item Studio around the construction sheet.
+8. Rebuild Character Studio’s default path around large visual choices and one authored paper part, retaining its existing real geometry/layer controls under optional fine tuning.
+9. Run save/reopen, item placement, and human visual acceptance tests.
 
 ## Non-negotiable stop rule
 

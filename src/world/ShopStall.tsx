@@ -40,19 +40,22 @@ export function ShopStall() {
 }
 
 function waddlesTexture(): THREE.CanvasTexture {
-  const c = document.createElement('canvas'); c.width = c.height = 256
-  const g = c.getContext('2d')!
-  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#33291f'; g.lineWidth = 9
-  const blob = (x: number, y: number, rx: number, ry: number, fill: string) => {
-    g.beginPath(); for (let i = 0; i <= 10; i++) { const a = i / 10 * Math.PI * 2; const px = x + Math.cos(a) * rx * (1 + Math.sin(i * 4) * .035); const py = y + Math.sin(a) * ry; if (!i) g.moveTo(px, py); else g.lineTo(px, py) } g.closePath(); g.fillStyle = fill; g.fill(); g.stroke()
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256
+  for (let frame=0;frame<2;frame++) {
+    const g=c.getContext('2d')!, ox=frame*256, bob=frame?-4:0, foot=frame?8:0
+    g.save();g.translate(ox,0);g.lineCap='round';g.lineJoin='round';g.strokeStyle='#33291f';g.lineWidth=8
+    const blob=(x:number,y:number,rx:number,ry:number,fill:string,stroke=true)=>{g.beginPath();for(let i=0;i<=10;i++){const a=i/10*Math.PI*2,px=x+Math.cos(a)*rx*(1+Math.sin(i*4)*.035),py=y+Math.sin(a)*ry;if(!i)g.moveTo(px,py);else g.lineTo(px,py)}g.closePath();g.fillStyle=fill;g.fill();if(stroke)g.stroke()}
+    // Waddles is a beachcomber, not a letter-labelled duck: pebble hat + shell satchel
+    // give the swap stand a readable resident owner from normal camera distance.
+    blob(128,160+bob,57,57,'#f7e36a');blob(128,89+bob,51,45,'#f7e36a')
+    g.fillStyle='#71747b';g.beginPath();g.arc(128,54+bob,34,Math.PI,0);g.lineTo(162,61+bob);g.lineTo(94,61+bob);g.closePath();g.fill();g.stroke()
+    blob(128,110+bob,28,14,'#e68c4a');g.fillStyle='#33291f';blob(108,87+bob,5,6,'#33291f',false);blob(148,87+bob,5,6,'#33291f',false)
+    // coral satchel with a tiny shell clasp, deliberately asymmetrical.
+    blob(169,160+bob,23,31,'#d96557');g.strokeStyle='#fff4d8';g.lineWidth=4;g.beginPath();g.arc(169,159+bob,9,.2,Math.PI*1.8);g.stroke();g.strokeStyle='#33291f';g.lineWidth=5;g.beginPath();g.moveTo(145,132+bob);g.quadraticCurveTo(167,120+bob,181,140+bob);g.stroke()
+    blob(104-foot,211+bob,14,7,'#e68c4a');blob(147+foot,211+bob,14,7,'#e68c4a')
+    g.restore()
   }
-  blob(128, 161, 60, 69, '#F7E36A') // rounded duck body
-  blob(128, 90, 55, 49, '#F7E36A')
-  blob(128, 111, 28, 15, '#E68C4A') // bill
-  g.fillStyle = '#33291f'; g.beginPath(); g.arc(107, 88, 6, 0, Math.PI * 2); g.arc(149, 88, 6, 0, Math.PI * 2); g.fill()
-  g.strokeStyle = '#D96557'; g.lineWidth = 12; g.beginPath(); g.moveTo(82, 139); g.lineTo(72, 194); g.moveTo(174, 139); g.lineTo(184, 194); g.stroke()
-  g.fillStyle = '#FFF4D8'; g.font = 'bold 20px sans-serif'; g.textAlign = 'center'; g.fillText('W', 128, 171)
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; return t
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.repeat.set(.5,1); return t
 }
 
 function Waddles({ position }: { position: [number, number, number] }) {
@@ -60,6 +63,6 @@ function Waddles({ position }: { position: [number, number, number] }) {
   const mesh = useRef<THREE.Mesh>(null)
   const tex = useMemo(waddlesTexture, [])
   const mat = useMemo(() => { const m = new THREE.MeshBasicMaterial({ map: tex, alphaTest: .5, side: THREE.DoubleSide, toneMapped: false }); m.userData.outlineParameters = { visible: false }; return m }, [tex])
-  useFrame(() => { if (mesh.current) mesh.current.rotation.y = Math.atan2(camera.position.x - (SHOP.x + position[0]), camera.position.z - (SHOP.z + position[2])) })
+  useFrame(({ clock }) => { if (mesh.current) { mesh.current.rotation.y = Math.atan2(camera.position.x - (SHOP.x + position[0]), camera.position.z - (SHOP.z + position[2])); tex.offset.x = Math.sin(clock.elapsedTime * 2.2) > 0 ? .5 : 0 } })
   return <mesh ref={mesh} position={position} material={mat}><planeGeometry args={[1.28, 1.28]} /></mesh>
 }

@@ -3,7 +3,7 @@ import { DEFAULT_CHARACTER, characterPartRect, drawCharacter, type Accessory, ty
 import { loadCharacter, saveCharacter } from '../draw/customKid'
 import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { sfx } from '../audio/sfx'
-import type { Part } from './characterParts'
+import { characterPartAt, type Part } from './characterParts'
 const PARTS: Array<{ key: Part; label: string; hint: string }> = [
   { key: 'head', label: 'Head', hint: 'shape, width, height, tilt, skin' }, { key: 'hair', label: 'Hair', hint: 'form, color, scale, placement' },
   { key: 'face', label: 'Face', hint: 'eyes, expression, placement' }, { key: 'top', label: 'Top', hint: 'form, color, width, length' },
@@ -30,7 +30,8 @@ function Dial({ title, value, set, min = .62, max = 1.48, step = .03, signed = f
 function PaperDoll({ config, selected, select, facing, setFacing }: { config: CharacterConfig; selected: Part; select: (part: Part) => void; facing: 'front'|'side'|'back'; setFacing:(facing:'front'|'side'|'back')=>void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => { const ctx = canvas.current?.getContext('2d'); if (!ctx) return; ctx.clearRect(0,0,300,300); drawCharacter(ctx, config, facing, 0) }, [config, facing])
-  return <section className="doll-stage"><div className="doll-stage-head"><div><p className="eyebrow">Click a part to edit it</p><h3>Original island kid, directly editable</h3></div><div className="facing-toggle">{(['front','side','back'] as const).map((view) => <button key={view} className={facing === view ? 'selected' : ''} onClick={() => setFacing(view)}>{view}</button>)}</div></div><div className="doll-canvas"><canvas ref={canvas} width="300" height="300" aria-label="Editable character preview"/>{PARTS.filter((part) => part.key !== 'mark').map((part) => <button key={part.key} className={`part-hit part-${part.key} ${selected === part.key ? 'selected' : ''}`} onClick={() => select(part.key)} aria-label={`Edit ${part.label}`}><span>{part.label}</span></button>)}</div><p className="part-readout"><strong>{PARTS.find((part) => part.key === selected)?.label}</strong> — {PARTS.find((part) => part.key === selected)?.hint}</p></section>
+  const choosePart = (event: React.PointerEvent<HTMLCanvasElement>) => { const box = event.currentTarget.getBoundingClientRect(); const part = characterPartAt((event.clientX - box.left) * 300 / box.width, (event.clientY - box.top) * 300 / box.height, facing); if (part) select(part) }
+  return <section className="doll-stage"><div className="doll-stage-head"><div><p className="eyebrow">Click a part to edit it</p><h3>Original island kid, directly editable</h3></div><div className="facing-toggle">{(['front','side','back'] as const).map((view) => <button key={view} className={facing === view ? 'selected' : ''} onClick={() => setFacing(view)}>{view}</button>)}</div></div><div className="doll-canvas"><canvas ref={canvas} width="300" height="300" onPointerDown={choosePart} aria-label="Editable character preview"/></div><p className="part-readout"><strong>{PARTS.find((part) => part.key === selected)?.label}</strong> — {PARTS.find((part) => part.key === selected)?.hint}</p></section>
 }
 function PartMarkPad({ config, part, facing, marks, color, size, setMarks }: { config:CharacterConfig; part:CharacterMarkPart; facing:'front'|'side'|'back'; marks:Stroke[]; color:string; size:number; setMarks:(marks:Stroke[])=>void }) {
   const canvas=useRef<HTMLCanvasElement>(null), live=useRef<Stroke|null>(null), rect=characterPartRect(part,facing)

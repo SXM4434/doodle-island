@@ -4,8 +4,9 @@ export type ItemRoute = 'paper' | 'constructed'
 export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
 export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string }
 export interface ConstructionPart { key: string; label: string; prompt: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
-export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Front', side:'Side', top:'Top' }
-export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'Draw the face you will see first.', side:'Draw the edge and depth-side detail.', top:'Draw the top surface and footprint detail.' }
+// Player words describe the job; storage keeps precise orthographic view names.
+export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Face', side:'Edge', top:'Top' }
+export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'Add the mark people will notice first.', side:'Add the mark along its edge.', top:'Add the mark across its top.' }
 const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945' }
 const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b' }
 const fire: PartKit = { shape:'tapered', width:1, height:1, depth:1, color:'#d95d39' }

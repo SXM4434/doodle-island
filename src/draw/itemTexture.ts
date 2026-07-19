@@ -26,8 +26,8 @@ export function itemTexture(item: DrawnItem): Baked {
   const hit = cache.get(item.id)
   if (hit) return hit
   // Constructed objects use their visible hero part as the preview/world art.
-  const parts = item.construction ? Object.values(item.construction) : []
-  const hero = parts.find((strokes) => strokes.some((stroke) => !stroke.erase)) ?? item.strokes
+  const views = item.construction ? Object.values(item.construction).flatMap(part => Object.values(part)) : []
+  const hero = views.find((strokes) => strokes?.some((stroke) => !stroke.erase)) ?? item.strokes
   const baked = bakeStrokes(hero)
   cache.set(item.id, baked)
   return baked
@@ -37,8 +37,8 @@ const thumbCache = new Map<string, string>()
 export function itemThumb(item: DrawnItem): string {
   const hit = thumbCache.get(item.id)
   if (hit) return hit
-  const parts = item.construction ? Object.values(item.construction) : []
-  const hero = parts.find((strokes) => strokes.some((stroke) => !stroke.erase)) ?? item.strokes
+  const views = item.construction ? Object.values(item.construction).flatMap(part => Object.values(part)) : []
+  const hero = views.find((strokes) => strokes?.some((stroke) => !stroke.erase)) ?? item.strokes
   const baked = bakeStrokes(hero, 96)
   const url = (baked.tex.image as HTMLCanvasElement).toDataURL()
   baked.tex.dispose()

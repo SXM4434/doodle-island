@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useGame, COSTS, RES_LABEL, type CraftKey, type ResKind } from '../sim/store'
+import { useGame, COSTS, RES_LABEL, type ConstructionView, type ConstructionViews, type CraftKey, type ResKind } from '../sim/store'
 import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { drawConvertedSketch } from '../draw/styleEngine'
 import { drawCraftGuide, guideFor } from '../draw/itemGuide'
-import { constructionParts, itemRoute } from '../draw/construction'
+import { constructionParts, itemRoute, VIEW_LABEL } from '../draw/construction'
 import { sfx } from '../audio/sfx'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { conversionForCraft } from '../draw/conversion'
@@ -47,19 +47,20 @@ function Pad({ canvasRef, onDown, onMove, onUp, className }: { canvasRef: React.
 
 function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const route = itemRoute(cls), paper = useRef<HTMLCanvasElement>(null), result = useRef<HTMLCanvasElement>(null), live = useRef<Stroke | null>(null)
-  const [single, setSingle] = useState<Stroke[]>([]), [parts, setParts] = useState<Record<string, Stroke[]>>({}), [selected, setSelected] = useState('')
+  const [single, setSingle] = useState<Stroke[]>([]), [parts, setParts] = useState<ConstructionViews>({}), [selected, setSelected] = useState(''), [view, setView] = useState<ConstructionView>('front')
   const [redo, setRedo] = useState<Stroke[]>([]), [brush, setBrush] = useState(1), [color, setColor] = useState('ink'), [eraser, setEraser] = useState(false), [form, setForm] = useState<'chair' | 'table' | 'planter'>('chair')
   const craft = useGame(s => s.craft), place = useGame(s => s.beginPlace), close = useGame(s => s.openDraw), say = useGame(s => s.say), gold = useGame(s => s.goldenInk)
   const partsSpec = constructionParts(cls, form), guide = guideFor(cls)
   useEffect(() => { if (route === 'constructed' && !partsSpec.some(p => p.key === selected)) setSelected(partsSpec[0]?.key ?? '') }, [route, selected, partsSpec])
-  const active = route === 'paper' ? single : (parts[selected] ?? [])
-  const setActive = (next: Stroke[]) => route === 'paper' ? setSingle(next) : setParts(all => ({ ...all, [selected]: next }))
   const current = partsSpec.find(p => p.key === selected)
+  useEffect(() => { if (route === 'constructed' && current && !current.views.includes(view)) setView(current.views[0]) }, [route, current, view])
+  const active = route === 'paper' ? single : (parts[selected]?.[view] ?? [])
+  const setActive = (next: Stroke[]) => route === 'paper' ? setSingle(next) : setParts(all => ({ ...all, [selected]: { ...all[selected], [view]: next } }))
   const required = partsSpec.filter(p => !p.optional)
-  const complete = required.filter(p => (parts[p.key] ?? []).some(s => !s.erase))
+  const complete = required.filter(p => p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)))
   const isReady = route === 'paper' ? single.some(s => !s.erase) : complete.length === required.length
   const currentIndex = partsSpec.findIndex(p => p.key === selected)
-  const next = partsSpec.slice(currentIndex + 1).find(p => !(parts[p.key] ?? []).some(s => !s.erase))
+  const next = partsSpec.slice(currentIndex + 1).find(p => !p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)))
 
   const paint = useMemo(() => () => {
     const g = paper.current?.getContext('2d'); if (!g) return
@@ -83,7 +84,7 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const up = () => { if (!live.current) return; const stroke = { ...live.current, pts:simplifyStroke(live.current.pts) }; live.current = null; setActive([...active, stroke]); setRedo([]) }
   const confirm = () => {
     if (!isReady) return
-    const hero = route === 'paper' ? single : (parts[partsSpec[0]?.key] ?? [])
+    const hero = route === 'paper' ? single : (parts[partsSpec[0]?.key]?.front ?? [])
     const item = craft(cls, hero, cls === 'furniture' ? form : undefined, route === 'constructed' ? parts : undefined)
     if (!item) { say('You need the materials shown before you can make this.'); return }
     sfx.chime()
@@ -97,8 +98,8 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
     {route === 'constructed' ? <>
       {cls === 'furniture' && <div className="form-picker" aria-label="Furniture form">{(['chair','table','planter'] as const).map(v => <button key={v} className={form === v ? 'selected form-choice' : 'form-choice'} onClick={() => { setForm(v); setSelected('') }}>{v}</button>)}</div>}
       <div className="build-layout">
-        <section className="drawing-bay focused-bay"><div className="bay-head"><div><span className="step-label">Part {currentIndex + 1} of {required.length}</span><h3>{current?.label}</h3></div><span>{current?.optional ? 'optional' : 'required'}</span></div><Pad canvasRef={paper} className="paper item-paper" onDown={down} onMove={move} onUp={up} /><ToolRow brush={brush} setBrush={setBrush} color={color} setColor={setColor} eraser={eraser} setEraser={setEraser} gold={gold} active={active} redo={redo} setActive={setActive} setRedo={setRedo} /></section>
-        <aside className="build-card"><p className="eyebrow">Build checklist</p><h3>{complete.length} of {required.length} parts ready</h3><p className="build-help">{current?.hint}</p><nav className="part-list" aria-label="Construction parts">{partsSpec.map((p, i) => { const done = (parts[p.key] ?? []).some(s => !s.erase); return <button key={p.key} onClick={() => setSelected(p.key)} className={selected === p.key ? 'selected' : ''}><span className={done ? 'part-state done' : 'part-state'}>{done ? '✓' : i + 1}</span><span><b>{p.label}</b><small>{p.optional ? 'Optional' : done ? 'Drawn' : 'Needed'}</small></span></button> })}</nav>
+        <section className="drawing-bay focused-bay"><div className="bay-head"><div><span className="step-label">Part {currentIndex + 1} of {required.length}</span><h3>{current?.label}</h3></div><span>{current?.optional ? 'optional' : 'required'}</span></div><div className="construction-views" aria-label="Part drawing views">{current?.views.map(v => <button key={v} onClick={() => setView(v)} className={view === v ? 'selected' : ''}>{VIEW_LABEL[v]} <small>{(parts[selected]?.[v] ?? []).some(s => !s.erase) ? '✓' : ''}</small></button>)}</div><p className="view-brief">Draw the <b>{VIEW_LABEL[view].toLowerCase()}</b> view of this part. Your ink stays on this view; the controlled construction kit uses all required views to make its 3D volume.</p><Pad canvasRef={paper} className="paper item-paper" onDown={down} onMove={move} onUp={up} /><ToolRow brush={brush} setBrush={setBrush} color={color} setColor={setColor} eraser={eraser} setEraser={setEraser} gold={gold} active={active} redo={redo} setActive={setActive} setRedo={setRedo} /></section>
+        <aside className="build-card"><p className="eyebrow">Build checklist</p><h3>{complete.length} of {required.length} parts ready</h3><p className="build-help">{current?.hint}</p><nav className="part-list" aria-label="Construction parts">{partsSpec.map((p, i) => { const done = p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)); return <button key={p.key} onClick={() => { setSelected(p.key); setView(p.views[0]) }} className={selected === p.key ? 'selected' : ''}><span className={done ? 'part-state done' : 'part-state'}>{done ? '✓' : i + 1}</span><span><b>{p.label}</b><small>{p.optional ? 'Optional' : done ? 'Views drawn' : `${p.views.map(v=>VIEW_LABEL[v]).join(' + ')}`}</small></span></button> })}</nav>
           <div className="build-action">{isReady ? <button className="btn confirm" onClick={confirm}>Build {cls === 'furniture' ? form : cls}</button> : <button className="btn confirm" disabled={!active.some(s => !s.erase)} onClick={advance}>{next ? `Save & draw ${next.label}` : 'Finish this part'}</button>}<p>{isReady ? 'All required parts are ready.' : 'Draw this part to continue.'}</p></div>
         </aside>
       </div>

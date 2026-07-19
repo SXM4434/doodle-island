@@ -10,6 +10,8 @@ export type ItemClass = 'tool' | 'furniture' | 'decoration' | 'campfire' | 'wall
 export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'stonesword' | 'rod'
 
 export type ObjectForm = 'chair' | 'table' | 'planter'
+export type ConstructionView = 'front' | 'side' | 'top'
+export type ConstructionViews = Record<string, Partial<Record<ConstructionView, Stroke[]>>>
 export interface DrawnItem {
   id: string
   cls: ItemClass
@@ -20,7 +22,7 @@ export interface DrawnItem {
   strokes: Stroke[]
   // Physical crafts retain authored construction parts. These are never inferred:
   // the explicit class/form tells the assembler what each player-drawn part means.
-  construction?: Record<string, Stroke[]>
+  construction?: ConstructionViews
 }
 export interface Slot {
   res?: ResKind
@@ -185,7 +187,7 @@ interface State {
   collectDrop: (id: number) => void
   equip: (i: number) => void
   openDraw: (open: boolean) => void
-  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: Record<string, Stroke[]>) => DrawnItem | null
+  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: ConstructionViews) => DrawnItem | null
   beginPlace: (item: DrawnItem) => void
   rotatePlacing: () => void
   commitPlace: (x: number, z: number) => void

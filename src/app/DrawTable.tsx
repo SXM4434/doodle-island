@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useGame, COSTS, RES_LABEL, type ConstructionView, type ConstructionViews, type CraftKey, type ResKind } from '../sim/store'
+import { useGame, COSTS, RES_LABEL, type ConstructionPartState, type ConstructionView, type ConstructionViews, type CraftKey, type ResKind } from '../sim/store'
 import { drawStrokes, simplifyStroke, INKS, type Stroke } from '../draw/strokes'
 import { drawConvertedSketch } from '../draw/styleEngine'
 import { drawCraftGuide, guideFor } from '../draw/itemGuide'
-import { constructionParts, itemRoute, VIEW_LABEL } from '../draw/construction'
+import { drawConstructionGuide } from '../draw/constructionGuide'
+import { constructionParts, itemRoute, VIEW_LABEL, VIEW_PROMPT, type PartKit } from '../draw/construction'
 import { sfx } from '../audio/sfx'
 import { dropIconDataURL } from '../actors/kidSprite'
 import { conversionForCraft } from '../draw/conversion'
@@ -47,12 +48,14 @@ function Pad({ canvasRef, onDown, onMove, onUp, className }: { canvasRef: React.
 
 function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const route = itemRoute(cls), paper = useRef<HTMLCanvasElement>(null), result = useRef<HTMLCanvasElement>(null), live = useRef<Stroke | null>(null)
-  const [single, setSingle] = useState<Stroke[]>([]), [parts, setParts] = useState<ConstructionViews>({}), [selected, setSelected] = useState(''), [view, setView] = useState<ConstructionView>('front')
+  const [single, setSingle] = useState<Stroke[]>([]), [parts, setParts] = useState<ConstructionViews>({}), [kits, setKits] = useState<Record<string, ConstructionPartState>>({}), [selected, setSelected] = useState(''), [view, setView] = useState<ConstructionView>('front')
   const [redo, setRedo] = useState<Stroke[]>([]), [brush, setBrush] = useState(1), [color, setColor] = useState('ink'), [eraser, setEraser] = useState(false), [form, setForm] = useState<'chair' | 'table' | 'planter'>('chair')
   const craft = useGame(s => s.craft), place = useGame(s => s.beginPlace), close = useGame(s => s.openDraw), say = useGame(s => s.say), gold = useGame(s => s.goldenInk)
   const partsSpec = constructionParts(cls, form), guide = guideFor(cls)
   useEffect(() => { if (route === 'constructed' && !partsSpec.some(p => p.key === selected)) setSelected(partsSpec[0]?.key ?? '') }, [route, selected, partsSpec])
   const current = partsSpec.find(p => p.key === selected)
+  const currentKit = current ? (kits[current.key] ?? current.kit) : undefined
+  const setKit = (next: Partial<PartKit>) => current && setKits(all => ({ ...all, [current.key]: { ...(all[current.key] ?? current.kit), ...next } }))
   useEffect(() => { if (route === 'constructed' && current && !current.views.includes(view)) setView(current.views[0]) }, [route, current, view])
   const active = route === 'paper' ? single : (parts[selected]?.[view] ?? [])
   const setActive = (next: Stroke[]) => route === 'paper' ? setSingle(next) : setParts(all => ({ ...all, [selected]: { ...all[selected], [view]: next } }))
@@ -60,6 +63,7 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const complete = required.filter(p => p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)))
   const isReady = route === 'paper' ? single.some(s => !s.erase) : complete.length === required.length
   const currentIndex = partsSpec.findIndex(p => p.key === selected)
+  const nextView = current?.views.find(v => !(parts[selected]?.[v] ?? []).some(s => !s.erase))
   const next = partsSpec.slice(currentIndex + 1).find(p => !p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)))
 
   const paint = useMemo(() => () => {
@@ -68,10 +72,10 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
     const all = live.current ? [...active, live.current] : active
     if (!all.length) {
       if (route === 'paper') drawCraftGuide(g, cls, 600)
-      else { g.fillStyle = 'rgba(51,41,31,.48)'; g.font = '600 24px sans-serif'; g.textAlign = 'center'; g.fillText(current?.hint ?? 'Choose a part', 300, 290) }
+      else if (currentKit) drawConstructionGuide(g, view, currentKit, 600)
     }
     drawStrokes(g, all, 600, { backing: true })
-  }, [active, cls, current?.hint, route])
+  }, [active, cls, current?.prompt, route])
   const finalPaint = useMemo(() => () => {
     const g = result.current?.getContext('2d'); if (!g) return
     g.clearRect(0, 0, 600, 600)
@@ -85,22 +89,22 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
   const confirm = () => {
     if (!isReady) return
     const hero = route === 'paper' ? single : (parts[partsSpec[0]?.key]?.front ?? [])
-    const item = craft(cls, hero, cls === 'furniture' ? form : undefined, route === 'constructed' ? parts : undefined)
+    const item = craft(cls, hero, cls === 'furniture' ? form : undefined, route === 'constructed' ? parts : undefined, route === 'constructed' ? kits : undefined)
     if (!item) { say('You need the materials shown before you can make this.'); return }
     sfx.chime()
     if (item.cls === 'tool') { close(false); say('Made it — it is in your hand.') }
     else if (item.cls === 'friend') { close(false); useGame.getState().addVillager(item) }
     else { net.setDrawing(false); place(item); say('Choose a spot, then press E to place it. R rotates.') }
   }
-  const advance = () => { if (next && active.some(s => !s.erase)) setSelected(next.key) }
+  const advance = () => { if (!active.some(s => !s.erase)) return; if (nextView) { setView(nextView); return } if (next) { setSelected(next.key); setView(next.views[0]) } }
   return <div className={`item-studio ${route}`}>
     <header className="draw-topbar studio-topbar"><button className="back-link" onClick={onBack}>← All crafts</button><div><p className="eyebrow">{route === 'paper' ? 'Paper studio' : 'Build studio'}</p><h2>{route === 'paper' ? guide.title : `Make a ${cls === 'furniture' ? form : cls}`}</h2></div><button className="close-button" onClick={() => close(false)} aria-label="Close draw table">×</button></header>
     {route === 'constructed' ? <>
       {cls === 'furniture' && <div className="form-picker" aria-label="Furniture form">{(['chair','table','planter'] as const).map(v => <button key={v} className={form === v ? 'selected form-choice' : 'form-choice'} onClick={() => { setForm(v); setSelected('') }}>{v}</button>)}</div>}
       <div className="build-layout">
-        <section className="drawing-bay focused-bay"><div className="bay-head"><div><span className="step-label">Part {currentIndex + 1} of {required.length}</span><h3>{current?.label}</h3></div><span>{current?.optional ? 'optional' : 'required'}</span></div><div className="construction-views" aria-label="Part drawing views">{current?.views.map(v => <button key={v} onClick={() => setView(v)} className={view === v ? 'selected' : ''}>{VIEW_LABEL[v]} <small>{(parts[selected]?.[v] ?? []).some(s => !s.erase) ? '✓' : ''}</small></button>)}</div><p className="view-brief">Draw the <b>{VIEW_LABEL[view].toLowerCase()}</b> view of this part. Your ink stays on this view; the controlled construction kit uses all required views to make its 3D volume.</p><Pad canvasRef={paper} className="paper item-paper" onDown={down} onMove={move} onUp={up} /><ToolRow brush={brush} setBrush={setBrush} color={color} setColor={setColor} eraser={eraser} setEraser={setEraser} gold={gold} active={active} redo={redo} setActive={setActive} setRedo={setRedo} /></section>
-        <aside className="build-card"><p className="eyebrow">Build checklist</p><h3>{complete.length} of {required.length} parts ready</h3><p className="build-help">{current?.hint}</p><nav className="part-list" aria-label="Construction parts">{partsSpec.map((p, i) => { const done = p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)); return <button key={p.key} onClick={() => { setSelected(p.key); setView(p.views[0]) }} className={selected === p.key ? 'selected' : ''}><span className={done ? 'part-state done' : 'part-state'}>{done ? '✓' : i + 1}</span><span><b>{p.label}</b><small>{p.optional ? 'Optional' : done ? 'Views drawn' : `${p.views.map(v=>VIEW_LABEL[v]).join(' + ')}`}</small></span></button> })}</nav>
-          <div className="build-action">{isReady ? <button className="btn confirm" onClick={confirm}>Build {cls === 'furniture' ? form : cls}</button> : <button className="btn confirm" disabled={!active.some(s => !s.erase)} onClick={advance}>{next ? `Save & draw ${next.label}` : 'Finish this part'}</button>}<p>{isReady ? 'All required parts are ready.' : 'Draw this part to continue.'}</p></div>
+        <section className="drawing-bay focused-bay"><div className="bay-head"><div><span className="step-label">Part {currentIndex + 1} of {required.length}</span><h3>{current?.label}</h3></div><span>{current?.optional ? 'optional' : 'required'}</span></div><div className="construction-views" aria-label="Part drawing views">{current?.views.map(v => <button key={v} onClick={() => setView(v)} className={view === v ? 'selected' : ''}>{VIEW_LABEL[v]} <small>{(parts[selected]?.[v] ?? []).some(s => !s.erase) ? '✓' : ''}</small></button>)}</div><p className="view-brief">{VIEW_PROMPT[view]} Your drawing stays on this side of the {current?.label.toLowerCase()}.</p><div className="part-kit">{(['square','round','tapered','picket','soft'] as const).map(shape=><button key={shape} className={currentKit?.shape===shape?'selected':''} onClick={()=>setKit({shape})}>{shape}</button>)}<label>Width <input type="range" min=".6" max="1.5" step=".05" value={currentKit?.width??1} onChange={e=>setKit({width:Number(e.target.value)})}/></label><label>Depth <input type="range" min=".5" max="1.5" step=".05" value={currentKit?.depth??1} onChange={e=>setKit({depth:Number(e.target.value)})}/></label></div><Pad canvasRef={paper} className="paper item-paper" onDown={down} onMove={move} onUp={up} /><ToolRow brush={brush} setBrush={setBrush} color={color} setColor={setColor} eraser={eraser} setEraser={setEraser} gold={gold} active={active} redo={redo} setActive={setActive} setRedo={setRedo} /></section>
+        <aside className="build-card"><p className="eyebrow">Build checklist</p><h3>{complete.length} of {required.length} parts ready</h3><p className="build-help">{current?.prompt}</p><nav className="part-list" aria-label="Construction parts">{partsSpec.map((p, i) => { const done = p.views.every(v => (parts[p.key]?.[v] ?? []).some(s => !s.erase)); return <button key={p.key} onClick={() => { setSelected(p.key); setView(p.views[0]) }} className={selected === p.key ? 'selected' : ''}><span className={done ? 'part-state done' : 'part-state'}>{done ? '✓' : i + 1}</span><span><b>{p.label}</b><small>{p.optional ? 'Optional' : done ? 'Views drawn' : `${p.views.map(v=>VIEW_LABEL[v]).join(' + ')}`}</small></span></button> })}</nav>
+          <div className="build-action">{isReady ? <button className="btn confirm" onClick={confirm}>Build {cls === 'furniture' ? form : cls}</button> : <button className="btn confirm" disabled={!active.some(s => !s.erase)} onClick={advance}>{nextView ? `Save & draw ${VIEW_LABEL[nextView]}` : next ? `Save & make ${next.label}` : 'Finish this piece'}</button>}<p>{isReady ? 'Everything needed is ready.' : nextView ? `Finish the ${VIEW_LABEL[nextView].toLowerCase()} of this ${current?.label.toLowerCase()}.` : 'Finish this piece to continue.'}</p></div>
         </aside>
       </div>
     </> : <>

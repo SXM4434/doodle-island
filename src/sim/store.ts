@@ -12,6 +12,7 @@ export type ToolKind = 'axe' | 'pick' | 'sword' | 'stoneaxe' | 'stonepick' | 'st
 export type ObjectForm = 'chair' | 'table' | 'planter'
 export type ConstructionView = 'front' | 'side' | 'top'
 export type ConstructionViews = Record<string, Partial<Record<ConstructionView, Stroke[]>>>
+export interface ConstructionPartState { shape: 'square'|'round'|'tapered'|'picket'|'soft'; width: number; height: number; depth: number; color: string }
 export interface DrawnItem {
   id: string
   cls: ItemClass
@@ -23,6 +24,7 @@ export interface DrawnItem {
   // Physical crafts retain authored construction parts. These are never inferred:
   // the explicit class/form tells the assembler what each player-drawn part means.
   construction?: ConstructionViews
+  constructionKit?: Record<string, ConstructionPartState>
 }
 export interface Slot {
   res?: ResKind
@@ -187,7 +189,7 @@ interface State {
   collectDrop: (id: number) => void
   equip: (i: number) => void
   openDraw: (open: boolean) => void
-  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: ConstructionViews) => DrawnItem | null
+  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: ConstructionViews, constructionKit?: Record<string, ConstructionPartState>) => DrawnItem | null
   beginPlace: (item: DrawnItem) => void
   rotatePlacing: () => void
   commitPlace: (x: number, z: number) => void
@@ -356,7 +358,7 @@ export const useGame = create<State>((set, get) => ({
 
   openDraw: (open) => set({ drawOpen: open }),
 
-  craft: (key, strokes, form, construction) => {
+  craft: (key, strokes, form, construction, constructionKit) => {
     const g = get()
     if (!g.canAfford(key)) return null
     const cost = COSTS[key]
@@ -380,6 +382,7 @@ export const useGame = create<State>((set, get) => ({
       form: key === 'furniture' ? form ?? 'table' : undefined,
       strokes,
       construction,
+      constructionKit,
     }
     get().deed('craft-' + key)
     if (isTool) {

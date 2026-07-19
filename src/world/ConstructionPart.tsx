@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { ConstructionPartState, ConstructionView } from '../sim/store'
 import { drawStrokes, type Stroke } from '../draw/strokes'
+import { profileHullGeometry } from '../draw/profileHull'
 import { toon } from './toon'
 
 // A physical construction part is always a real low-poly volume. The kit establishes a
@@ -23,11 +24,16 @@ function ArtFace({ strokes, view, size, offset }: { strokes: Stroke[]; view: Con
 
 export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] }: { kit: ConstructionPartState; views: Partial<Record<ConstructionView,Stroke[]>>; size:[number,number,number]; position:[number,number,number]; rotation?:[number,number,number] }) {
   const [baseW,baseH,baseD]=size, w=baseW*kit.width,h=baseH*kit.height,d=baseD*kit.depth
+  const profile = useMemo(() => profileHullGeometry(views, w, h, d), [views, w, h, d])
+  useEffect(() => () => profile?.dispose(), [profile])
   // Curved and faceted silhouettes get art mounted just beyond their widest point.
   // A surface mark must never disappear inside the physical volume.
   const outer=kit.shape==='square' ? 1 : kit.shape==='soft' ? 1.18 : 1.16
   const faces=<>{views.front&&<ArtFace strokes={views.front} view="front" size={[w,h]} offset={d/2*outer+.006} />}{views.side&&<ArtFace strokes={views.side} view="side" size={[d,h]} offset={w/2*outer+.006} />}{views.top&&<ArtFace strokes={views.top} view="top" size={[w,d]} offset={h/2*outer+.006} />}</>
   const material=toon(kit.color)
+  // New creations use the authored profile as the volume itself. Do not reattach a
+  // rectangular art panel here—the silhouette is the player’s visible contribution.
+  if (profile) return <group position={position} rotation={rotation}><mesh geometry={profile} material={material} /></group>
   if(kit.shape==='round') return <group position={position} rotation={rotation}><mesh material={material}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}</group>
   if(kit.shape==='tapered'||kit.shape==='picket') return <group position={position} rotation={rotation}><mesh material={material}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}</group>
   if(kit.shape==='soft') return <group position={position} rotation={rotation}><mesh material={material}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}</group>

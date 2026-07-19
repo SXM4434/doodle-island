@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -32,9 +32,9 @@ import { Mobs } from '../actors/Mobs'
 import { RemotePlayers, NetSync } from '../actors/RemotePlayers'
 import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
-import { DrawTable } from './DrawTable'
 import { HUD, TitleCard } from './HUD'
-import { CharacterStudio } from './CharacterStudio'
+const DrawTable = lazy(() => import('./DrawTable').then((module) => ({ default: module.DrawTable })))
+const CharacterStudio = lazy(() => import('./CharacterStudio').then((module) => ({ default: module.CharacterStudio })))
 import { useGame } from '../sim/store'
 import { initAudio } from '../audio/sfx'
 import './app.css'
@@ -134,20 +134,13 @@ export default function App() {
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}
-      <DrawTable />
+      <Suspense fallback={null}><DrawTable /></Suspense>
       <Journal />
       <Shop />
       <HomeStorage />
       <Bag />
       <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      {drawingSelf && (
-        <CharacterStudio
-          onDone={() => {
-            setDrawingSelf(false)
-            useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 }))
-          }}
-        />
-      )}
+      {drawingSelf && <Suspense fallback={null}><CharacterStudio onDone={() => { setDrawingSelf(false); useGame.setState((st) => ({ kidVersion: st.kidVersion + 1 })) }} /></Suspense>}
     </div>
   )
 }

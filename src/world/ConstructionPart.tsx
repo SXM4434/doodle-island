@@ -24,6 +24,8 @@ function ArtFace({ strokes, view, size, offset }: { strokes: Stroke[]; view: Con
 
 export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] }: { kit: ConstructionPartState; views: Partial<Record<ConstructionView,Stroke[]>>; size:[number,number,number]; position:[number,number,number]; rotation?:[number,number,number] }) {
   const [baseW,baseH,baseD]=size, w=baseW*kit.width,h=baseH*kit.height,d=baseD*kit.depth
+  const shifted: [number,number,number] = [position[0] + (kit.offsetX ?? 0), position[1] + (kit.offsetY ?? 0), position[2]]
+  const posed: [number,number,number] = [rotation[0], rotation[1], rotation[2] + (kit.tilt ?? 0)]
   const profile = useMemo(() => profileHullGeometry(views, w, h, d), [views, w, h, d])
   useEffect(() => () => profile?.dispose(), [profile])
   // Curved and faceted silhouettes get art mounted just beyond their widest point.
@@ -34,9 +36,9 @@ export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0] 
   const material=toon(materialColor)
   // New creations use the authored profile as the volume itself. Do not reattach a
   // rectangular art panel here—the silhouette is the player’s visible contribution.
-  if (profile) return <group position={position} rotation={rotation}><mesh geometry={profile} material={material} /></group>
-  if(kit.shape==='round') return <group position={position} rotation={rotation}><mesh material={material}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}</group>
-  if(kit.shape==='tapered'||kit.shape==='picket') return <group position={position} rotation={rotation}><mesh material={material}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}</group>
-  if(kit.shape==='soft') return <group position={position} rotation={rotation}><mesh material={material}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}</group>
-  return <group position={position} rotation={rotation}><mesh material={material}><boxGeometry args={[w,h,d]} /></mesh>{faces}</group>
+  if (profile) return <group position={shifted} rotation={posed}><mesh geometry={profile} material={material} /></group>
+  if(kit.shape==='round') return <group position={shifted} rotation={posed}><mesh material={material}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}</group>
+  if(kit.shape==='tapered'||kit.shape==='picket') return <group position={shifted} rotation={posed}><mesh material={material}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}</group>
+  if(kit.shape==='soft') return <group position={shifted} rotation={posed}><mesh material={material}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}</group>
+  return <group position={shifted} rotation={posed}><mesh material={material}><boxGeometry args={[w,h,d]} /></mesh>{faces}</group>
 }

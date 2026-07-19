@@ -2,7 +2,7 @@ import type { ConstructionMaterial, CraftKey, ObjectForm, ConstructionView } fro
 
 export type ItemRoute = 'paper' | 'constructed'
 export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
-export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial }
+export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial; tilt?: number; offsetX?: number; offsetY?: number }
 export const MATERIAL_LABEL: Record<ConstructionMaterial, string> = { wood:'wood', 'painted-wood':'painted wood', stone:'stone', clay:'clay', leaf:'leaf', ember:'ember' }
 export const MATERIALS_FOR_PART = (key: string): ConstructionMaterial[] => key === 'stone' ? ['stone', 'clay'] : key === 'flame' ? ['ember', 'painted-wood'] : key === 'leaf' ? ['leaf', 'painted-wood'] : key === 'pot' || key === 'rim' ? ['clay', 'stone', 'painted-wood'] : ['wood', 'painted-wood', 'stone']
 // Same direct-control grammar as Character Studio, but words belong to the object part.

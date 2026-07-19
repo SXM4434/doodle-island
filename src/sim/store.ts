@@ -420,7 +420,7 @@ export const useGame = create<State>((set, get) => ({
       }],
       placing: null,
     })
-    const finishedResident = g.villagers.find(v => v.built >= 1 && v.displayRequest && !v.displayRequest.done && v.displayRequest.cls === g.placing!.cls)
+    const finishedResident = g.villagers.find(v => v.built >= 1 && v.displayRequest && !v.displayRequest.done && v.displayRequest.cls === g.placing!.cls && Math.hypot(v.homeX - x, v.homeZ - z) < 4.5)
     if (finishedResident) {
       set({ villagers: get().villagers.map(v => v.id === finishedResident.id ? { ...v, displayRequest: { ...v.displayRequest!, done: true } } : v) })
       g.say(`${finishedResident.name} loves your ${g.placing.cls} — it now has a place by their home!`)

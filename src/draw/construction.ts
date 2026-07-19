@@ -5,6 +5,19 @@ export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
 export interface PartKit { shape: PartShape; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial }
 export const MATERIAL_LABEL: Record<ConstructionMaterial, string> = { wood:'wood', 'painted-wood':'painted wood', stone:'stone', clay:'clay', leaf:'leaf', ember:'ember' }
 export const MATERIALS_FOR_PART = (key: string): ConstructionMaterial[] => key === 'stone' ? ['stone', 'clay'] : key === 'flame' ? ['ember', 'painted-wood'] : key === 'leaf' ? ['leaf', 'painted-wood'] : key === 'pot' || key === 'rim' ? ['clay', 'stone', 'painted-wood'] : ['wood', 'painted-wood', 'stone']
+// Same direct-control grammar as Character Studio, but words belong to the object part.
+// The values map to the renderer's deliberate facet recipes.
+export const FORMS_FOR_PART = (key: string): Array<{ label: string; shape: PartShape }> => {
+  if (key === 'post') return [{ label:'square', shape:'square' }, { label:'round', shape:'round' }, { label:'picket', shape:'picket' }, { label:'tapered', shape:'tapered' }]
+  if (key === 'rail' || key === 'log') return [{ label:'square-cut', shape:'square' }, { label:'round-cut', shape:'round' }, { label:'tapered', shape:'tapered' }]
+  if (key === 'back') return [{ label:'solid', shape:'square' }, { label:'rounded', shape:'soft' }, { label:'arched', shape:'tapered' }]
+  if (key === 'seat' || key === 'top') return [{ label:'square', shape:'square' }, { label:'rounded', shape:'soft' }, { label:'sloped', shape:'tapered' }]
+  if (key === 'leg') return [{ label:'square', shape:'square' }, { label:'turned', shape:'round' }, { label:'tapered', shape:'tapered' }]
+  if (key === 'pot' || key === 'rim') return [{ label:'boxy', shape:'square' }, { label:'round', shape:'round' }, { label:'tapered', shape:'tapered' }, { label:'soft', shape:'soft' }]
+  if (key === 'leaf') return [{ label:'flat', shape:'square' }, { label:'soft', shape:'soft' }, { label:'pointed', shape:'tapered' }]
+  if (key === 'flame') return [{ label:'soft', shape:'soft' }, { label:'pointed', shape:'tapered' }, { label:'chunky', shape:'picket' }]
+  return [{ label:'square', shape:'square' }, { label:'rounded', shape:'soft' }, { label:'tapered', shape:'tapered' }]
+}
 export interface ConstructionPart { key: string; label: string; prompt: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
 // Player words describe the job; storage keeps precise orthographic view names.
 export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Face', side:'Edge', top:'Top' }

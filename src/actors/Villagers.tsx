@@ -187,7 +187,7 @@ function QuestBubble({ v }: { v: Villager }) {
     const t = new THREE.CanvasTexture(c)
     t.colorSpace = THREE.SRGBColorSpace
     return t
-  }, [quest])
+  }, [quest, request])
 
   useFrame(({ clock }) => {
     if (spr.current) spr.current.position.y = 1.35 + Math.sin(clock.elapsedTime * 2.2) * 0.05

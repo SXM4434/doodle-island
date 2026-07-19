@@ -55,7 +55,7 @@ function BuildPreview({ cls, form, parts, kits }: { cls:CraftKey; form:'chair'|'
   const item = { id:'preview', cls:cls==='furniture'?'furniture':cls, form:cls==='furniture'?form:undefined, strokes:[], construction:parts, constructionKit:kits } as never
   const placed = { id:'preview', item, x:0, z:0, rot:0 }
   const unavailable=<div className="build-preview-fallback"><b>3D preview unavailable here</b><span>Your shaped parts and face drawings are saved. Open Doodle Island in a WebGL-capable browser to turn the model around.</span></div>
-  return <section className="build-preview"><div><p className="eyebrow">Your build</p><h3>Turn it around</h3></div>{webgl ? <Canvas camera={{position:[2.8,2.15,3.7],fov:42}} dpr={[1,1]} fallback={unavailable}><ambientLight intensity={1.6}/><directionalLight position={[3,5,4]} intensity={1.8}/><ConvertedItem placed={placed} y={0}/><OrbitControls enablePan={false} minDistance={3} maxDistance={6}/></Canvas> : unavailable}<p>These are the same shaped parts and drawn faces that will appear on the island.</p></section>
+  return <section className="build-preview"><div><p className="eyebrow">Your build</p><h3>Turn it around</h3></div>{webgl ? <Canvas camera={{position:[2.8,2.15,3.7],fov:42}} dpr={[1,1]} fallback={unavailable}><ambientLight intensity={1.6}/><directionalLight position={[3,5,4]} intensity={1.8}/><ConvertedItem placed={placed} y={0} physics={false}/><OrbitControls enablePan={false} minDistance={3} maxDistance={6}/></Canvas> : unavailable}<p>These are the same shaped parts and drawn faces that will appear on the island.</p></section>
 }
 
 function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {

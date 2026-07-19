@@ -41,6 +41,7 @@ class NetAdapter {
   private setGlobal: ((k: string, v: unknown, reliable?: boolean) => void) | null = null
   private getGlobal: ((k: string) => unknown) | null = null
   private isHostNow: (() => boolean) | null = null
+  private lastPushedPlaced = ''
   private lastPushedWorld = ''
   private host = false
 
@@ -142,10 +143,26 @@ class NetAdapter {
     } catch { return null }
   }
 
-  // Legacy placement-channel methods intentionally defer to the host-owned snapshot.
-  // Guests never write a competing reliable `placed` value; that was the duplication race.
-  pushPlaced(_placed: Placed[]): void { /* world subscription publishes only through pushWorld() on host */ }
-  pullPlaced(): Placed[] | null { return null }
+  // ---- world edits: placed items travel as stroke JSON, never pixels ----
+  pushPlaced(placed: Placed[]): void {
+    if (this.status !== 'on' || !this.setGlobal) return
+    const json = JSON.stringify(placed)
+    if (json === this.lastPushedPlaced) return
+    this.lastPushedPlaced = json
+    this.setGlobal('placed', json, true) // reliable
+  }
+
+  pullPlaced(): Placed[] | null {
+    if (this.status !== 'on' || !this.getGlobal) return null
+    const json = this.getGlobal('placed') as string | undefined
+    if (!json || json === this.lastPushedPlaced) return null
+    this.lastPushedPlaced = json
+    try {
+      return JSON.parse(json) as Placed[]
+    } catch {
+      return null
+    }
+  }
 }
 
 export const net = new NetAdapter()

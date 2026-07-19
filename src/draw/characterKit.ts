@@ -14,8 +14,9 @@ export type BottomStyle = 'shorts' | 'pants' | 'skirt' | 'overalls'
 export type ShoeStyle = 'sneakers' | 'boots' | 'sandals'
 export type Accessory = 'none' | 'backpack' | 'cape' | 'bow' | 'scarf'
 export type CharacterMarkPart = 'hair' | 'face' | 'top' | 'bottoms' | 'shoes' | 'accessory'
+export type CharacterSignature = 'hair' | 'top' | 'shoes' | 'accessory'
 export type CharacterMarks = Partial<Record<CharacterMarkPart, Partial<Record<Facing, Stroke[]>>>>
-export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: CharacterMarks }
+export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: CharacterMarks; signature?: CharacterSignature }
 export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, headWidth:1, headHeight:1, headTilt:0, hair:'sprigs', hairColor:'#33291f', hairVolume:1, hairWidth:1, hairHeight:1, hairOffsetX:0, hairOffsetY:0, eyes:'dots', eyeSpacing:1, eyeSize:1, eyeY:1, mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, torsoWidth:1, armLength:1, armThickness:1, bottoms:'shorts', bottomColor:'#4f8fb8', bottomWidth:1, bottomLength:1, legLength:1, legThickness:1, shoes:'sneakers', shoeColor:'#33291f', shoeWidth:1, shoeHeight:1, accessory:'none', accessoryColor:'#e0a428', accessoryScale:1, accessoryX:0, accessoryY:0, patch:[], marks:{} }
 const INK='#33291f'
 type Ctx=CanvasRenderingContext2D
@@ -34,7 +35,10 @@ function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:nu
 // Marks are authored independently for every facing. The kit still controls the kid's
 // proportions and animation; the player supplies the hand-drawn residue on that view.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
-  const m=c.marks, get=(part:CharacterMarkPart)=>m[part]?.[facing] ?? (facing==='front' ? (part==='top' ? c.patch : []) : [])
+  const m=c.marks, signature=c.signature
+  // A chosen signature is drawn once by the player, then follows that paper part to
+  // every available facing. Existing per-facing marks still win when supplied.
+  const get=(part:CharacterMarkPart)=>m[part]?.[facing] ?? (signature===part ? (m[part]?.front ?? []) : facing==='front' ? (part==='top' ? c.patch : []) : [])
   if(facing==='front') { localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('face'),99,76,58,43); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),151,132,40,55); return }
   if(facing==='side') { localMark(ctx,get('hair'),121,48,55,43); localMark(ctx,get('face'),134,77,35,37); localMark(ctx,get('top'),119,147,32,31); localMark(ctx,get('bottoms'),120,174,30,21); localMark(ctx,get('shoes'),115,220,42,22); localMark(ctx,get('accessory'),145,134,37,55); return }
   localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),84,132,40,55)

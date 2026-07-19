@@ -39,7 +39,7 @@ function PartMarkPad({ config, part, facing, marks, color, size, setMarks }: { c
   useEffect(paint,[config,part,facing,marks,color,size])
   const point=(event:React.PointerEvent)=>{const box=canvas.current!.getBoundingClientRect();return [(event.clientX-box.left)/box.width,(event.clientY-box.top)/box.height,event.pressure||.6]}
   const down=(event:React.PointerEvent)=>{canvas.current!.setPointerCapture(event.pointerId);live.current={pts:[point(event)],size,color};paint()};const move=(event:React.PointerEvent)=>{if(!live.current)return;live.current.pts.push(point(event));paint()};const up=()=>{if(!live.current)return;const stroke={...live.current,pts:simplifyStroke(live.current.pts)};live.current=null;setMarks([...marks,stroke])}
-  return <div className="part-mark-pad"><div><p className="eyebrow">Zoomed drawing board</p><h3>Draw on {part} · {facing}</h3><p>The faint kid is context only. Your ink is made at a workable scale, then placed on this exact part in the same position.</p></div><canvas ref={canvas} width="420" height="420" className="zoom-paper" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}/></div>
+  return <div className="part-mark-pad"><div><p className="eyebrow">Large drawing board</p><h3>{part === 'shoes' ? 'Shoe detail' : `${part} detail`} · {facing}</h3><p>The pale kid keeps you oriented. Your mark goes exactly on this part.</p></div><canvas ref={canvas} width="420" height="420" className="zoom-paper" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}/></div>
 }
 
 export function CharacterStudio({ onDone }: { onDone: () => void }) {

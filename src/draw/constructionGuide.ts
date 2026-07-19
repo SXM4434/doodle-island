@@ -3,7 +3,7 @@ import type { ConstructionPartState, ConstructionView } from '../sim/store'
 // Non-persistent drafting context. It is deliberately quiet: the player’s ink is the only
 // saved art; this only shows the style-safe part selected by the construction controls.
 export function drawConstructionGuide(ctx: CanvasRenderingContext2D, view: ConstructionView, kit: ConstructionPartState, px: number) {
-  const cx=px/2, cy=px/2, w=px*.30*kit.width, h=px*.34*kit.height, d=px*.20*kit.depth
+  const cx=px/2, cy=px/2, w=px*.22*kit.width, h=px*.25*kit.height, d=px*.15*kit.depth
   ctx.save();ctx.strokeStyle='rgba(51,41,31,.22)';ctx.fillStyle='rgba(255,241,191,.42)';ctx.lineWidth=Math.max(2,px*.006);ctx.setLineDash([px*.018,px*.018])
   const rounded=(x:number,y:number,width:number,height:number,r:number)=>{ctx.beginPath();ctx.roundRect(x,y,width,height,r);ctx.fill();ctx.stroke()}
   if(view==='top') {

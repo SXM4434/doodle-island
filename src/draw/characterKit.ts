@@ -13,10 +13,19 @@ export type TopStyle = 'tee' | 'jumper' | 'coat' | 'dress'
 export type BottomStyle = 'shorts' | 'pants' | 'skirt' | 'overalls'
 export type ShoeStyle = 'sneakers' | 'boots' | 'sandals'
 export type Accessory = 'none' | 'backpack' | 'cape' | 'bow' | 'scarf'
-export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: Record<string, Stroke[]> }
+export type CharacterMarkPart = 'hair' | 'face' | 'top' | 'bottoms' | 'shoes' | 'accessory'
+export type CharacterMarks = Partial<Record<CharacterMarkPart, Partial<Record<Facing, Stroke[]>>>>
+export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: CharacterMarks }
 export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, headWidth:1, headHeight:1, headTilt:0, hair:'sprigs', hairColor:'#33291f', hairVolume:1, hairWidth:1, hairHeight:1, hairOffsetX:0, hairOffsetY:0, eyes:'dots', eyeSpacing:1, eyeSize:1, eyeY:1, mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, torsoWidth:1, armLength:1, armThickness:1, bottoms:'shorts', bottomColor:'#4f8fb8', bottomWidth:1, bottomLength:1, legLength:1, legThickness:1, shoes:'sneakers', shoeColor:'#33291f', shoeWidth:1, shoeHeight:1, accessory:'none', accessoryColor:'#e0a428', accessoryScale:1, accessoryX:0, accessoryY:0, patch:[], marks:{} }
 const INK='#33291f'
 type Ctx=CanvasRenderingContext2D
+export interface PartRect { x:number; y:number; w:number; h:number }
+export function characterPartRect(part: CharacterMarkPart, facing: Facing): PartRect {
+  const front: Record<CharacterMarkPart,PartRect> = { hair:{x:93,y:48,w:70,h:42}, face:{x:99,y:76,w:58,h:43}, top:{x:113,y:147,w:30,h:27}, bottoms:{x:111,y:173,w:34,h:21}, shoes:{x:101,y:220,w:54,h:22}, accessory:{x:151,y:132,w:40,h:55} }
+  const side: Record<CharacterMarkPart,PartRect> = { hair:{x:121,y:48,w:55,h:43}, face:{x:134,y:77,w:35,h:37}, top:{x:119,y:147,w:32,h:31}, bottoms:{x:120,y:174,w:30,h:21}, shoes:{x:115,y:220,w:42,h:22}, accessory:{x:145,y:134,w:37,h:55} }
+  const back: Record<CharacterMarkPart,PartRect> = { hair:{x:93,y:48,w:70,h:42}, face:{x:0,y:0,w:0,h:0}, top:{x:113,y:147,w:30,h:27}, bottoms:{x:111,y:173,w:34,h:21}, shoes:{x:101,y:220,w:54,h:22}, accessory:{x:84,y:132,w:40,h:55} }
+  return (facing==='front'?front:facing==='side'?side:back)[part]
+}
 
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
@@ -24,7 +33,7 @@ function localMark(ctx:Ctx, strokes:Stroke[], x:number, y:number, w:number, h:nu
 // Marks are authored independently for every facing. The kit still controls the kid's
 // proportions and animation; the player supplies the hand-drawn residue on that view.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
-  const m=c.marks, get=(part:string)=>m[`${part}:${facing}`] ?? (facing==='front' ? (m[part] ?? (part==='top' ? c.patch : [])) : [])
+  const m=c.marks, get=(part:CharacterMarkPart)=>m[part]?.[facing] ?? (facing==='front' ? (part==='top' ? c.patch : []) : [])
   if(facing==='front') { localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('face'),99,76,58,43); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),151,132,40,55); return }
   if(facing==='side') { localMark(ctx,get('hair'),121,48,55,43); localMark(ctx,get('face'),134,77,35,37); localMark(ctx,get('top'),119,147,32,31); localMark(ctx,get('bottoms'),120,174,30,21); localMark(ctx,get('shoes'),115,220,42,22); localMark(ctx,get('accessory'),145,134,37,55); return }
   localMark(ctx,get('hair'),93,48,70,42); localMark(ctx,get('top'),113,147,30,27); localMark(ctx,get('bottoms'),111,173,34,21); localMark(ctx,get('shoes'),101,220,54,22); localMark(ctx,get('accessory'),84,132,40,55)

@@ -499,7 +499,7 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .doll-stage-head { display:flex; justify-content:space-between; gap:8px; align-items:start; }
 .doll-stage-head h3 { max-width:25ch; font-size:.88rem; line-height:1.12; }
 .doll-canvas { position:relative; width:min(100%,300px); margin:0 auto; aspect-ratio:1; }
-.doll-canvas canvas { width:100%; height:100%; }
+.doll-canvas canvas { width:100%; height:100%; }.doll-canvas.is-drawing canvas { cursor:crosshair; }.draw-on-part p { margin:3px 0 8px; font-size:.74rem; line-height:1.35; opacity:.72; }
 .part-hit { position:absolute; padding:0; border:2px dashed transparent; border-radius:12px; background:transparent; color:transparent; }
 .part-hit:hover, .part-hit.selected { border-color:var(--sun); background:rgba(255,241,191,.25); color:var(--ink); }
 .part-hit span { position:absolute; top:-19px; left:50%; transform:translateX(-50%); padding:1px 5px; border:1px solid var(--ink); border-radius:5px; background:#fffdf4; font-size:.63rem; white-space:nowrap; opacity:0; }

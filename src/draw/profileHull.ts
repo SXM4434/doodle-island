@@ -24,21 +24,29 @@ function maskFor(strokes: Stroke[], width: number, height: number): Uint8Array {
   const ctx = canvas.getContext('2d')!
   drawConvertedSketch(ctx, strokes, px, 'object')
   const pixels = ctx.getImageData(0, 0, px, px).data
+  // A profile is the enclosed player region, not its ink contour. Flood from the
+  // canvas edge, then keep every unvisited transparent pixel as the player-made hull.
+  const outside = new Uint8Array(px * px)
+  const queue = new Int32Array(px * px)
+  let head = 0, tail = 0
+  const push = (index: number) => { if (!outside[index] && pixels[index * 4 + 3] <= 25) { outside[index] = 1; queue[tail++] = index } }
+  for (let x = 0; x < px; x++) { push(x); push((px - 1) * px + x) }
+  for (let y = 1; y < px - 1; y++) { push(y * px); push(y * px + px - 1) }
+  while (head < tail) {
+    const at = queue[head++], x = at % px, y = (at / px) | 0
+    if (x > 0) push(at - 1); if (x < px - 1) push(at + 1)
+    if (y > 0) push(at - px); if (y < px - 1) push(at + px)
+  }
   const out = new Uint8Array(width * height)
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const startX = Math.floor(x * px / width)
-      const endX = Math.ceil((x + 1) * px / width)
-      const startY = Math.floor(y * px / height)
-      const endY = Math.ceil((y + 1) * px / height)
-      let filled = false
-      for (let py = startY; py < endY && !filled; py++) {
-        for (let pxi = startX; pxi < endX; pxi++) {
-          if (pixels[(py * px + pxi) * 4 + 3] > 25) { filled = true; break }
-        }
-      }
-      out[y * width + x] = filled ? 1 : 0
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const startX = Math.floor(x * px / width), endX = Math.ceil((x + 1) * px / width)
+    const startY = Math.floor(y * px / height), endY = Math.ceil((y + 1) * px / height)
+    let filled = false
+    for (let py = startY; py < endY && !filled; py++) for (let pxi = startX; pxi < endX; pxi++) {
+      const at = py * px + pxi
+      if (pixels[at * 4 + 3] > 25 || !outside[at]) { filled = true; break }
     }
+    out[y * width + x] = filled ? 1 : 0
   }
   return out
 }

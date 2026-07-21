@@ -44,7 +44,7 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
     return () => clearInterval(iv)
   }, [])
 
-  if (noWebGL) return <div className="webgl-play-notice" role="status"><b>The island needs WebGL to load.</b><span>Turn on hardware acceleration, then reload this page.</span></div>
+  if (noWebGL) return null
 
   return (
     <div className="hud">

@@ -1,8 +1,7 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useThree, useFrame } from '@react-three/fiber'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
-import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
 import { Island } from '../world/Island'
 import { Ripples } from '../world/Ripples'
 import { Campfires } from '../world/Campfires'
@@ -50,31 +49,6 @@ const keyMap = [
   { name: 'run', keys: ['Shift'] },
 ]
 
-// Inverted-hull toon outlines: take over r3f's render call with OutlineEffect
-// (ARCH §3.4). A priority useFrame disables r3f auto-render; we render instead.
-function Outlined() {
-  const gl = useThree((s) => s.gl)
-  const frames = useRef(0), last = useRef(performance.now()), fps = useRef(0)
-  const effect = useMemo(
-    () =>
-      new OutlineEffect(gl, {
-        defaultThickness: 0.0028,
-        defaultColor: [0.24, 0.18, 0.13],
-      }),
-    [gl],
-  )
-  useFrame(({ scene, camera }) => {
-    effect.render(scene, camera)
-    // dev perf probe (ARCH §8 budget check)
-    frames.current++
-    const now=performance.now(); if(now-last.current>=1000){fps.current=frames.current*1000/(now-last.current);frames.current=0;last.current=now}
-    ;(window as unknown as { __perf?: unknown }).__perf = {
-      fps: Math.round(fps.current), calls: gl.info.render.calls, triangles: gl.info.render.triangles, textures: gl.info.memory.textures,
-    }
-  }, 1)
-  return null
-}
-
 export default function App() {
   const started = useGame((s) => s.started)
   const drawOpen = useGame((s) => s.drawOpen)
@@ -91,9 +65,9 @@ export default function App() {
   return (
     <div className={`app ${webgl ? '' : 'no-webgl'}`}>
       {webgl ? <Canvas
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
         camera={{ fov: 45, near: 0.1, far: 400 }}
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
@@ -131,7 +105,6 @@ export default function App() {
           <Drops />
           <PlaceGhost />
           {started && <InteractDriver />}
-          <Outlined />
         </Suspense>
       </Canvas> : <div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />

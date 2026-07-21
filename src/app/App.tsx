@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
+import { canRenderIsland } from './webgl'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -75,6 +76,7 @@ function Outlined() {
 
 export default function App() {
   const started = useGame((s) => s.started)
+  const rendererReady = useMemo(canRenderIsland, [])
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Canvas
+      {rendererReady ? <Canvas
         dpr={[1, 2]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
@@ -129,8 +131,8 @@ export default function App() {
           {started && <InteractDriver />}
           <Outlined />
         </Suspense>
-      </Canvas>
-      <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
+      </Canvas> : <div className="webgl-unavailable"><b>3D island preview is unavailable here.</b><span>This embedded browser cannot bind a Three.js WebGL renderer. The studios and the saved island are intact; open in a WebGL-capable desktop browser to explore.</span></div>}
+      <TitleCard onDrawSelf={() => setDrawingSelf(true)} rendererReady={rendererReady} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}

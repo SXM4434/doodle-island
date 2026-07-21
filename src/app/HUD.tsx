@@ -90,20 +90,19 @@ export function HUD({ onOpenSettings }: { onOpenSettings: () => void }) {
   )
 }
 
-export function TitleCard({ onDrawSelf }: { onDrawSelf?: () => void }) {
+export function TitleCard({ onDrawSelf, rendererReady = true }: { onDrawSelf?: () => void; rendererReady?: boolean }) {
   const started = useGame((s) => s.started)
   const start = useGame((s) => s.start)
   if (started) return null
-  const webgl = typeof document !== 'undefined' && !document.querySelector('.app')?.classList.contains('no-webgl')
   return (
     <div className="title-veil">
       <div className="title-card">
         <h1>Doodle&nbsp;Island</h1>
         <p>Gather stuff. Draw your tools. Everything you make keeps your hand in it.</p>
-        <button className="btn confirm big" disabled={!webgl} onClick={() => { start(); initAudio(); sfx.chime() }}>
-          {webgl ? 'Wash ashore →' : 'WebGL is needed to wash ashore'}
+        <button className="btn confirm big" disabled={!rendererReady} onClick={() => { start(); initAudio(); sfx.chime() }}>
+          {rendererReady ? 'Wash ashore →' : '3D island unavailable in this preview'}
         </button>
-        {!webgl && <p className="webgl-start-help">This device cannot start the 3D island here. Enable browser hardware acceleration and reload.</p>}
+        {!rendererReady && <p className="webgl-start-help">This preview cannot create the Three.js renderer the island needs, so starting is disabled instead of showing an empty blue canvas.</p>}
         <button className="btn" style={{ marginTop: 10 }} onClick={() => { initAudio(); onDrawSelf?.() }}>
           Make your character
         </button>

@@ -13,6 +13,7 @@ export type ObjectForm = 'chair' | 'table' | 'planter'
 export type ConstructionView = 'front' | 'side' | 'top'
 export type ConstructionViews = Record<string, Partial<Record<ConstructionView, Stroke[]>>>
 export type ConstructionMaterial = 'wood' | 'painted-wood' | 'stone' | 'clay' | 'leaf' | 'ember'
+export type ConstructionSupport = 'paired-posts' | 'picket-run' | 'four-feet' | 'rockers' | 'square-legs' | 'trestle' | 'feet' | 'grounded' | 'round-ring' | 'rough-ring'
 export interface ConstructionPartState { shape: 'square'|'round'|'tapered'|'picket'|'soft'; width: number; height: number; depth: number; color: string; material?: ConstructionMaterial; tilt?: number; offsetX?: number; offsetY?: number }
 export interface DrawnItem {
   id: string
@@ -26,6 +27,8 @@ export interface DrawnItem {
   // the explicit class/form tells the assembler what each player-drawn part means.
   construction?: ConstructionViews
   constructionKit?: Record<string, ConstructionPartState>
+  // Support is rig-owned assembly only. It never replaces player-authored profiles.
+  constructionSupport?: ConstructionSupport
 }
 export interface Slot {
   res?: ResKind
@@ -191,7 +194,7 @@ interface State {
   collectDrop: (id: number) => void
   equip: (i: number) => void
   openDraw: (open: boolean) => void
-  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: ConstructionViews, constructionKit?: Record<string, ConstructionPartState>) => DrawnItem | null
+  craft: (key: CraftKey, strokes: Stroke[], form?: ObjectForm, construction?: ConstructionViews, constructionKit?: Record<string, ConstructionPartState>, constructionSupport?: ConstructionSupport) => DrawnItem | null
   beginPlace: (item: DrawnItem) => void
   rotatePlacing: () => void
   commitPlace: (x: number, z: number) => void
@@ -361,7 +364,7 @@ export const useGame = create<State>((set, get) => ({
 
   openDraw: (open) => set({ drawOpen: open }),
 
-  craft: (key, strokes, form, construction, constructionKit) => {
+  craft: (key, strokes, form, construction, constructionKit, constructionSupport) => {
     const g = get()
     if (!g.canAfford(key)) return null
     const cost = COSTS[key]
@@ -386,6 +389,7 @@ export const useGame = create<State>((set, get) => ({
       strokes,
       construction,
       constructionKit,
+      constructionSupport,
     }
     get().deed('craft-' + key)
     if (isTool) {

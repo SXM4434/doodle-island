@@ -1,4 +1,4 @@
-import type { ConstructionMaterial, CraftKey, ObjectForm, ConstructionView } from '../sim/store'
+import type { ConstructionMaterial, ConstructionSupport, CraftKey, ObjectForm, ConstructionView } from '../sim/store'
 
 export type ItemRoute = 'paper' | 'constructed'
 export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
@@ -19,6 +19,14 @@ export const FORMS_FOR_PART = (key: string): Array<{ label: string; shape: PartS
   return [{ label:'square', shape:'square' }, { label:'rounded', shape:'soft' }, { label:'tapered', shape:'tapered' }]
 }
 export interface ConstructionPart { key: string; label: string; prompt: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
+export interface SupportChoice { value: ConstructionSupport; label: string; hint: string }
+export function supportsFor(key: CraftKey, form?: ObjectForm): SupportChoice[] {
+  if (key === 'fence') return [{ value:'paired-posts', label:'paired posts', hint:'two sturdy anchors' }, { value:'picket-run', label:'picket run', hint:'a close little row' }]
+  if (key === 'campfire') return [{ value:'round-ring', label:'round stone ring', hint:'an even circle' }, { value:'rough-ring', label:'rough stone ring', hint:'a wobbly gathering' }]
+  if (form === 'chair') return [{ value:'four-feet', label:'four feet', hint:'a planted chair' }, { value:'rockers', label:'rocking runners', hint:'a gentle sway' }]
+  if (form === 'table') return [{ value:'square-legs', label:'four legs', hint:'a familiar table' }, { value:'trestle', label:'trestle base', hint:'two broad supports' }]
+  return [{ value:'feet', label:'little feet', hint:'lift it from the ground' }, { value:'grounded', label:'grounded pot', hint:'sit it in the soil' }]
+}
 // Player words describe the job; storage keeps precise orthographic view names.
 export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Front shape', side:'Side shape', top:'Top shape' }
 export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'What should people notice first?', side:'What should this piece look like from the side?', top:'What should its top look like?' }

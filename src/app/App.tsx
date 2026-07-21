@@ -72,6 +72,7 @@ export default function App() {
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
       >
+        <Suspense fallback={<mesh><planeGeometry args={[200, 200]} /><meshBasicMaterial color="#f2e3c6" /></mesh>}>
           <ambientLight intensity={1.15} color="#fff3dc" />
           <hemisphereLight args={['#c9ecff', '#9a855f', 0.65]} />
           <directionalLight position={[45, 55, 30]} intensity={2.2} color="#fff0cc" />
@@ -106,6 +107,7 @@ export default function App() {
           <Drops />
           <PlaceGhost />
           {started && <InteractDriver />}
+        </Suspense>
       </Canvas> : <div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}

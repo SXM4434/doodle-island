@@ -21,7 +21,6 @@ import { Critters } from '../actors/Critters'
 import { Islanders } from '../actors/Islanders'
 import { Journal } from './Journal'
 import { Villagers } from '../actors/Villagers'
-import { DayNight } from '../world/DayNight'
 import { Props } from '../world/Props'
 import { PlacedItems, PlaceGhost } from '../world/Placed'
 import { Player } from '../actors/Player'
@@ -72,8 +71,9 @@ export default function App() {
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
       >
-        <Suspense fallback={null}>
-          <DayNight />
+          <ambientLight intensity={1.15} color="#fff3dc" />
+          <hemisphereLight args={['#c9ecff', '#9a855f', 0.65]} />
+          <directionalLight position={[45, 55, 30]} intensity={2.2} color="#fff0cc" />
           <Physics timeStep={1 / 60} paused={!started}>
             <Island />
             <Props />
@@ -105,7 +105,6 @@ export default function App() {
           <Drops />
           <PlaceGhost />
           {started && <InteractDriver />}
-        </Suspense>
       </Canvas> : <div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}

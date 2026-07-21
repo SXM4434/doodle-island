@@ -20,8 +20,8 @@ export const FORMS_FOR_PART = (key: string): Array<{ label: string; shape: PartS
 }
 export interface ConstructionPart { key: string; label: string; prompt: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
 // Player words describe the job; storage keeps precise orthographic view names.
-export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Face', side:'Edge', top:'Top' }
-export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'Add the mark people will notice first.', side:'Add the mark along its edge.', top:'Add the mark across its top.' }
+export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Front shape', side:'Side shape', top:'Top shape' }
+export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'What should people notice first?', side:'What should this piece look like from the side?', top:'What should its top look like?' }
 const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945', material:'wood' }
 const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b', material:'stone' }
 const fire: PartKit = { shape:'tapered', width:1, height:1, depth:1, color:'#d95d39', material:'ember' }

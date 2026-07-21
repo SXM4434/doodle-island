@@ -40,7 +40,9 @@ export function characterSignatureRect(part: CharacterSignature, facing: Facing)
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
 function localMark(ctx:Ctx, strokes:Stroke[], rect:PartRect, signature=false) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
-  drawStrokes(g,strokes,128,{backing:signature});ctx.save();if(!signature){ctx.beginPath();ctx.ellipse(rect.x+rect.w/2,rect.y+rect.h/2,rect.w/2,rect.h/2,0,0,Math.PI*2);ctx.clip()}ctx.drawImage(c,rect.x,rect.y,rect.w,rect.h);ctx.restore() }
+  // Character marks are ink-on-paper components, not sticker decals. In particular,
+  // signature art must not gain a thick white halo that changes the player’s line.
+  drawStrokes(g,strokes,128);ctx.save();if(!signature){ctx.beginPath();ctx.ellipse(rect.x+rect.w/2,rect.y+rect.h/2,rect.w/2,rect.h/2,0,0,Math.PI*2);ctx.clip()}ctx.drawImage(c,rect.x,rect.y,rect.w,rect.h);ctx.restore() }
 // Marks are authored independently for every facing. A chosen signature is a larger
 // paper layer, deliberately allowed to extend beyond a tiny detail patch.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {

@@ -78,6 +78,20 @@ export function drawStrokes(
   }
 }
 
+// Closing is always an explicit authoring action in the construction studio.
+// It writes the final segment into the canonical raw points instead of letting the
+// hull generator secretly invent an edge the player never drew.
+export function closeLatestProfile(strokes: Stroke[]): Stroke[] {
+  let index = -1
+  for (let i = strokes.length - 1; i >= 0; i--) if (!strokes[i].erase && strokes[i].pts.length > 2) { index = i; break }
+  if (index < 0) return strokes
+  const source = strokes[index]
+  const first = source.pts[0], last = source.pts[source.pts.length - 1]
+  if (Math.hypot(first[0] - last[0], first[1] - last[1]) <= .002) return strokes
+  const closed: Stroke = { ...source, pts: [...source.pts, [...first]] }
+  return strokes.map((stroke, i) => i === index ? closed : stroke)
+}
+
 export function hasClosedProfile(strokes: Stroke[]): boolean {
   // Physical construction needs at least one deliberate enclosed gesture. Paper items
   // remain freehand and never call this check. The threshold is intentionally generous:

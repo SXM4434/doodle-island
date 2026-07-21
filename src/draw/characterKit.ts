@@ -16,8 +16,8 @@ export type Accessory = 'none' | 'backpack' | 'cape' | 'bow' | 'scarf'
 export type CharacterMarkPart = 'hair' | 'face' | 'top' | 'bottoms' | 'shoes' | 'accessory'
 export type CharacterSignature = 'hair' | 'top' | 'shoes' | 'accessory'
 export type CharacterMarks = Partial<Record<CharacterMarkPart, Partial<Record<Facing, Stroke[]>>>>
-export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: CharacterMarks; signature?: CharacterSignature }
-export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, headWidth:1, headHeight:1, headTilt:0, hair:'sprigs', hairColor:'#33291f', hairVolume:1, hairWidth:1, hairHeight:1, hairOffsetX:0, hairOffsetY:0, eyes:'dots', eyeSpacing:1, eyeSize:1, eyeY:1, mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, torsoWidth:1, armLength:1, armThickness:1, bottoms:'shorts', bottomColor:'#4f8fb8', bottomWidth:1, bottomLength:1, legLength:1, legThickness:1, shoes:'sneakers', shoeColor:'#33291f', shoeWidth:1, shoeHeight:1, accessory:'none', accessoryColor:'#e0a428', accessoryScale:1, accessoryX:0, accessoryY:0, patch:[], marks:{} }
+export interface CharacterConfig { skin:string; headShape:HeadShape; headScale:number; headWidth:number; headHeight:number; headTilt:number; hair:HairStyle; hairColor:string; hairVolume:number; hairWidth:number; hairHeight:number; hairOffsetX:number; hairOffsetY:number; eyes:EyeStyle; eyeSpacing:number; eyeSize:number; eyeY:number; mouth:MouthStyle; top:TopStyle; topColor:string; topLength:number; torsoWidth:number; armLength:number; armThickness:number; bottoms:BottomStyle; bottomColor:string; bottomWidth:number; bottomLength:number; legLength:number; legThickness:number; shoes:ShoeStyle; shoeColor:string; shoeWidth:number; shoeHeight:number; accessory:Accessory; accessoryColor:string; accessoryScale:number; accessoryX:number; accessoryY:number; patch:Stroke[]; marks: CharacterMarks; signature?: CharacterSignature; signatureScale:number; signatureOffsetX:number; signatureOffsetY:number }
+export const DEFAULT_CHARACTER: CharacterConfig = { skin:'#f9e3c0', headShape:'round', headScale:1, headWidth:1, headHeight:1, headTilt:0, hair:'sprigs', hairColor:'#33291f', hairVolume:1, hairWidth:1, hairHeight:1, hairOffsetX:0, hairOffsetY:0, eyes:'dots', eyeSpacing:1, eyeSize:1, eyeY:1, mouth:'smile', top:'tee', topColor:'#d95d39', topLength:1, torsoWidth:1, armLength:1, armThickness:1, bottoms:'shorts', bottomColor:'#4f8fb8', bottomWidth:1, bottomLength:1, legLength:1, legThickness:1, shoes:'sneakers', shoeColor:'#33291f', shoeWidth:1, shoeHeight:1, accessory:'none', accessoryColor:'#e0a428', accessoryScale:1, accessoryX:0, accessoryY:0, patch:[], marks:{}, signatureScale:1, signatureOffsetX:0, signatureOffsetY:0 }
 const INK='#33291f'
 type Ctx=CanvasRenderingContext2D
 export interface PartRect { x:number; y:number; w:number; h:number }
@@ -39,10 +39,10 @@ export function characterSignatureRect(part: CharacterSignature, facing: Facing)
 
 function line(ctx:Ctx, pts:number[][], width=5, color=INK) { ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.stroke() }
 function fillShape(ctx:Ctx, pts:number[][], color:string) { ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke() }
-function localMark(ctx:Ctx, strokes:Stroke[], rect:PartRect, signature=false) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
+function localMark(ctx:Ctx, strokes:Stroke[], rect:PartRect, signature=false, scale=1, offsetX=0, offsetY=0) { if(!strokes.length)return; const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!; // Marks stay at the exact local position where the player made them.
   // Character marks are ink-on-paper components, not sticker decals. In particular,
   // signature art must not gain a thick white halo that changes the player’s line.
-  drawStrokes(g,strokes,128);ctx.save();if(!signature){ctx.beginPath();ctx.ellipse(rect.x+rect.w/2,rect.y+rect.h/2,rect.w/2,rect.h/2,0,0,Math.PI*2);ctx.clip()}ctx.drawImage(c,rect.x,rect.y,rect.w,rect.h);ctx.restore() }
+  drawStrokes(g,strokes,128);const w=rect.w*(signature?scale:1),h=rect.h*(signature?scale:1),x=rect.x+(rect.w-w)/2+offsetX,y=rect.y+(rect.h-h)/2+offsetY;ctx.save();if(!signature){ctx.beginPath();ctx.ellipse(rect.x+rect.w/2,rect.y+rect.h/2,rect.w/2,rect.h/2,0,0,Math.PI*2);ctx.clip()}ctx.drawImage(c,x,y,w,h);ctx.restore() }
 // Marks are authored independently for every facing. A chosen signature is a larger
 // paper layer, deliberately allowed to extend beyond a tiny detail patch.
 function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
@@ -53,7 +53,7 @@ function localMarks(ctx:Ctx,c:CharacterConfig,facing:Facing) {
     const signatureMarks=signature===part ? (m[part]?.front ?? []) : undefined
     const marks=m[part]?.[facing] ?? signatureMarks ?? (facing==='front'&&part==='top'?c.patch:[])
     const rect=signature===part ? characterSignatureRect(part,facing) : characterPartRect(part,facing)
-    localMark(ctx,marks,rect,signature===part)
+    localMark(ctx,marks,rect,signature===part,c.signatureScale,c.signatureOffsetX,c.signatureOffsetY)
   }
 }
 function overlayHair(ctx:Ctx,c:CharacterConfig,_f:Facing) { const color=c.hairColor, v=c.hairVolume

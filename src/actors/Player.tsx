@@ -160,15 +160,19 @@ export function Player() {
       maxVelLimit={3.5}
       sprintMult={1.7}
       jumpVel={3.2}
-      camInitDis={-11}
-      camMaxDis={-14}
-      camMinDis={-5}
-      camUpLimit={1.35}
-      camLowLimit={0.45}
-      camInitDir={{ x: 0.85, y: 0 }}
+      camInitDis={-8}
+      camMaxDis={-10}
+      camMinDis={-5.5}
+      camUpLimit={1.12}
+      camLowLimit={0.38}
+      camInitDir={{ x: 0.62, y: 0 }}
       camCollision={false}
+      camMoveSpeed={0.55}
+      camZoomSpeed={0.55}
+      camFollowMult={7}
+      camLerpMult={9}
       autoBalance={false}
-      turnSpeed={30}
+      turnSpeed={20}
       disableControl={drawOpen}
       camListenerTarget="domElement"
     >

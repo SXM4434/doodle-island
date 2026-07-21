@@ -67,7 +67,8 @@ export default function App() {
         dpr={[1, 1.5]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
-        camera={{ fov: 45, near: 0.1, far: 400 }}
+        camera={{ fov: 45, near: 0.1, far: 400, position: [0, 46, 62] }}
+        onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
       >

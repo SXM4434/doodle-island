@@ -49,6 +49,9 @@ const keyMap = [
 
 export default function App() {
   const started = useGame((s) => s.started)
+  // A canvas can exist while its renderer is unable to bind in an embedded browser.
+  // Keep a real DOM surface visible until R3F has created the renderer successfully.
+  const [rendererReady, setRendererReady] = useState(false)
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
@@ -65,6 +68,7 @@ export default function App() {
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
         camera={{ fov: 45, near: 0.1, far: 400 }}
+        onCreated={() => setRendererReady(true)}
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
       >
@@ -103,6 +107,7 @@ export default function App() {
           {started && <InteractDriver />}
         </Suspense>
       </Canvas>
+      {!rendererReady && <div className="renderer-blocker"><div><b>Preparing Doodle Island…</b><span>This browser could not start the island renderer.</span></div></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}

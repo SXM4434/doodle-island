@@ -29,7 +29,14 @@ export function supportsFor(key: CraftKey, form?: ObjectForm): SupportChoice[] {
 }
 // Player words describe the job; storage keeps precise orthographic view names.
 export const VIEW_LABEL: Record<ConstructionView,string> = { front:'Front shape', side:'Side shape', top:'Top shape' }
-export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'What should people notice first?', side:'What should this piece look like from the side?', top:'What should its top look like?' }
+export const VIEW_PROMPT: Record<ConstructionView,string> = { front:'Draw the silhouette people notice first.', side:'If depth matters, draw how it swells, tapers, or leans from the side.', top:'If its top matters, draw its footprint from above.' }
+// This is guidance, not a tracing target. The player keeps a blank sheet and owns
+// the contour; the wording explains the real-world job the semantic rig will do.
+export function profilePrompt(part: ConstructionPart, view: ConstructionView): string {
+  const primary = part.views[0] === view
+  const need = primary ? 'This is the one shape needed to build this part.' : 'Optional: this gives your part a more specific 3D read.'
+  return `${VIEW_PROMPT[view]} ${need} The island keeps the scale, connection, and stability safe.`
+}
 const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945', material:'wood' }
 const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b', material:'stone' }
 const fire: PartKit = { shape:'tapered', width:1, height:1, depth:1, color:'#d95d39', material:'ember' }

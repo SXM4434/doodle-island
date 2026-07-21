@@ -89,7 +89,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="app">
+    <div className={`app ${webgl ? '' : 'no-webgl'}`}>
       {webgl ? <Canvas
         dpr={[1, 2]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}

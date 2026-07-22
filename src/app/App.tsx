@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
+import { canRenderIsland } from './webgl'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -49,9 +50,9 @@ const keyMap = [
 
 export default function App() {
   const started = useGame((s) => s.started)
-  // A canvas can exist while its renderer is unable to bind in an embedded browser.
-  // Keep a real DOM surface visible until R3F has created the renderer successfully.
-  const [rendererReady, setRendererReady] = useState(false)
+  // Do not mount R3F at all until Three itself can bind a renderer. A nominal
+  // `getContext()` is not enough in sandboxed previews and leaves a blue canvas.
+  const [rendererReady] = useState(() => canRenderIsland())
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
@@ -63,12 +64,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <Canvas
+      {rendererReady && <Canvas
         dpr={[1, 1.5]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
         camera={{ fov: 45, near: 0.1, far: 400 }}
-        onCreated={() => setRendererReady(true)}
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
       >
@@ -106,9 +106,9 @@ export default function App() {
           <PlaceGhost />
           {started && <InteractDriver />}
         </Suspense>
-      </Canvas>
-      {!rendererReady && <div className="renderer-blocker"><div><b>Preparing Doodle Island…</b><span>This browser could not start the island renderer.</span></div></div>}
-      <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
+      </Canvas>}
+      {!rendererReady && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view is unavailable in this preview.</b><span>This viewer cannot create a Three.js WebGL renderer. The island is not being started, so there is no blue game screen.</span></div></div>}
+      <TitleCard onDrawSelf={() => setDrawingSelf(true)} rendererReady={rendererReady} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}

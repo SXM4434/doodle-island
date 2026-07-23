@@ -160,19 +160,21 @@ export function Player() {
       maxVelLimit={3.5}
       sprintMult={1.7}
       jumpVel={3.2}
-      camInitDis={-10}
-      camMaxDis={-10}
-      camMinDis={-10}
-      camUpLimit={1.02}
-      camLowLimit={0.46}
-      camInitDir={{ x: 0.62, y: 0 }}
+      // Fixed AC-style camera: movement turns the camera; the trackpad does not
+      // steal scrolling, orbit the view, or change zoom while players explore.
+      mode="FixedCamera"
+      fixedCamRotMult={0.7}
+      camInitDis={-9}
+      camMaxDis={-9}
+      camMinDis={-9}
+      camUpLimit={.72}
+      camLowLimit={.72}
+      camInitDir={{ x: .72, y: 0 }}
       camCollision={false}
-      camMoveSpeed={0.42}
-      camZoomSpeed={0}
-      camFollowMult={8}
-      camLerpMult={11}
+      camFollowMult={7}
+      camLerpMult={9}
       autoBalance={false}
-      turnSpeed={20}
+      turnSpeed={18}
       disableControl={drawOpen}
       camListenerTarget="domElement"
     >

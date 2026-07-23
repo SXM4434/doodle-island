@@ -160,23 +160,15 @@ export function Player() {
       maxVelLimit={3.5}
       sprintMult={1.7}
       jumpVel={3.2}
-      // Fixed AC-style camera: movement turns the camera; the trackpad does not
-      // steal scrolling, orbit the view, or change zoom while players explore.
-      mode="FixedCamera"
-      fixedCamRotMult={0.7}
-      camInitDis={-9}
-      camMaxDis={-9}
-      camMinDis={-9}
-      camUpLimit={.72}
-      camLowLimit={.72}
-      camInitDir={{ x: .72, y: 0 }}
+      // Fixed presentation position avoids the browser's noisy trackpad orbit.
+      // Movement stays WASD; no wheel/drag listener is attached to the canvas.
+      disableFollowCam
+      disableFollowCamPos={{ x: SPAWN.x + 9, y: groundY(SPAWN.x, SPAWN.z) + 9, z: SPAWN.z + 11 }}
+      disableFollowCamTarget={{ x: SPAWN.x, y: groundY(SPAWN.x, SPAWN.z) + .7, z: SPAWN.z }}
       camCollision={false}
-      camFollowMult={7}
-      camLerpMult={9}
       autoBalance={false}
       turnSpeed={18}
       disableControl={drawOpen}
-      camListenerTarget="domElement"
     >
       {/* capsule bottom = center − (halfHeight+radius+float) = −0.75; feet there */}
       <group position={[0, -0.75, 0]}>

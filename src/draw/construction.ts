@@ -1,4 +1,5 @@
 import type { ConstructionMaterial, ConstructionSupport, CraftKey, ObjectForm, ConstructionView } from '../sim/store'
+import { strokeBounds, type Stroke } from './strokes'
 
 export type ItemRoute = 'paper' | 'constructed'
 export type PartShape = 'square' | 'round' | 'tapered' | 'picket' | 'soft'
@@ -36,6 +37,23 @@ export function profilePrompt(part: ConstructionPart, view: ConstructionView): s
   const primary = part.views[0] === view
   const need = primary ? 'This is the one shape needed to build this part.' : 'Optional: this gives your part a more specific 3D read.'
   return `${part.fitHint} ${VIEW_PROMPT[view]} ${need} The island keeps the scale, connection, and stability safe.`
+}
+
+export type ProfileFit = 'empty' | 'too-small' | 'too-wide' | 'too-tall' | 'too-square' | 'ready'
+export interface ProfileFitResult { state: ProfileFit; label: string; detail: string }
+
+// These are authoring rails, not a classifier. They only describe whether a
+// free-drawn contour occupies an envelope appropriate for the named part.
+export function assessProfileFit(part: ConstructionPart, strokes: Stroke[]): ProfileFitResult {
+  const ink = strokes.some(stroke => !stroke.erase && stroke.pts.length > 1)
+  if (!ink) return { state:'empty', label:'Blank paper', detail:'Draw any silhouette that can do this part’s job.' }
+  const bounds = strokeBounds(strokes), width = bounds.maxX - bounds.minX, height = bounds.maxY - bounds.minY
+  if (width < .12 || height < .12) return { state:'too-small', label:'Make it bolder', detail:'Use more of the paper so this part remains visible in the world.' }
+  const ratio = width / height
+  if (['post','leg','back','leaf','flame'].includes(part.key) && ratio > 1.35) return { state:'too-wide', label:'A little taller', detail:'Keep your own shape, but stretch its idea upward so the rig can read this part.' }
+  if (['rail','log','seat','top','apron','rim'].includes(part.key) && ratio < .72) return { state:'too-tall', label:'A little wider', detail:'Keep your own shape, but give it a broader resting/supporting read.' }
+  if (['post','leg'].includes(part.key) && ratio > .82) return { state:'too-square', label:'Narrow it slightly', detail:'The rig will repeat this as a support, so a slimmer silhouette will read better.' }
+  return { state:'ready', label:'Fits this part', detail:'Your silhouette is freehand and will fit the rig’s safe envelope.' }
 }
 const wood: PartKit = { shape:'square', width:1, height:1, depth:1, color:'#b87945', material:'wood' }
 const stone: PartKit = { shape:'soft', width:1, height:1, depth:1, color:'#71747b', material:'stone' }

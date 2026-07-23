@@ -160,15 +160,21 @@ export function Player() {
       maxVelLimit={3.5}
       sprintMult={1.7}
       jumpVel={3.2}
-      // Fixed presentation position avoids the browser's noisy trackpad orbit.
-      // Movement stays WASD; no wheel/drag listener is attached to the canvas.
-      disableFollowCam
-      disableFollowCamPos={{ x: SPAWN.x + 9, y: groundY(SPAWN.x, SPAWN.z) + 9, z: SPAWN.z + 11 }}
-      disableFollowCamTarget={{ x: SPAWN.x, y: groundY(SPAWN.x, SPAWN.z) + .7, z: SPAWN.z }}
+      camInitDis={-8}
+      camMaxDis={-10}
+      camMinDis={-5.5}
+      camUpLimit={1.12}
+      camLowLimit={0.38}
+      camInitDir={{ x: 0.62, y: 0 }}
       camCollision={false}
+      camMoveSpeed={0.55}
+      camZoomSpeed={0.55}
+      camFollowMult={7}
+      camLerpMult={9}
       autoBalance={false}
-      turnSpeed={18}
+      turnSpeed={20}
       disableControl={drawOpen}
+      camListenerTarget="domElement"
     >
       {/* capsule bottom = center − (halfHeight+radius+float) = −0.75; feet there */}
       <group position={[0, -0.75, 0]}>

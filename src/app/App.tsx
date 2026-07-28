@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { canRenderIsland } from './webgl'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -50,9 +49,6 @@ const keyMap = [
 
 export default function App() {
   const started = useGame((s) => s.started)
-  // Do not mount R3F at all until Three itself can bind a renderer. A nominal
-  // `getContext()` is not enough in sandboxed previews and leaves a blue canvas.
-  const [rendererReady] = useState(() => canRenderIsland())
   const [canvasFailed, setCanvasFailed] = useState(false)
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -65,9 +61,9 @@ export default function App() {
 
   return (
     <div className="app">
-      {rendererReady && <Canvas
+      {!canvasFailed && <Canvas
         dpr={[1, 1.5]}
-        fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
+        fallback={null}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
         onCreated={({ gl, scene }) => { gl.setClearColor('#8ed0dd', 1); scene.background = null }}
         onError={() => setCanvasFailed(true)}
@@ -110,8 +106,8 @@ export default function App() {
           {started && <InteractDriver />}
         </Suspense>
       </Canvas>}
-      {(!rendererReady || canvasFailed) && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view is unavailable in this preview.</b><span>This viewer cannot create a Three.js WebGL renderer. The island is not being started, so there is no blank game screen.</span></div></div>}
-      <TitleCard onDrawSelf={() => setDrawingSelf(true)} rendererReady={rendererReady} />
+      {canvasFailed && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view could not start.</b><span>Reload this page to try the island renderer again.</span></div></div>}
+      <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}

@@ -91,10 +91,16 @@ function ItemStudio({ cls, onBack }: { cls: CraftKey; onBack: () => void }) {
     g.clearRect(0, 0, 600, 600)
     const all = live.current ? [...active, live.current] : active
     if (route === 'paper') { if (!all.length) drawCraftGuide(g, cls, 600) }
+    // Side/top boards show the player's own front profile as a translucent spatial
+    // cue (plan §2.3). It is their drawing, never a supplied template.
+    if (route === 'constructed' && view !== 'front') {
+      const front = parts[selected]?.front
+      if (front?.length) { g.save(); g.globalAlpha = .13; drawStrokes(g, front, 600); g.restore() }
+    }
     // Built parts intentionally begin on blank paper. The semantic rig owns safe
     // function, scale, attachment and collision; the player owns this silhouette.
     drawStrokes(g, all, 600, { backing: true })
-  }, [active, cls, current?.prompt, route])
+  }, [active, cls, current?.prompt, route, view, parts, selected])
   const finalPaint = useMemo(() => () => {
     const g = result.current?.getContext('2d'); if (!g) return
     g.clearRect(0, 0, 600, 600)

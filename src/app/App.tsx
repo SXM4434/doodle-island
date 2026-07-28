@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
+import { canRenderIsland } from './webgl'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { KeyboardControls } from '@react-three/drei'
@@ -49,6 +50,9 @@ const keyMap = [
 
 export default function App() {
   const started = useGame((s) => s.started)
+  // Test the actual Three renderer before R3F mounts. This avoids an unhandled
+  // renderer exception that can blank an entire fresh preview page.
+  const [rendererReady] = useState(() => canRenderIsland())
   const [canvasFailed, setCanvasFailed] = useState(false)
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -61,7 +65,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {!canvasFailed && <Canvas
+      {rendererReady && !canvasFailed && <Canvas
         dpr={[1, 1.5]}
         fallback={null}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
@@ -106,8 +110,8 @@ export default function App() {
           {started && <InteractDriver />}
         </Suspense>
       </Canvas>}
-      {canvasFailed && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view could not start.</b><span>Reload this page to try the island renderer again.</span></div></div>}
-      <TitleCard onDrawSelf={() => setDrawingSelf(true)} />
+      {(!rendererReady || canvasFailed) && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view is unavailable here.</b><span>This browser cannot create the renderer needed by the island. The page is still usable for character work, but it will not try to open a blank world.</span></div></div>}
+      <TitleCard onDrawSelf={() => setDrawingSelf(true)} rendererReady={rendererReady && !canvasFailed} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}
       {started && <Hearts />}

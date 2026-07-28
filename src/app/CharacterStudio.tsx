@@ -43,10 +43,18 @@ function PaperDoll({ config, selected, select, facing, setFacing }: { config: Ch
 }
 function PartMarkPad({ config, part, facing, marks, color, size, signature, setMarks }: { config:CharacterConfig; part:CharacterMarkPart; facing:'front'|'side'|'back'; marks:Stroke[]; color:string; size:number; signature:boolean; setMarks:(marks:Stroke[])=>void }) {
   const canvas=useRef<HTMLCanvasElement>(null), live=useRef<Stroke|null>(null), rect=signature ? characterSignatureRect(part as CharacterSignature,facing) : characterPartRect(part,facing)
-  const paint=() => { const ctx=canvas.current?.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,420,420);ctx.fillStyle='#fffdf4';ctx.fillRect(0,0,420,420);const scale=Math.min(360/Math.max(1,rect.w),360/Math.max(1,rect.h));ctx.save();ctx.translate(210-(rect.x+rect.w/2)*scale,210-(rect.y+rect.h/2)*scale);ctx.scale(scale,scale);ctx.globalAlpha=.24;drawCharacter(ctx,config,facing,0);ctx.globalAlpha=1;ctx.restore(); // The drawing board is its own 420px coordinate system. Never render its normalized strokes through the tiny part transform.
-    drawStrokes(ctx,live.current?[...marks,live.current]:marks,420) }
+  // WYSIWYG contract: strokes are saved in PART space (the same square canvas the
+  // renderer stamps into this rect). The board therefore paints them through the
+  // exact rect projection, so ink lands on the kid precisely where it was drawn.
+  const scale=Math.min(360/Math.max(1,rect.w),360/Math.max(1,rect.h))
+  const originX=210-(rect.w/2)*scale, originY=210-(rect.h/2)*scale, regionW=rect.w*scale, regionH=rect.h*scale
+  const paint=() => { const ctx=canvas.current?.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,420,420);ctx.fillStyle='#fffdf4';ctx.fillRect(0,0,420,420);ctx.save();ctx.translate(210-(rect.x+rect.w/2)*scale,210-(rect.y+rect.h/2)*scale);ctx.scale(scale,scale);ctx.globalAlpha=.3;drawCharacter(ctx,config,facing,0);ctx.globalAlpha=1;ctx.restore()
+    // paper-piece bounds: this is the exact region that lives on the kid
+    ctx.save();ctx.strokeStyle='rgba(92,150,69,.6)';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.strokeRect(originX,originY,regionW,regionH);ctx.setLineDash([]);ctx.restore()
+    const all=live.current?[...marks,live.current]:marks
+    if(all.length){const off=document.createElement('canvas');off.width=off.height=512;const g=off.getContext('2d')!;drawStrokes(g,all,512);ctx.drawImage(off,originX,originY,regionW,regionH)} }
   useEffect(paint,[config,part,facing,marks,color,size])
-  const point=(event:React.PointerEvent)=>{const box=canvas.current!.getBoundingClientRect();return [(event.clientX-box.left)/box.width,(event.clientY-box.top)/box.height,event.pressure||.6]}
+  const point=(event:React.PointerEvent):[number,number,number]=>{const box=canvas.current!.getBoundingClientRect();const bx=(event.clientX-box.left)*420/box.width,by=(event.clientY-box.top)*420/box.height;return [(bx-originX)/regionW,(by-originY)/regionH,event.pressure||.6]}
   const down=(event:React.PointerEvent)=>{canvas.current!.setPointerCapture(event.pointerId);live.current={pts:[point(event)],size,color};paint()};const move=(event:React.PointerEvent)=>{if(!live.current)return;live.current.pts.push(point(event));paint()};const up=()=>{if(!live.current)return;const stroke={...live.current,pts:simplifyStroke(live.current.pts)};live.current=null;setMarks([...marks,stroke])}
   return <div className="part-mark-pad"><div><p className="eyebrow">Large drawing board</p><h3>{signature ? `Custom ${part} piece` : part === 'shoes' ? 'Shoe detail' : `${part} detail`} · {facing}</h3><p>{signature ? 'Draw a paper piece in any shape. The kid keeps it readable through every pose; you place and size it after drawing.' : 'The pale kid keeps you oriented. Your mark becomes a real paper layer on this part.'}</p></div><canvas ref={canvas} width="420" height="420" className="zoom-paper" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}/></div>
 }

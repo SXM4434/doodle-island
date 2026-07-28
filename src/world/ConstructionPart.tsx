@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import type { ConstructionPartState, ConstructionView } from '../sim/store'
 import { drawStrokes, type Stroke } from '../draw/strokes'
 import { profileHullGeometry } from '../draw/profileHull'
-import { toon } from './toon'
+import { gradientMap, toon } from './toon'
 
 // A physical construction part is always a real low-poly volume. The kit establishes a
 // readable toy-world form; authored front/side/top ink is mounted on the corresponding
@@ -26,19 +26,23 @@ export function ConstructionPart({ kit, views, size, position, rotation=[0,0,0],
   const [baseW,baseH,baseD]=size, w=baseW*kit.width,h=baseH*kit.height,d=baseD*kit.depth
   const shifted: [number,number,number] = [position[0] + (kit.offsetX ?? 0), position[1] + (kit.offsetY ?? 0), position[2]]
   const posed: [number,number,number] = [rotation[0], rotation[1], rotation[2] + (kit.tilt ?? 0)]
-  const profile = useMemo(() => profileHullGeometry(views, w, h, d), [views, w, h, d])
+  const materialColor = kit.material === 'stone' ? '#71747b' : kit.material === 'clay' ? '#c86f4d' : kit.material === 'leaf' ? '#5c9645' : kit.material === 'ember' ? '#e06d3c' : kit.color
+  const profile = useMemo(() => profileHullGeometry(views, w, h, d, materialColor), [views, w, h, d, materialColor])
   useEffect(() => () => profile?.dispose(), [profile])
+  // Generated hulls carry the player's ink colors as vertex colors; the toon
+  // material shades those colors instead of replacing them with one flat paint.
+  const hullMaterial = useMemo(() => { const m = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradientMap() }); return m }, [])
+  useEffect(() => () => hullMaterial.dispose(), [hullMaterial])
   // Curved and faceted silhouettes get art mounted just beyond their widest point.
   // A surface mark must never disappear inside the physical volume.
   const outer=kit.shape==='square' ? 1 : kit.shape==='soft' ? 1.18 : 1.16
   const faces=<>{views.front&&<ArtFace strokes={views.front} view="front" size={[w,h]} offset={d/2*outer+.006} />}{views.side&&<ArtFace strokes={views.side} view="side" size={[d,h]} offset={w/2*outer+.006} />}{views.top&&<ArtFace strokes={views.top} view="top" size={[w,d]} offset={h/2*outer+.006} />}</>
-  const materialColor = kit.material === 'stone' ? '#71747b' : kit.material === 'clay' ? '#c86f4d' : kit.material === 'leaf' ? '#5c9645' : kit.material === 'ember' ? '#e06d3c' : kit.color
-  const material=toon(materialColor)
+  const material=useMemo(()=>toon(materialColor),[materialColor])
   const select = onSelect ? (event: { stopPropagation: () => void }) => { event.stopPropagation(); onSelect() } : undefined
   const outline = selected ? <mesh scale={[1.055,1.055,1.055]} raycast={() => null}><boxGeometry args={[w,h,d]} /><meshBasicMaterial color="#f7d35e" wireframe transparent opacity={.62} depthWrite={false} /></mesh> : null
   // New creations use the authored profile as the volume itself. Do not reattach a
   // rectangular art panel here—the silhouette is the player’s visible contribution.
-  if (profile) return <group position={shifted} rotation={posed}><mesh geometry={profile} material={material} onClick={select} />{outline}</group>
+  if (profile) return <group position={shifted} rotation={posed}><mesh geometry={profile} material={hullMaterial} onClick={select} />{outline}</group>
   if(kit.shape==='round') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><cylinderGeometry args={[Math.min(w,d)*.5,Math.min(w,d)*.5,h,8]} /></mesh>{faces}{outline}</group>
   if(kit.shape==='tapered'||kit.shape==='picket') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><coneGeometry args={[Math.max(w,d)*.58,h,kit.shape==='picket'?4:8]} /></mesh>{faces}{outline}</group>
   if(kit.shape==='soft') return <group position={shifted} rotation={posed}><mesh material={material} onClick={select}><dodecahedronGeometry args={[Math.max(w,h,d)*.58,0]} /></mesh>{faces}{outline}</group>

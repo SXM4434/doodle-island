@@ -11,13 +11,14 @@ const FRONT_W = 12
 const HEIGHT = 14
 const DEPTH = 10
 
-type Masks = Partial<Record<ConstructionView, Uint8Array>>
+interface ProfileMask { inside: Uint8Array; color: Float32Array; hasInk: Uint8Array }
+type Masks = Partial<Record<ConstructionView, ProfileMask>>
 
 function hasInk(strokes: Stroke[] | undefined): boolean {
   return Boolean(strokes?.some((stroke) => !stroke.erase && stroke.pts.length))
 }
 
-function maskFor(strokes: Stroke[], width: number, height: number): Uint8Array {
+function maskFor(strokes: Stroke[], width: number, height: number): ProfileMask {
   const px = 192
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = px
@@ -37,22 +38,31 @@ function maskFor(strokes: Stroke[], width: number, height: number): Uint8Array {
     if (x > 0) push(at - 1); if (x < px - 1) push(at + 1)
     if (y > 0) push(at - px); if (y < px - 1) push(at + px)
   }
-  const out = new Uint8Array(width * height)
+  const inside = new Uint8Array(width * height)
+  const color = new Float32Array(width * height * 3)
+  const inked = new Uint8Array(width * height)
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const startX = Math.floor(x * px / width), endX = Math.ceil((x + 1) * px / width)
     const startY = Math.floor(y * px / height), endY = Math.ceil((y + 1) * px / height)
-    let filled = false
-    for (let py = startY; py < endY && !filled; py++) for (let pxi = startX; pxi < endX; pxi++) {
+    let filled = false, r = 0, g = 0, b = 0, n = 0
+    for (let py = startY; py < endY; py++) for (let pxi = startX; pxi < endX; pxi++) {
       const at = py * px + pxi
-      if (pixels[at * 4 + 3] > 25 || !outside[at]) { filled = true; break }
+      const inkAlpha = pixels[at * 4 + 3]
+      if (inkAlpha > 25 || !outside[at]) filled = true
+      // The player's actual ink color carries into 3D — a drawing is not a
+      // grayscale stencil for a stock material.
+      if (inkAlpha > 90) { r += pixels[at * 4]; g += pixels[at * 4 + 1]; b += pixels[at * 4 + 2]; n++ }
     }
-    out[y * width + x] = filled ? 1 : 0
+    const cell = y * width + x
+    inside[cell] = filled ? 1 : 0
+    if (n > 0) { inked[cell] = 1; color[cell * 3] = r / n / 255; color[cell * 3 + 1] = g / n / 255; color[cell * 3 + 2] = b / n / 255 }
   }
-  return out
+  return { inside, color, hasInk: inked }
 }
 
-function addQuad(data: number[], a: number[], b: number[], c: number[], d: number[]): void {
+function addQuad(data: number[], colors: number[], rgb: [number, number, number], a: number[], b: number[], c: number[], d: number[]): void {
   data.push(...a, ...b, ...c, ...a, ...c, ...d)
+  for (let i = 0; i < 6; i++) colors.push(rgb[0], rgb[1], rgb[2])
 }
 
 export function profileHullGeometry(
@@ -60,6 +70,7 @@ export function profileHullGeometry(
   width: number,
   height: number,
   depth: number,
+  baseColor = '#b87945',
 ): THREE.BufferGeometry | null {
   if (!hasInk(views.front) && !hasInk(views.side) && !hasInk(views.top)) return null
 
@@ -74,29 +85,44 @@ export function profileHullGeometry(
 
   let count = 0
   for (let y = 0; y < HEIGHT; y++) for (let z = 0; z < DEPTH; z++) for (let x = 0; x < FRONT_W; x++) {
-    const front = !masks.front || masks.front[y * FRONT_W + x]
-    const side = !masks.side || masks.side[y * DEPTH + z]
-    const top = !masks.top || masks.top[z * FRONT_W + x]
+    const front = !masks.front || masks.front.inside[y * FRONT_W + x]
+    const side = !masks.side || masks.side.inside[y * DEPTH + z]
+    const top = !masks.top || masks.top.inside[z * FRONT_W + x]
     if (front && side && top) { filled[index(x, y, z)] = 1; count++ }
   }
   if (!count) return null
 
+  const base = new THREE.Color(baseColor)
+  const cellColor = (x: number, y: number, z: number): [number, number, number] => {
+    // Priority: front ink → top ink → side ink → the part's chosen paint. This is
+    // how the picked palette genuinely reaches the 3D output: it colors every
+    // region the player left as plain enclosed paper.
+    const f = masks.front, t = masks.top, s = masks.side
+    if (f?.hasInk[y * FRONT_W + x]) { const i = (y * FRONT_W + x) * 3; return [f.color[i], f.color[i + 1], f.color[i + 2]] }
+    if (t?.hasInk[z * FRONT_W + x]) { const i = (z * FRONT_W + x) * 3; return [t.color[i], t.color[i + 1], t.color[i + 2]] }
+    if (s?.hasInk[y * DEPTH + z]) { const i = (y * DEPTH + z) * 3; return [s.color[i], s.color[i + 1], s.color[i + 2]] }
+    return [base.r, base.g, base.b]
+  }
+
   const verts: number[] = []
+  const colors: number[] = []
   const xAt = (x: number) => -width / 2 + x * width / FRONT_W
   const yAt = (y: number) => -height / 2 + y * height / HEIGHT
   const zAt = (z: number) => -depth / 2 + z * depth / DEPTH
   for (let y = 0; y < HEIGHT; y++) for (let z = 0; z < DEPTH; z++) for (let x = 0; x < FRONT_W; x++) {
     if (!occupied(x, y, z)) continue
     const x0=xAt(x), x1=xAt(x+1), y0=yAt(y), y1=yAt(y+1), z0=zAt(z), z1=zAt(z+1)
-    if (!occupied(x, y, z + 1)) addQuad(verts, [x0,y0,z1], [x1,y0,z1], [x1,y1,z1], [x0,y1,z1])
-    if (!occupied(x, y, z - 1)) addQuad(verts, [x1,y0,z0], [x0,y0,z0], [x0,y1,z0], [x1,y1,z0])
-    if (!occupied(x + 1, y, z)) addQuad(verts, [x1,y0,z1], [x1,y0,z0], [x1,y1,z0], [x1,y1,z1])
-    if (!occupied(x - 1, y, z)) addQuad(verts, [x0,y0,z0], [x0,y0,z1], [x0,y1,z1], [x0,y1,z0])
-    if (!occupied(x, y + 1, z)) addQuad(verts, [x0,y1,z1], [x1,y1,z1], [x1,y1,z0], [x0,y1,z0])
-    if (!occupied(x, y - 1, z)) addQuad(verts, [x0,y0,z0], [x1,y0,z0], [x1,y0,z1], [x0,y0,z1])
+    const rgb = cellColor(x, y, z)
+    if (!occupied(x, y, z + 1)) addQuad(verts, colors, rgb, [x0,y0,z1], [x1,y0,z1], [x1,y1,z1], [x0,y1,z1])
+    if (!occupied(x, y, z - 1)) addQuad(verts, colors, rgb, [x1,y0,z0], [x0,y0,z0], [x0,y1,z0], [x1,y1,z0])
+    if (!occupied(x + 1, y, z)) addQuad(verts, colors, rgb, [x1,y0,z1], [x1,y0,z0], [x1,y1,z0], [x1,y1,z1])
+    if (!occupied(x - 1, y, z)) addQuad(verts, colors, rgb, [x0,y0,z0], [x0,y0,z1], [x0,y1,z1], [x0,y1,z0])
+    if (!occupied(x, y + 1, z)) addQuad(verts, colors, rgb, [x0,y1,z1], [x1,y1,z1], [x1,y1,z0], [x0,y1,z0])
+    if (!occupied(x, y - 1, z)) addQuad(verts, colors, rgb, [x0,y0,z0], [x1,y0,z0], [x1,y0,z1], [x0,y0,z1])
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
   geometry.computeVertexNormals()
   return geometry
 }

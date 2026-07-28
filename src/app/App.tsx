@@ -53,6 +53,7 @@ export default function App() {
   // Do not mount R3F at all until Three itself can bind a renderer. A nominal
   // `getContext()` is not enough in sandboxed previews and leaves a blue canvas.
   const [rendererReady] = useState(() => canRenderIsland())
+  const [canvasFailed, setCanvasFailed] = useState(false)
   const [drawingSelf, setDrawingSelf] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   useEffect(() => {
@@ -68,6 +69,8 @@ export default function App() {
         dpr={[1, 1.5]}
         fallback={<div className="webgl-unavailable"><b>Doodle Island needs WebGL</b><span>This browser cannot draw the island. Try an up-to-date desktop browser with hardware acceleration enabled.</span></div>}
         gl={{ antialias: false, alpha: false, powerPreference: 'default' }}
+        onCreated={({ gl, scene }) => { gl.setClearColor('#8ed0dd', 1); scene.background = null }}
+        onError={() => setCanvasFailed(true)}
         camera={{ fov: 45, near: 0.1, far: 400 }}
         shadows={false}
         frameloop={started ? 'always' : 'demand'}
@@ -107,7 +110,7 @@ export default function App() {
           {started && <InteractDriver />}
         </Suspense>
       </Canvas>}
-      {!rendererReady && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view is unavailable in this preview.</b><span>This viewer cannot create a Three.js WebGL renderer. The island is not being started, so there is no blue game screen.</span></div></div>}
+      {(!rendererReady || canvasFailed) && <div className="renderer-blocker"><div><b>Doodle Island’s 3D view is unavailable in this preview.</b><span>This viewer cannot create a Three.js WebGL renderer. The island is not being started, so there is no blank game screen.</span></div></div>}
       <TitleCard onDrawSelf={() => setDrawingSelf(true)} rendererReady={rendererReady} />
       {started && <HUD onOpenSettings={() => setSettingsOpen(true)} />}
       {started && <InteractionPrompt />}

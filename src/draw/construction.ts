@@ -19,7 +19,7 @@ export const FORMS_FOR_PART = (key: string): Array<{ label: string; shape: PartS
   if (key === 'flame') return [{ label:'soft', shape:'soft' }, { label:'pointed', shape:'tapered' }, { label:'chunky', shape:'picket' }]
   return [{ label:'square', shape:'square' }, { label:'rounded', shape:'soft' }, { label:'tapered', shape:'tapered' }]
 }
-export interface ConstructionPart { key: string; label: string; prompt: string; fitHint: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
+export interface ConstructionPart { key: string; label: string; prompt: string; fitHint: string; assembly: string; optional?: boolean; views: ConstructionView[]; kit: PartKit }
 export interface SupportChoice { value: ConstructionSupport; label: string; hint: string }
 export function supportsFor(key: CraftKey, form?: ObjectForm): SupportChoice[] {
   if (key === 'fence') return [{ value:'paired-posts', label:'paired posts', hint:'two sturdy anchors' }, { value:'picket-run', label:'picket run', hint:'a close little row' }]
@@ -62,32 +62,32 @@ const kit = (base:PartKit, extra:Partial<PartKit>={}) => ({...base,...extra})
 export function itemRoute(key: CraftKey): ItemRoute { return ['furniture', 'fence', 'campfire'].includes(key) ? 'constructed' : 'paper' }
 export function constructionParts(key: CraftKey, form?: ObjectForm): ConstructionPart[] {
   if (key === 'fence') return [
-    { key:'post', label:'Post', prompt:'Start with one sturdy post.', fitHint:'Make it tall and narrow: a post, not a whole fence.', views:['front','side'], kit:kit(wood,{shape:'picket',height:1.25,depth:.8}) },
-    { key:'rail', label:'Rail', prompt:'Make the bar that joins your posts.', fitHint:'Make it long and low: this is the joining bar.', views:['front','top'], kit:kit(wood,{shape:'round',width:1.5,height:.45,depth:.7}) },
-    { key:'board', label:'Fence face', prompt:'Give your fence its visible personality.', fitHint:'Make a broad, shallow panel that can sit between posts.', views:['front','side'], kit:kit(wood,{shape:'square',width:1.2,height:.8,depth:.5}) },
-    { key:'cap', label:'Top detail', prompt:'Optional: add a small finishing piece.', fitHint:'Keep it small—a cap or little finishing flourish.', views:['front'], optional:true, kit:kit(wood,{shape:'tapered',width:1.2,height:.3}) },
+    { key:'post', label:'Post', prompt:'Start with one sturdy post.', fitHint:'Make it tall and narrow: a post, not a whole fence.', assembly:'Repeated as the fence\'s upright anchors; the rig plants each copy in the ground.', views:['front','side'], kit:kit(wood,{shape:'picket',height:1.25,depth:.8}) },
+    { key:'rail', label:'Rail', prompt:'Make the bar that joins your posts.', fitHint:'Make it long and low: this is the joining bar.', assembly:'Stretched between your posts at two heights to join them.', views:['front','top'], kit:kit(wood,{shape:'round',width:1.5,height:.45,depth:.7}) },
+    { key:'board', label:'Fence face', prompt:'Give your fence its visible personality.', fitHint:'Make a broad, shallow panel that can sit between posts.', assembly:'Mounted between the posts as the visible panel.', views:['front','side'], kit:kit(wood,{shape:'square',width:1.2,height:.8,depth:.5}) },
+    { key:'cap', label:'Top detail', prompt:'Optional: add a small finishing piece.', fitHint:'Keep it small—a cap or little finishing flourish.', assembly:'Sits along the very top of the finished fence.', views:['front'], optional:true, kit:kit(wood,{shape:'tapered',width:1.2,height:.3}) },
   ]
   if (key === 'campfire') return [
-    { key:'flame', label:'Flame', prompt:'Give the fire its hand-drawn flicker.', fitHint:'Make one upright flame shape that can rise from the logs.', views:['front','side'], kit:kit(fire,{shape:'tapered',height:1.3,depth:.6}) },
-    { key:'log', label:'Log', prompt:'Make one log for the crossed firewood.', fitHint:'Make it long and low so the rig can cross it safely.', views:['side','top'], kit:kit(wood,{shape:'round',width:1.25,height:.45,depth:.65}) },
-    { key:'stone', label:'Ring stone', prompt:'Optional: draw one stone for the ring.', fitHint:'Keep it squat and rounded for the protective stone ring.', views:['top','front'], optional:true, kit:kit(stone,{shape:'soft',width:.6,height:.45,depth:.6}) },
+    { key:'flame', label:'Flame', prompt:'Give the fire its hand-drawn flicker.', fitHint:'Make one upright flame shape that can rise from the logs.', assembly:'Rises from the crossed logs at the fire\'s heart.', views:['front','side'], kit:kit(fire,{shape:'tapered',height:1.3,depth:.6}) },
+    { key:'log', label:'Log', prompt:'Make one log for the crossed firewood.', fitHint:'Make it long and low so the rig can cross it safely.', assembly:'Duplicated and crossed to form the firewood base.', views:['side','top'], kit:kit(wood,{shape:'round',width:1.25,height:.45,depth:.65}) },
+    { key:'stone', label:'Ring stone', prompt:'Optional: draw one stone for the ring.', fitHint:'Keep it squat and rounded for the protective stone ring.', assembly:'Repeated around the fire as its protective ring.', views:['top','front'], optional:true, kit:kit(stone,{shape:'soft',width:.6,height:.45,depth:.6}) },
   ]
   if (form === 'chair') return [
-    { key:'back', label:'Chair back', prompt:'Shape the tall, friendly back.', fitHint:'Make it taller than it is wide so it reads as a backrest.', views:['front','side'], kit:kit(wood,{shape:'soft',width:1.1,height:1.1,depth:.35}) },
-    { key:'seat', label:'Seat', prompt:'Draw the cushion or wooden seat top.', fitHint:'Make it broad and shallow—a body can sit on it.', views:['top','side'], kit:kit(wood,{shape:'soft',width:1.1,height:.4,depth:1}) },
-    { key:'leg', label:'Leg', prompt:'Make one leg; the chair repeats it.', fitHint:'Make it narrow and upright; the rig repeats it into stable feet.', views:['front','side'], kit:kit(wood,{shape:'round',width:.35,height:.8,depth:.35}) },
-    { key:'detail', label:'Extra detail', prompt:'Optional: arm, finial, or trim.', fitHint:'Keep it a small accent that sits on the chair, not a new main part.', views:['front'], optional:true, kit:kit(wood) },
+    { key:'back', label:'Chair back', prompt:'Shape the tall, friendly back.', fitHint:'Make it taller than it is wide so it reads as a backrest.', assembly:'Attached upright at the rear edge of your seat.', views:['front','side'], kit:kit(wood,{shape:'soft',width:1.1,height:1.1,depth:.35}) },
+    { key:'seat', label:'Seat', prompt:'Draw the cushion or wooden seat top.', fitHint:'Make it broad and shallow—a body can sit on it.', assembly:'The platform everything joins: back above, legs below.', views:['top','side'], kit:kit(wood,{shape:'soft',width:1.1,height:.4,depth:1}) },
+    { key:'leg', label:'Leg', prompt:'Make one leg; the chair repeats it.', fitHint:'Make it narrow and upright; the rig repeats it into stable feet.', assembly:'Copied into a stable set under the seat corners.', views:['front','side'], kit:kit(wood,{shape:'round',width:.35,height:.8,depth:.35}) },
+    { key:'detail', label:'Extra detail', prompt:'Optional: arm, finial, or trim.', fitHint:'Keep it a small accent that sits on the chair, not a new main part.', assembly:'Placed as an accent on the assembled chair.', views:['front'], optional:true, kit:kit(wood) },
   ]
   if (form === 'planter') return [
-    { key:'pot', label:'Pot', prompt:'Shape the planter’s main body.', fitHint:'Make it wider at the body than a leaf: this holds the soil.', views:['front','top'], kit:kit(wood,{shape:'tapered',width:1.2,height:1,depth:1}) },
-    { key:'rim', label:'Rim', prompt:'Add the top edge of the pot.', fitHint:'Make a low, wide lip that can sit around the pot opening.', views:['front','top'], kit:kit(wood,{shape:'round',width:1.2,height:.3,depth:1}) },
-    { key:'leaf', label:'Leaf', prompt:'Draw one leaf; the planter repeats it.', fitHint:'Make a single narrow leaf; the rig gathers it into a plant.', views:['front','side'], kit:kit(wood,{shape:'soft',width:.55,height:.8,depth:.2}) },
-    { key:'detail', label:'Extra detail', prompt:'Optional: band or badge.', fitHint:'Keep it a small decoration that wraps or rests on the planter.', views:['front'], optional:true, kit:kit(wood) },
+    { key:'pot', label:'Pot', prompt:'Shape the planter’s main body.', fitHint:'Make it wider at the body than a leaf: this holds the soil.', assembly:'The planter body; soil and plant anchor inside it.', views:['front','top'], kit:kit(wood,{shape:'tapered',width:1.2,height:1,depth:1}) },
+    { key:'rim', label:'Rim', prompt:'Add the top edge of the pot.', fitHint:'Make a low, wide lip that can sit around the pot opening.', assembly:'Wrapped around the pot\'s opening as its top edge.', views:['front','top'], kit:kit(wood,{shape:'round',width:1.2,height:.3,depth:1}) },
+    { key:'leaf', label:'Leaf', prompt:'Draw one leaf; the planter repeats it.', fitHint:'Make a single narrow leaf; the rig gathers it into a plant.', assembly:'Repeated and fanned from the soil as the plant.', views:['front','side'], kit:kit(wood,{shape:'soft',width:.55,height:.8,depth:.2}) },
+    { key:'detail', label:'Extra detail', prompt:'Optional: band or badge.', fitHint:'Keep it a small decoration that wraps or rests on the planter.', assembly:'Placed as a small decoration on the pot.', views:['front'], optional:true, kit:kit(wood) },
   ]
   return [
-    { key:'top', label:'Table top', prompt:'Shape the surface of your table.', fitHint:'Make a wide, shallow top with room for things to rest on.', views:['top','side'], kit:kit(wood,{shape:'soft',width:1.5,height:.35,depth:1.15}) },
-    { key:'apron', label:'Front rail', prompt:'Make the front support below the top.', fitHint:'Make a long, low rail that can support the top.', views:['front','side'], kit:kit(wood,{shape:'square',width:1.25,height:.5,depth:.35}) },
-    { key:'leg', label:'Leg', prompt:'Make one leg; the table repeats it.', fitHint:'Make it narrow and upright; the rig repeats it into stable legs.', views:['front','side'], kit:kit(wood,{shape:'round',width:.3,height:1,depth:.3}) },
-    { key:'detail', label:'Extra detail', prompt:'Optional: trim or ornament.', fitHint:'Keep it small so it reads as table trim, not another tabletop.', views:['front'], optional:true, kit:kit(wood) },
+    { key:'top', label:'Table top', prompt:'Shape the surface of your table.', fitHint:'Make a wide, shallow top with room for things to rest on.', assembly:'The surface the rig raises and levels; legs meet its underside.', views:['top','side'], kit:kit(wood,{shape:'soft',width:1.5,height:.35,depth:1.15}) },
+    { key:'apron', label:'Front rail', prompt:'Make the front support below the top.', fitHint:'Make a long, low rail that can support the top.', assembly:'Fitted under the top\'s front edge as a support beam.', views:['front','side'], kit:kit(wood,{shape:'square',width:1.25,height:.5,depth:.35}) },
+    { key:'leg', label:'Leg', prompt:'Make one leg; the table repeats it.', fitHint:'Make it narrow and upright; the rig repeats it into stable legs.', assembly:'Copied into a stable set under the tabletop.', views:['front','side'], kit:kit(wood,{shape:'round',width:.3,height:1,depth:.3}) },
+    { key:'detail', label:'Extra detail', prompt:'Optional: trim or ornament.', fitHint:'Keep it small so it reads as table trim, not another tabletop.', assembly:'Placed as an accent on the assembled table.', views:['front'], optional:true, kit:kit(wood) },
   ]
 }

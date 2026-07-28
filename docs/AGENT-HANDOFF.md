@@ -128,6 +128,13 @@ git status --short
 git push origin master
 ```
 
+## Studio polish state (2026-07-28)
+
+- Build preview no longer zoom-fights the studio scroll: `OrbitControls` has `enableZoom={false}`, calm rotate speed, and the canvas is clipped inside `.build-stage` (`c740aff`).
+- Side/top construction boards now show the player's own front profile as a 13%-alpha spatial cue — their drawing, never a supplied template (`a1b4410`).
+- Character Studio has a live pose strip: front/side/back thumbnails re-render on every config change so a broken pose is caught before saving (`a1b4410`).
+- Visually verified in-sandbox: Character Studio layout, part rail, pose strip, and inspector render correctly (screenshot check). Item Studio 3D preview still needs a WebGL-capable browser check.
+
 ## Recent commits
 
 - `1096d42 fix: surface failed canvas instead of black screen`

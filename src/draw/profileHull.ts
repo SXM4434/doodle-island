@@ -50,8 +50,14 @@ function maskFor(strokes: Stroke[], width: number, height: number): ProfileMask 
       const inkAlpha = pixels[at * 4 + 3]
       if (inkAlpha > 25 || !outside[at]) filled = true
       // The player's actual ink color carries into 3D — a drawing is not a
-      // grayscale stencil for a stock material.
-      if (inkAlpha > 90) { r += pixels[at * 4]; g += pixels[at * 4 + 1]; b += pixels[at * 4 + 2]; n++ }
+      // grayscale stencil for a stock material. The restyle engine's neutral paper
+      // fill (cream ~ 255,248,234) is NOT ink: those regions fall through to the
+      // part's chosen paint so the palette swatches genuinely color the volume.
+      if (inkAlpha > 90) {
+        const pr = pixels[at * 4], pg = pixels[at * 4 + 1], pb = pixels[at * 4 + 2]
+        const isPaperFill = pr > 240 && pg > 233 && pb > 219 && pb < 250
+        if (!isPaperFill) { r += pr; g += pg; b += pb; n++ }
+      }
     }
     const cell = y * width + x
     inside[cell] = filled ? 1 : 0

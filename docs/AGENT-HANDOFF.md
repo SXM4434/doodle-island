@@ -128,6 +128,24 @@ git status --short
 git push origin master
 ```
 
+## Rebuild verification results (2026-07-29)
+
+End-to-end tests run in a live browser against the real modules (not unit stubs):
+
+| Chain | Result |
+|---|---|
+| Character: draw on hair board → strokes land in dashed region | PASS (screenshot) |
+| Character: save → reload → `loadCharacter()` → `drawCharacter()` renders mark | PASS (pixel diff: 303px; enlarged render confirms placement) |
+| Construction: closed tomato loop → `profileHullGeometry` | PASS (5,424 verts, color attribute present) |
+| Construction: ink color carried to hull + paint swatch fills paper regions | PASS after fix `7011280` (3,432 tomato verts + 792 blue paint verts) |
+| Conversion routing: fence/chair/table/planter/campfire → correct archetype | PASS |
+| Paper route: strokes → world texture keeps leaf/sun ink colors | PASS (15,026 leaf px, 3,317 sun px) |
+| Craft: views/kits/support persist onto DrawnItem | PASS |
+| Place: physical builds restricted to cottage plot (by design) → commit inside plot | PASS |
+| World save (debounced 1s) → reload → fence rehydrates with views/kit/support | PASS |
+
+Known behavior worth remembering: physical builds (fence/furniture/campfire) may only be placed on the player plot (`PLAYER_PLOT` in `src/sim/placement.ts`); world save is debounced 1s.
+
 ## Studio polish state (2026-07-28)
 
 - Build preview no longer zoom-fights the studio scroll: `OrbitControls` has `enableZoom={false}`, calm rotate speed, and the canvas is clipped inside `.build-stage` (`c740aff`).

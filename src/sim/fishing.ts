@@ -78,6 +78,7 @@ export function fishInteract(): boolean {
   }
   if (fishing.phase === 'bite') {
     const kind = fishing.kind!
+    const pond = Math.hypot(fishing.x - POND.x, fishing.z - POND.z) < 14
     fishing.phase = 'idle'
     fishing.kind = null
     const g = useGame.getState()
@@ -86,6 +87,12 @@ export function fishInteract(): boolean {
     g.deed('catch-' + kind)
     g.say(kind === 'inkkoi' ? 'INK KOI! A rare night catch! +3 fish' : `Caught a ${kind}! +${reward} fish`)
     sfx.chime()
+    // Shore Finds reeled up from the water. Starting value 7%; pond and sea
+    // hold different treasures so both spots stay worth visiting.
+    if (Math.random() < 0.07) {
+      const pool = (pond ? ['old-compass'] : ['sea-marble', 'tiny-anchor']).filter((k) => !g.treasures.includes(k))
+      if (pool.length) g.foundTreasure(pool[Math.floor(Math.random() * pool.length)])
+    }
     return true
   }
   return true // waiting: don't recast

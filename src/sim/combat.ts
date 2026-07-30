@@ -228,7 +228,10 @@ export function swingHitMobs(dmg: number): boolean {
       if (m.hp <= 0) {
         m.state = 'dying'; m.stateAt = now
         dropInk(m.x, m.z, m.kind === 'scribble' ? 2 : 1)
-        useGame.getState().deed('slay-' + m.kind)
+        const g = useGame.getState()
+        g.deed('slay-' + m.kind)
+        // Shore Find from night hunting: the ink pebble. Starting value 8% per kill.
+        if (Math.random() < 0.08 && !g.treasures.includes('ink-pebble')) g.foundTreasure('ink-pebble')
       }
     }
   }

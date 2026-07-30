@@ -110,7 +110,19 @@ export const refs = {
   returnPos: new THREE.Vector3(0, 3, -38),
 }
 
+// The seven Shore Finds. Sources are spread across the existing verbs so the
+// collection rewards playing the whole island, not one grind spot.
+export const TREASURE_LABEL: Record<string, string> = {
+  'pearl-button': 'Pearl Button', 'sea-marble': 'Sea Marble', 'tiny-anchor': 'Tiny Anchor',
+  'moon-shell': 'Moon Shell', 'ink-pebble': 'Ink Pebble', 'old-compass': 'Old Compass', 'glass-feather': 'Glass Feather',
+}
+export const TREASURE_SOURCE: Record<string, string> = {
+  'pearl-button': 'beach shells', 'sea-marble': 'fishing the sea', 'tiny-anchor': 'fishing the sea',
+  'moon-shell': 'beach shells', 'ink-pebble': 'night scribbles', 'old-compass': 'fishing the pond', 'glass-feather': 'chopping trees',
+}
+
 export const DEED_LABEL: Record<string, string> = {
+  'shore-find': 'Shore Curator',
   'gather-wood': 'First Timber', 'gather-stone': 'Rock Collector', 'gather-fiber': 'Grass Whisperer',
   'gather-shine': 'Beachcomber', 'gather-berry': 'Berry Nice', 'gather-ink': 'Night Hunter',
   'craft-axe': 'Axe Artist', 'craft-pick': 'Pick Picasso', 'craft-sword': 'Blade Doodler',
@@ -174,6 +186,11 @@ interface State {
   goldenInk: boolean // bought from the shop — unlocks gold in the palette
   islanders: IslanderBonds // named-islander friendships and their permanent payoffs
   setIslanders: (next: Partial<IslanderBonds>) => void
+  // The Shore Finds collection (gap analysis: ONE collection set with a visible
+  // world display, not a menu checklist). Rare finds while gathering; each new
+  // find becomes a permanent exhibit on the driftwood shelf near the dock.
+  treasures: string[]
+  foundTreasure: (key: string) => void
   shopOpen: boolean
   chestOpen: number | null
   homeStorage: Slot[][]
@@ -228,7 +245,7 @@ const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(
 // Named islander roles (gap analysis: one durable identity each, no dialogue trees).
 // 'none' → hasn't asked yet · 'asked' → request live · 'done' → payoff active forever.
 export interface IslanderBonds { miso: 'none' | 'asked' | 'done'; sluggo: 'none' | 'asked' | 'done'; sluggoFindDay: string }
-interface SaveData { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][]; personalHomeAdded?: boolean; islanders?: IslanderBonds }
+interface SaveData { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][]; personalHomeAdded?: boolean; islanders?: IslanderBonds; treasures?: string[] }
 function loadSave(): SaveData | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
@@ -271,6 +288,14 @@ export const useGame = create<State>((set, get) => ({
   goldenInk: saved?.goldenInk ?? false,
   islanders: saved?.islanders ?? { miso: 'none', sluggo: 'none', sluggoFindDay: '' },
   setIslanders: (next) => set({ islanders: { ...get().islanders, ...next } }),
+  treasures: saved?.treasures ?? [],
+  foundTreasure: (key) => {
+    const g = get()
+    if (g.treasures.includes(key)) return
+    set({ treasures: [...g.treasures, key] })
+    g.say(`✦ Shore find: ${TREASURE_LABEL[key] ?? key}! It takes its place on the driftwood shelf by the dock.`)
+    g.deed('shore-find')
+  },
   shopOpen: false,
   chestOpen: null,
   homeStorage: saved?.homeStorage ?? [],
@@ -342,6 +367,13 @@ export const useGame = create<State>((set, get) => ({
         })
       }
       set({ nodes, drops })
+      // Shore Finds from gathering. Starting value 6% per depleted node; tune from
+      // playtests (target: first find inside the first two sessions).
+      if (Math.random() < 0.06) {
+        const g = get()
+        const pool = (n.type === 'shell' ? ['pearl-button', 'moon-shell'] : n.type === 'tree' ? ['glass-feather'] : []).filter((k) => !g.treasures.includes(k))
+        if (pool.length) g.foundTreasure(pool[Math.floor(Math.random() * pool.length)])
+      }
     } else {
       set({ nodes })
     }
@@ -709,7 +741,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage, personalHomeAdded: true, islanders: s.islanders }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage, personalHomeAdded: true, islanders: s.islanders, treasures: s.treasures }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)

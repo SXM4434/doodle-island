@@ -11,6 +11,7 @@ import { nearestRipePlant } from '../world/Garden'
 import { critterSay } from '../actors/Critters'
 import { islanderSay } from '../actors/Islanders'
 import { visitorSay } from '../actors/DockVisitor'
+import { shelfSay } from '../world/ShoreShelf'
 import { tryEnterHouse, tryExitHouse, chestRoomNearby, sleepAtHome } from '../world/Interiors'
 import { restAtCampfire } from '../world/Campfires'
 import { collectDailyBottle } from '../world/DailyBottle'
@@ -104,6 +105,7 @@ export function tryInteract(): void {
 
   // island regulars before ambient critters: named people own the interaction.
   if (visitorSay()) { sfx.chime(); return }
+  if (shelfSay()) { sfx.knock('soft'); return }
   if (islanderSay()) { sfx.knock('soft'); return }
   // wild critter nearby? they have opinions
   if (critterSay()) { sfx.knock('soft'); return }

@@ -30,6 +30,7 @@ import { Drops } from '../actors/Drops'
 import { Mobs } from '../actors/Mobs'
 import { RemotePlayers, NetSync } from '../actors/RemotePlayers'
 import { DockVisitor } from '../actors/DockVisitor'
+import { ShoreShelf } from '../world/ShoreShelf'
 import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { HUD, TitleCard } from './HUD'
@@ -96,6 +97,7 @@ export default function App() {
           {started && <Critters />}
           {started && <Islanders />}
           {started && <DockVisitor />}
+          <ShoreShelf />
           {started && <DailyBottle />}
           {started && <Fishing />}
           {started && <ShopStall />}

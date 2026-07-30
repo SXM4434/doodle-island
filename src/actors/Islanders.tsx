@@ -89,7 +89,37 @@ export function nearestIslander(): { id: IslanderId; line: string } | null {
   for (const n of ISLANDERS) { const b = brains.get(n.id); if (!b) continue; const d = Math.hypot(b.x - p.x, b.z - p.z); if (d < distance) { best = { id: n.id, line: n.line }; distance = d } }
   return best
 }
+
+// One durable role each (gap analysis): a specific drawn request, then a permanent
+// payoff. No dialogue trees — the relationship lives in world state, not menus.
 export function islanderSay(): boolean {
   const n = nearestIslander(); if (!n) return false
-  useGame.getState().say(`${n.id}: “${n.line}”`); useGame.getState().deed(`meet-${n.id.toLowerCase()}`); return true
+  const g = useGame.getState()
+  g.deed(`meet-${n.id.toLowerCase()}`)
+  const bonds = g.islanders
+  if (n.id === 'Miso') {
+    if (bonds.miso === 'none') { g.setIslanders({ miso: 'asked' }); g.say('Miso: “Draw the pond a decoration and place it by the water. Do that, and I’ll teach you what the fish told me.”'); return true }
+    if (bonds.miso === 'asked') { g.say('Miso: “The pond is still waiting for your drawn decoration on its shore…”'); return true }
+    g.say('Miso: “The pond loves your art. Fish bite faster here now — and the ink koi visits even in daylight.”'); return true
+  }
+  if (n.id === 'Sluggo') {
+    if (bonds.sluggo === 'none') { g.setIslanders({ sluggo: 'asked' }); g.say('Sluggo: “Draw me a trophy of something you found, and hang it near my beach. Then I’ll share what the tide brings in.”'); return true }
+    if (bonds.sluggo === 'asked') { g.say('Sluggo: “No rush… but my beach wall is still bare. A drawn trophy would suit it.”'); return true }
+    // Payoff: one rotating beach discovery per real day.
+    const today = new Date().toDateString()
+    if (bonds.sluggoFindDay === today) { g.say('Sluggo: “Tide’s brought nothing new since this morning. Come back tomorrow.”'); return true }
+    g.setIslanders({ sluggoFindDay: today })
+    const finds: Array<{ res: 'shine' | 'fiber' | 'berry'; n: number; note: string }> = [
+      { res: 'shine', n: 2, note: 'two glimmers tangled in kelp' },
+      { res: 'shine', n: 3, note: 'a whole pocket of sparkle under a stone' },
+      { res: 'fiber', n: 4, note: 'a bundle of washed-up reeds' },
+      { res: 'berry', n: 3, note: 'berries rolled down from the bluff' },
+    ]
+    const find = finds[(new Date().getDate() + today.length) % finds.length]
+    g.addRes(find.res, find.n)
+    g.say(`Sluggo: “Today the tide left ${find.note}.” +${find.n} ${find.res}`)
+    return true
+  }
+  g.say(`${n.id}: “${n.line}”`)
+  return true
 }

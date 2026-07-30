@@ -47,7 +47,11 @@ function nearestWater(): { x: number; z: number; pond: boolean } | null {
 function chooseCatch(pond: boolean): FishKind {
   const night = refs.time > 0.75 || refs.time < 0.02
   const roll = Math.random()
+  // Miso's payoff: once the pond has its drawn decoration, the ink koi visits
+  // the pond in daylight too (night keeps its higher odds everywhere).
+  const misoBond = useGame.getState().islanders.miso === 'done'
   if (night && roll < 0.22) return 'inkkoi'
+  if (misoBond && pond && roll < 0.1) return 'inkkoi'
   return pond ? 'doodlefish' : 'squiggle'
 }
 
@@ -64,7 +68,9 @@ export function fishInteract(): boolean {
     fishing.x = water.x
     fishing.z = water.z
     fishing.kind = chooseCatch(water.pond)
-    fishing.biteAt = now + 1300 + Math.random() * 2600
+    // Miso's pond blessing also shortens the wait at her pond.
+    const blessed = water.pond && useGame.getState().islanders.miso === 'done'
+    fishing.biteAt = now + (blessed ? 800 : 1300) + Math.random() * (blessed ? 1500 : 2600)
     fishing.expiresAt = fishing.biteAt + 1100
     useGame.getState().say('Cast! Keep an eye on the bobber…')
     sfx.swing()

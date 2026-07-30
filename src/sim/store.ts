@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import * as THREE from 'three'
 import type { Stroke } from '../draw/strokes'
-import { scatterNodes, type NodeType } from './terrain'
+import { scatterNodes, POND, type NodeType } from './terrain'
 import { placementProblem } from './placement'
 import { net } from '../net'
 
@@ -172,6 +172,8 @@ interface State {
   journalOpen: boolean
   bagOpen: boolean
   goldenInk: boolean // bought from the shop — unlocks gold in the palette
+  islanders: IslanderBonds // named-islander friendships and their permanent payoffs
+  setIslanders: (next: Partial<IslanderBonds>) => void
   shopOpen: boolean
   chestOpen: number | null
   homeStorage: Slot[][]
@@ -223,7 +225,10 @@ interface State {
 let dropId = 1
 const itemId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 
-interface SaveData { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][]; personalHomeAdded?: boolean }
+// Named islander roles (gap analysis: one durable identity each, no dialogue trees).
+// 'none' → hasn't asked yet · 'asked' → request live · 'done' → payoff active forever.
+export interface IslanderBonds { miso: 'none' | 'asked' | 'done'; sluggo: 'none' | 'asked' | 'done'; sluggoFindDay: string }
+interface SaveData { slots: Slot[]; placed: Placed[]; villagers?: Villager[]; plants?: Plant[]; project?: Project; journal?: Journal; goldenInk?: boolean; homeStorage?: Slot[][]; personalHomeAdded?: boolean; islanders?: IslanderBonds }
 function loadSave(): SaveData | null {
   try {
     const raw = localStorage.getItem('doodle-island-v1')
@@ -264,6 +269,8 @@ export const useGame = create<State>((set, get) => ({
   journalOpen: false,
   bagOpen: false,
   goldenInk: saved?.goldenInk ?? false,
+  islanders: saved?.islanders ?? { miso: 'none', sluggo: 'none', sluggoFindDay: '' },
+  setIslanders: (next) => set({ islanders: { ...get().islanders, ...next } }),
   shopOpen: false,
   chestOpen: null,
   homeStorage: saved?.homeStorage ?? [],
@@ -429,6 +436,15 @@ export const useGame = create<State>((set, get) => ({
     if (finishedResident) {
       set({ villagers: get().villagers.map(v => v.id === finishedResident.id ? { ...v, displayRequest: { ...v.displayRequest!, done: true } } : v) })
       g.say(`${finishedResident.name} loves your ${g.placing.cls} — it now has a place by their home!`)
+    }
+    // Named-islander requests complete through real placement, same as residents.
+    const bonds = get().islanders
+    if (bonds.miso === 'asked' && g.placing.cls === 'decoration' && Math.hypot(x - POND.x, z - POND.z) < 9) {
+      set({ islanders: { ...bonds, miso: 'done' } })
+      g.say('Miso purrs: “The pond finally has a face!” — fish bite faster here now.')
+    } else if (bonds.sluggo === 'asked' && g.placing.cls === 'wallhang' && Math.hypot(x - (-5), z - (-43)) < 9) {
+      set({ islanders: { ...get().islanders, sluggo: 'done' } })
+      g.say('Sluggo beams: “A real beach gallery!” — visit him daily for what the tide brings.')
     }
     g.deed('place-' + g.placing.cls)
     if (g.hint === 3) set({ hint: 4 })
@@ -693,7 +709,7 @@ useGame.subscribe(() => {
       const s = useGame.getState()
       localStorage.setItem(
         'doodle-island-v1',
-        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage, personalHomeAdded: true }),
+        JSON.stringify({ slots: s.slots, placed: s.placed, villagers: s.villagers, plants: s.plants, project: s.project, journal: s.journal, goldenInk: s.goldenInk, homeStorage: s.homeStorage, personalHomeAdded: true, islanders: s.islanders }),
       )
     } catch { /* storage full — skip */ }
   }, 1000)

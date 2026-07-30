@@ -70,7 +70,15 @@ export function getInteractionTarget(): InteractionTarget | null {
   const v = nearestQuestVillager()
   if (v) return { id: `villager-${v.id}`, label: v.name, detail: v.quest ? `E deliver ${v.quest.n} ${v.quest.res}` : v.displayRequest && !v.displayRequest.done ? `E hear their ${v.displayRequest.cls} idea` : 'E chat', verb: 'talk' }
   const islander = nearestIslander()
-  if (islander) return { id: `islander-${islander.id}`, label: islander.id, detail: 'E say hello', verb: 'talk' }
+  if (islander) {
+    const bonds = g.islanders
+    const detail = islander.id === 'Miso'
+      ? (bonds.miso === 'none' ? 'E hear her pond idea' : bonds.miso === 'asked' ? 'She wants a drawn decoration by the pond' : 'E chat with the pond keeper')
+      : islander.id === 'Sluggo'
+        ? (bonds.sluggo === 'none' ? 'E hear his beach idea' : bonds.sluggo === 'asked' ? 'He wants a drawn trophy by his beach' : bonds.sluggoFindDay === new Date().toDateString() ? 'E chat · tide gift claimed today' : 'E see what the tide brought')
+        : 'E say hello'
+    return { id: `islander-${islander.id}`, label: islander.id, detail, verb: 'talk' }
+  }
   const c = nearestCritter()
   if (c) return { id: `critter-${c.name}`, label: c.name, detail: 'E say hello', verb: 'talk' }
   const plant = nearestRipePlant()

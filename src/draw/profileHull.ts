@@ -1,15 +1,34 @@
 import * as THREE from 'three'
-import { type Stroke } from './strokes'
+import { drawStrokes, INKS, type Stroke } from './strokes'
 import { drawConvertedSketch } from './styleEngine'
 import type { ConstructionView } from '../sim/store'
+
+// Sampled cell colors snap to the game's crayon palette. Averaging antialiased
+// pixels produces muddy speckle; quantizing keeps the carved-toy two-tone read
+// (exact tomato contour, exact paint interior) that the art direction demands.
+const PALETTE = Object.values(INKS).map((hex) => {
+  const c = new THREE.Color(hex)
+  return [c.r * 255, c.g * 255, c.b * 255] as const
+})
+function snapToInk(r: number, g: number, b: number): readonly [number, number, number] {
+  let best = PALETTE[0], score = Infinity
+  for (const p of PALETTE) {
+    const d = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2
+    if (d < score) { score = d; best = p }
+  }
+  return best
+}
 
 // A small visual hull is the bridge between a player's orthographic drawings and a
 // chunky Doodle Island volume. Unlike contour extrusion, every occupied cell must
 // satisfy the visible front profile and (when supplied) the side/top profiles.
 // The deliberately small grid is a style constraint: carved toy facets, not a smooth mesh.
-const FRONT_W = 12
-const HEIGHT = 14
-const DEPTH = 10
+// 16×18×12 keeps the carved-toy facet read while letting notches, lobes, and
+// zigzags of a hand drawing survive voxelization (12×14 blurred a heart's lobes
+// into a blob in the three-chairs acceptance test).
+const FRONT_W = 16
+const HEIGHT = 18
+const DEPTH = 12
 
 interface ProfileMask { inside: Uint8Array; color: Float32Array; hasInk: Uint8Array }
 type Masks = Partial<Record<ConstructionView, ProfileMask>>
@@ -25,6 +44,14 @@ function maskFor(strokes: Stroke[], width: number, height: number): ProfileMask 
   const ctx = canvas.getContext('2d')!
   drawConvertedSketch(ctx, strokes, px, 'object')
   const pixels = ctx.getImageData(0, 0, px, px).data
+  // Color sampling uses the RAW ink pass, not the stylized restyle. The restyle's
+  // contour/edge treatment bleeds warm tones into cells and muddies the hull; raw
+  // strokes carry only the crayon colors the player actually picked.
+  const inkCanvas = document.createElement('canvas')
+  inkCanvas.width = inkCanvas.height = px
+  const inkCtx = inkCanvas.getContext('2d')!
+  drawStrokes(inkCtx, strokes, px)
+  const inkPixels = inkCtx.getImageData(0, 0, px, px).data
   // A profile is the enclosed player region, not its ink contour. Flood from the
   // canvas edge, then keep every unvisited transparent pixel as the player-made hull.
   const outside = new Uint8Array(px * px)
@@ -50,18 +77,19 @@ function maskFor(strokes: Stroke[], width: number, height: number): ProfileMask 
       const inkAlpha = pixels[at * 4 + 3]
       if (inkAlpha > 25 || !outside[at]) filled = true
       // The player's actual ink color carries into 3D — a drawing is not a
-      // grayscale stencil for a stock material. The restyle engine's neutral paper
-      // fill (cream ~ 255,248,234) is NOT ink: those regions fall through to the
-      // part's chosen paint so the palette swatches genuinely color the volume.
-      if (inkAlpha > 90) {
-        const pr = pixels[at * 4], pg = pixels[at * 4 + 1], pb = pixels[at * 4 + 2]
-        const isPaperFill = pr > 240 && pg > 233 && pb > 219 && pb < 250
-        if (!isPaperFill) { r += pr; g += pg; b += pb; n++ }
-      }
+      // grayscale stencil for a stock material. Sampling from the raw stroke pass
+      // means paper-fill/edge-treatment pixels never pollute the color; regions the
+      // player left blank fall through to the part's chosen paint swatch.
+      const rawAlpha = inkPixels[at * 4 + 3]
+      if (rawAlpha > 140) { r += inkPixels[at * 4]; g += inkPixels[at * 4 + 1]; b += inkPixels[at * 4 + 2]; n++ }
     }
     const cell = y * width + x
     inside[cell] = filled ? 1 : 0
-    if (n > 0) { inked[cell] = 1; color[cell * 3] = r / n / 255; color[cell * 3 + 1] = g / n / 255; color[cell * 3 + 2] = b / n / 255 }
+    // Ink rule: enough raw-stroke pixels (≈12% of the cell) claim the cell for the
+    // player's ink color; clean interiors below that stay paint. Balances honest
+    // contour color against speckling the whole volume.
+    const cellArea = (endX - startX) * (endY - startY)
+    if (n > cellArea * .12) { const snapped = snapToInk(r / n, g / n, b / n); inked[cell] = 1; color[cell * 3] = snapped[0] / 255; color[cell * 3 + 1] = snapped[1] / 255; color[cell * 3 + 2] = snapped[2] / 255 }
   }
   return { inside, color, hasInk: inked }
 }

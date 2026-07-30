@@ -516,6 +516,11 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .direct-control { padding:9px 0; border-bottom:1px solid rgba(51,41,31,.18); }.direct-control h3 { margin-bottom:6px; font-size:.76rem; }
 .direct-options { display:flex; flex-wrap:wrap; gap:5px; }.direct-options button { min-height:29px; padding:3px 7px; border:2px solid var(--ink); border-radius:8px; background:#fffdf4; font-size:.73rem; }.direct-options button.selected { background:#fff1bf; box-shadow:inset 0 0 0 2px var(--sun); }
 .direct-colors { display:flex; flex-wrap:wrap; gap:8px; }.direct-colors button { width:25px; height:25px; border:2px solid var(--ink); border-radius:50%; }.direct-colors button.selected { outline:3px solid var(--sun); outline-offset:2px; }
+.fine-tune { padding:6px 0; border-bottom:1px solid rgba(51,41,31,.18); }
+.fine-tune summary { cursor:pointer; padding:4px 0; color:#8a5a3b; font-size:.72rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; user-select:none; }
+.fine-tune summary:hover { color:var(--ink); }
+.fine-tune[open] summary { margin-bottom:2px; }
+.fine-tune .direct-dial { border-bottom:0; padding:5px 0; }
 .direct-dial { display:block; padding:8px 0; border-bottom:1px solid rgba(51,41,31,.18); font-size:.76rem; }.direct-dial span { display:flex; justify-content:space-between; }.direct-dial output { font-variant-numeric:tabular-nums; opacity:.65; }.direct-dial input { width:100%; margin-top:5px; accent-color:var(--leaf); }
 .reset-workbench { margin-top:10px; }
 .mark-editor { display:grid; grid-template-columns:1fr 150px; gap:10px; }.mark-editor p { margin:4px 0 9px; font-size:.74rem; line-height:1.35; opacity:.7; }.smart-suggestion { display:grid; gap:3px; margin-top:9px; padding:7px; border:1px dashed var(--leaf); border-radius:8px; background:#eef5e7; font-size:.7rem; line-height:1.25; }.smart-suggestion span { opacity:.7; }.smart-suggestion .btn { justify-self:start; padding:2px 6px; }.mark-tools { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }.mark-tools .tool-dot { width:29px; height:29px; }.mark-tools .ink { width:23px; height:23px; }.mark-paper { width:150px; aspect-ratio:1; border:2px solid var(--ink); border-radius:10px; background:#fffdf4; touch-action:none; cursor:crosshair; }

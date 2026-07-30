@@ -128,6 +128,14 @@ git status --short
 git push origin master
 ```
 
+## Three-chairs acceptance test (plan §5 items #1) — 2026-07-30
+
+Software-rendered the actual `profileHullGeometry` output for three intentionally different chair-back drawings (arch/tomato, zigzag/sky, heart/leaf) side by side:
+
+- v1 (12×14×10 grid, restyle-sampled colors): shapes distinguishable but muddy warm speckle everywhere; heart lobes blurred into a blob. FAIL on style.
+- Fixes: sample colors from the RAW stroke pass (not the restyle pass), snap sampled colors to the crayon palette, require ~12% cell ink coverage before a cell takes ink color, raise grid to 16×18×12 (`a64353a`).
+- v5 result: three clearly different silhouettes; contour carries the exact chosen ink; interiors take the paint swatch; carved-toy facets retained. PASS pending final human WebGL confirmation in-world.
+
 ## Rebuild verification results (2026-07-29)
 
 End-to-end tests run in a live browser against the real modules (not unit stubs):

@@ -8,6 +8,7 @@ import { ROOM, isInside, interiorSlot, chestRoomNearby, playerBedNearby, PLAYER_
 import { nearbyHomeBlueprint } from '../world/Homes'
 import { nearestCritter } from '../actors/Critters'
 import { nearestIslander } from '../actors/Islanders'
+import { visitorNearby, visitorGiftClaimed } from '../actors/DockVisitor'
 import { nearestQuestVillager } from '../actors/Villagers'
 import { nearestRipePlant } from '../world/Garden'
 import { nearestNode } from './Interact'
@@ -69,6 +70,8 @@ export function getInteractionTarget(): InteractionTarget | null {
   if (Math.hypot(p.x - TABLE.x, p.z - TABLE.z) < 2.6) return { id: 'table', label: 'Draw Table', detail: 'E create something useful', verb: 'draw' }
   const v = nearestQuestVillager()
   if (v) return { id: `villager-${v.id}`, label: v.name, detail: v.quest ? `E deliver ${v.quest.n} ${v.quest.res}` : v.displayRequest && !v.displayRequest.done ? `E hear their ${v.displayRequest.cls} idea` : 'E chat', verb: 'talk' }
+  const visitor = visitorNearby()
+  if (visitor) return { id: `visitor-${visitor.name}`, label: `${visitor.name} the traveler`, detail: visitorGiftClaimed() ? 'E chat with today’s visitor' : 'E welcome them ashore', verb: 'talk' }
   const islander = nearestIslander()
   if (islander) {
     const bonds = g.islanders

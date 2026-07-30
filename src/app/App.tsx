@@ -29,6 +29,7 @@ import { HeldItem } from '../actors/HeldItem'
 import { Drops } from '../actors/Drops'
 import { Mobs } from '../actors/Mobs'
 import { RemotePlayers, NetSync } from '../actors/RemotePlayers'
+import { DockVisitor } from '../actors/DockVisitor'
 import { Hearts } from './Hearts'
 import { InteractDriver } from '../sim/Interact'
 import { HUD, TitleCard } from './HUD'
@@ -94,6 +95,7 @@ export default function App() {
           {started && <Villagers />}
           {started && <Critters />}
           {started && <Islanders />}
+          {started && <DockVisitor />}
           {started && <DailyBottle />}
           {started && <Fishing />}
           {started && <ShopStall />}

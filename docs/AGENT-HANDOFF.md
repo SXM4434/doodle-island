@@ -137,7 +137,9 @@ Implemented `d00debd` and live-state verified:
 - Bonds persist in `SaveData.islanders`; interaction prompts surface the current request state.
 - Requests complete through **real placement**, the same mechanic residents use — drawings become socially consequential (the doc's core requirement).
 
-Remaining spine work: dock completion payoff, one post-dock shared project, one collection/display loop.
+**Dock payoff shipped (`efb6347`) and live-state verified:** finishing the dock brings one rotating daily traveler (Pip/Nori/Fen) to the dock. They admire one of the player's real outdoor placements by name and give one daily souvenir (shine/berry/fiber). Verified: gating on `project.doneAt`, compliment references actual placement, single daily gift, visitor disappears if dock resets. Test note: when verifying via `import()` in the browser, match Vite's timestamped module URL (`store.ts?t=...`) or you get a second store instance.
+
+Remaining spine work: one post-dock shared project, one collection/display loop.
 
 ## Three-chairs acceptance test (plan §5 items #1) — 2026-07-30
 

@@ -128,6 +128,17 @@ git status --short
 git push origin master
 ```
 
+## Mid-game spine: named-islander payoffs (gap analysis P1 #6) — 2026-07-30
+
+Implemented `d00debd` and live-state verified:
+
+- **Miso (pond keeper):** asks for a drawn **decoration placed within 9u of the pond**. On placement: bond → `done` (verified), toast fires (verified). Permanent payoff: faster pond bites (800–2300ms vs 1300–3900ms) and 10% daytime ink-koi odds at the pond (`fishing.ts`).
+- **Sluggo (beachcomber):** asks for a drawn **trophy (wallhang) placed within 9u of his beach spot (-5,-43)**. On placement: bond → `done` (verified). Permanent payoff: one tide gift per real day (shine/fiber/berry rotation) claimed by talking to him.
+- Bonds persist in `SaveData.islanders`; interaction prompts surface the current request state.
+- Requests complete through **real placement**, the same mechanic residents use — drawings become socially consequential (the doc's core requirement).
+
+Remaining spine work: dock completion payoff, one post-dock shared project, one collection/display loop.
+
 ## Three-chairs acceptance test (plan §5 items #1) — 2026-07-30
 
 Software-rendered the actual `profileHullGeometry` output for three intentionally different chair-back drawings (arch/tomato, zigzag/sky, heart/leaf) side by side:

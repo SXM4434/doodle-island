@@ -139,7 +139,9 @@ Implemented `d00debd` and live-state verified:
 
 **Dock payoff shipped (`efb6347`) and live-state verified:** finishing the dock brings one rotating daily traveler (Pip/Nori/Fen) to the dock. They admire one of the player's real outdoor placements by name and give one daily souvenir (shine/berry/fiber). Verified: gating on `project.doneAt`, compliment references actual placement, single daily gift, visitor disappears if dock resets. Test note: when verifying via `import()` in the browser, match Vite's timestamped module URL (`store.ts?t=...`) or you get a second store instance.
 
-Remaining spine work: one post-dock shared project, one collection/display loop.
+**Shore Finds collection shipped (`cc78fce`) and persisted:** seven named finds can be discovered through existing shell/tree gathering, fishing, and combat verbs. Each unique find is saved in `treasures`, announces a `shore-find` journal sticker, and appears as a physical exhibit on `src/world/ShoreShelf.tsx` beside the dock. The shelf has a proximity prompt and explains progress (n/7). Discovery rates are labeled starting values in code and need tuning through onboarding playtests. The live browser verification attempt was blocked by the dev server's stale/timestamped module graph; build/typecheck passed, but do not call the shelf visually verified until a clean port-3022 browser check confirms rerender and placement.
+
+Remaining spine work: one post-dock shared project; clean-browser verification of the Shore Finds shelf.
 
 ## Three-chairs acceptance test (plan §5 items #1) — 2026-07-30
 
